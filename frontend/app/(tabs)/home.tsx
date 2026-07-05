@@ -62,12 +62,17 @@ export default function HomeScreen() {
     const mode = typeModal;
     setTypeModal(null);
     if (mode === "online") {
-      router.push({ pathname: "/matchmaking", params: { type: matchType } });
+      // let the modal close before navigating (web Modal can linger otherwise)
+      setTimeout(() => {
+        router.push({ pathname: "/matchmaking", params: { type: matchType } });
+      }, 150);
     } else if (mode === "create") {
       setBusy(true);
       try {
         const room = await api.post("/rooms", { match_type: matchType });
-        router.push({ pathname: "/room/[code]", params: { code: room.code } });
+        setTimeout(() => {
+          router.push({ pathname: "/room/[code]", params: { code: room.code } });
+        }, 150);
       } catch {
         setJoinError(t("error_generic"));
       } finally {

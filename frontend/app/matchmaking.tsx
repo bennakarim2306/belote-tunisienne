@@ -1,9 +1,11 @@
+import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { Platform, StyleSheet, Text, View } from "react-native";
 import Animated, {
   Easing,
+  FadeInDown,
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
@@ -13,10 +15,18 @@ import Animated, {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { api } from "@/src/api";
+import Avatar from "@/src/components/Avatar";
 import ChunkyButton from "@/src/components/ChunkyButton";
 import PlayingCard from "@/src/components/PlayingCard";
+import { useAuth } from "@/src/context/AuthContext";
 import { useI18n } from "@/src/i18n";
-import { C, F, SP } from "@/src/theme";
+import { C, F, R, SP } from "@/src/theme";
+
+interface FoundPlayer {
+  username: string;
+  avatar_id: string;
+  elo: number;
+}
 
 function ShufflingCard({ delay }: { delay: number }) {
   const rot = useSharedValue(0);
@@ -34,9 +44,27 @@ function ShufflingCard({ delay }: { delay: number }) {
     transform: [{ rotate: `${rot.value + delay}deg` }],
   }));
   return (
-    <Animated.View style={[style, { marginHorizontal: -14 }]}>
-      <PlayingCard faceDown width={64} />
+    <Animated.View style={[style, { marginHorizontal: -12 }]}>
+      <PlayingCard faceDown width={52} />
     </Animated.View>
+  );
+}
+
+function EmptySlot({ label }: { label: string }) {
+  const pulse = useSharedValue(0.4);
+  useEffect(() => {
+    pulse.value = withRepeat(withTiming(1, { duration: 900 }), -1, true);
+  }, [pulse]);
+  const style = useAnimatedStyle(() => ({ opacity: pulse.value }));
+  return (
+    <View style={styles.slot}>
+      <Animated.View style={[styles.emptyCircle, style]}>
+        <Ionicons name="person" size={22} color="rgba(255,255,255,0.5)" />
+      </Animated.View>
+      <Text style={styles.slotName} numberOfLines={1}>
+        {label}
+      </Text>
+    </View>
   );
 }
 
@@ -44,9 +72,12 @@ export default function MatchmakingScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { type } = useLocalSearchParams<{ type: string }>();
+  const { user } = useAuth();
   const { t } = useI18n();
   const [seconds, setSeconds] = useState(0);
   const [found, setFound] = useState(false);
+  const [players, setPlayers] = useState<FoundPlayer[]>([]);
+  const [eloRange, setEloRange] = useState(100);
   const cancelledRef = useRef(false);
 
   useEffect(() => {
@@ -73,6 +104,9 @@ export default function MatchmakingScreen() {
             setTimeout(() => {
               router.replace({ pathname: "/game/[id]", params: { id: st.game_id } });
             }, 700);
+          } else if (st.status === "waiting") {
+            setPlayers(st.players ?? []);
+            setEloRange(st.elo_range ?? 100);
           }
         } catch {}
       }, 1500);
@@ -92,6 +126,8 @@ export default function MatchmakingScreen() {
     router.back();
   };
 
+  const foundCount = 1 + players.length;
+
   return (
     <View style={[styles.container, { paddingTop: insets.top }]} testID="matchmaking-screen">
       <View style={styles.center}>
@@ -100,12 +136,48 @@ export default function MatchmakingScreen() {
           <ShufflingCard delay={0} />
           <ShufflingCard delay={6} />
         </View>
+
         <Text style={styles.title} testID="matchmaking-status-text">
           {found ? t("matchFound") : t("searching")}
         </Text>
+        <Text style={styles.counter} testID="matchmaking-players-count">
+          {t("playersCount", { n: foundCount })}
+        </Text>
+
+        <View style={styles.slotsRow} testID="matchmaking-slots">
+          <View style={styles.slot}>
+            <Avatar avatarId={user?.avatar_id} size={52} ringColor={C.gold} />
+            <Text style={styles.slotName} numberOfLines={1}>
+              {t("you")}
+            </Text>
+            <Text style={styles.slotElo}>{user?.elo ?? 1000}</Text>
+          </View>
+          {[0, 1, 2].map((i) =>
+            players[i] ? (
+              <Animated.View key={players[i].username} entering={FadeInDown.springify().damping(14)}>
+                <View style={styles.slot} testID={`matchmaking-player-${players[i].username}`}>
+                  <Avatar avatarId={players[i].avatar_id} size={52} />
+                  <Text style={styles.slotName} numberOfLines={1}>
+                    {players[i].username}
+                  </Text>
+                  <Text style={styles.slotElo}>{players[i].elo}</Text>
+                </View>
+              </Animated.View>
+            ) : (
+              <EmptySlot key={`empty-${i}`} label={t("waitingSlot")} />
+            ),
+          )}
+        </View>
+
+        <View style={styles.rangeChip} testID="matchmaking-elo-range">
+          <Ionicons name="flame" size={13} color={C.gold} />
+          <Text style={styles.rangeText}>{t("eloRangeLabel", { n: eloRange })}</Text>
+        </View>
+
         <Text style={styles.timer}>{seconds}s</Text>
         <Text style={styles.hint}>{t("searchingHint")}</Text>
       </View>
+
       {!found && (
         <ChunkyButton
           testID="cancel-search-button"
@@ -121,15 +193,54 @@ export default function MatchmakingScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.feltDark },
-  center: { flex: 1, alignItems: "center", justifyContent: "center" },
-  cardsRow: { flexDirection: "row", marginBottom: SP.xl },
-  title: { fontFamily: F.display, fontSize: 24, color: C.cream },
-  timer: { fontFamily: F.extra, fontSize: 40, color: C.gold, marginTop: SP.sm },
+  center: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: SP.lg },
+  cardsRow: { flexDirection: "row", marginBottom: SP.lg },
+  title: { fontFamily: F.display, fontSize: 22, color: C.cream },
+  counter: { fontFamily: F.extra, fontSize: 30, color: C.gold, marginTop: SP.xs },
+  slotsRow: {
+    flexDirection: "row",
+    gap: SP.md,
+    marginTop: SP.xl,
+    justifyContent: "center",
+  },
+  slot: { alignItems: "center", width: 74 },
+  slotName: {
+    fontFamily: F.bold,
+    fontSize: 11,
+    color: C.cream,
+    marginTop: 4,
+    maxWidth: 72,
+    textAlign: "center",
+  },
+  slotElo: { fontFamily: F.text, fontSize: 10, color: "rgba(255,255,255,0.6)" },
+  emptyCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    borderWidth: 2,
+    borderStyle: "dashed",
+    borderColor: "rgba(255,255,255,0.4)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 2,
+  },
+  rangeChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "rgba(0,0,0,0.35)",
+    borderRadius: R.pill,
+    paddingHorizontal: SP.lg,
+    height: 32,
+    marginTop: SP.xl,
+  },
+  rangeText: { fontFamily: F.bold, fontSize: 12.5, color: C.cream },
+  timer: { fontFamily: F.extra, fontSize: 26, color: C.cream, marginTop: SP.md, opacity: 0.85 },
   hint: {
     fontFamily: F.text,
     fontSize: 13,
     color: "rgba(255,255,255,0.7)",
-    marginTop: SP.md,
+    marginTop: SP.sm,
     textAlign: "center",
     paddingHorizontal: SP.xl,
   },

@@ -63,31 +63,25 @@ def test_non_host_cannot_start(http, tester1, tester2):
 
 
 def test_matchmaking_join_status_leave(http, tester1):
-    # ensure clean state
+    """New behaviour: humans-only queue. Solo user stays 'waiting' forever
+    (until 3 more join or purge). We just verify join/status/leave shape."""
     http.delete(f"{API}/matchmaking/leave", headers=auth_headers(tester1["token"]))
 
     r = http.post(f"{API}/matchmaking/join", json={"match_type": "short"},
                   headers=auth_headers(tester1["token"]))
     assert r.status_code == 200
 
-    # immediate status: waiting
     r = http.get(f"{API}/matchmaking/status",
                  headers=auth_headers(tester1["token"]))
     assert r.status_code == 200
     st = r.json()
-    assert st["status"] in ("waiting", "found")
+    assert st["status"] == "waiting", st
+    assert st["found_count"] == 1
+    assert st["elo_range"] == 100
+    assert st["match_type"] == "short"
+    assert st["players"] == []
 
-    # wait up to 20s for match (bots fill after ~10s)
-    game_id = None
-    for _ in range(20):
-        time.sleep(1.5)
-        r = http.get(f"{API}/matchmaking/status",
-                     headers=auth_headers(tester1["token"]))
-        st = r.json()
-        if st.get("status") == "found":
-            game_id = st.get("game_id")
-            break
-    assert game_id and game_id.startswith("g_"), f"never matched: {st}"
-
-    # clean up
     http.delete(f"{API}/matchmaking/leave", headers=auth_headers(tester1["token"]))
+    st = http.get(f"{API}/matchmaking/status",
+                  headers=auth_headers(tester1["token"])).json()
+    assert st["status"] == "idle"

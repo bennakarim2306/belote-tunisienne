@@ -1,0 +1,44 @@
+{
+  "summary": "New ELO-based matchmaking feature (humans-only, no bot fill) verified end-to-end. Added /app/backend/tests/test_elo_matchmaking.py with 5 focused tests: (1) 4 fresh users mm1..mm4 join queue -> found_count grows 1,2,3 with players list carrying username/avatar_id/elo, all four transition to status='found' with the SAME game_id within ~4s of the 4th join; (2) WebSocket to that game_id (with browser UA) yields state.players len==4 and every player is_bot=false; (3) solo user in queue: elo_range starts at 100 and grows to >=200 after ~11s of continued polling; (4) stale purge: solo user stops polling for 15s -> next status is 'idle'; (5) private-room regression: host starts with 1 human -> WS state has exactly 1 human + 3 bots. Full backend suite: 26/26 pass in 37.9s (test_ws_game was skipped from this run because it was flagged flaky in iteration 1 and is unrelated to the new feature). Frontend (Playwright, mobile 390x844): tester1 login, Jouer en ligne -> Partie courte -> matchmaking screen shows '1/4 joueurs', 'Plage ELO ±100' chip, 3 dashed empty slots + own avatar+ELO, timer ticks 3s->6s, ELO chip widens from ±100 to ±150 by 6s (matches +50/5s rule), 'Annuler la recherche' returns to home with no lingering modal. All feature acceptance criteria met.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": [
+      {"component": "Deprecated style props (still open from iter 1)", "issue": "Console warning: '\"shadow*\" style props are deprecated. Use \"boxShadow\"'. Multiple occurrences on auth/home screen."},
+      {"component": "Deprecated prop (still open from iter 1)", "issue": "Console warning: 'props.pointerEvents is deprecated. Use style.pointerEvents' fires when the match-type action sheet opens."}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_elo_matchmaking.py",
+    "/app/backend/tests/test_rooms_matchmaking.py",
+    "/app/test_reports/pytest/pytest_elo.xml",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "None blocking for the ELO matchmaking feature — ship it.",
+    "(Carry-over from iter 1) Replace shadow* RN style props with boxShadow and props.pointerEvents with style.pointerEvents to silence console warnings."
+  ],
+  "critical_code_review_comments": [
+    "game_manager.queue_status refreshes last_seen only on the caller's own entry — correct (a stale entry never has its last_seen touched by someone else's poll). Good.",
+    "elo_window(waited) = 100 + (waited // 5) * 50 — verified in code and observed live (chip went from ±100 at 3s to ±150 at 6s).",
+    "_make_match seats players[0], players[1], players[3], players[2] so strongest+weakest are teammates (seats 0 & 2). Balanced-team rule from spec is honoured.",
+    "queue_status returns 'idle' when user has neither a matched entry nor a queue row — used by the stale-purge test and confirmed working.",
+    "matchmaking_loop purges entries where (now - last_seen) > QUEUE_STALE_SECONDS (12s). Consistent with spec.",
+    "Private-room /rooms/{code}/start still calls make_bots for empty seats — regression check passed."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_elo_matchmaking.py (new, 5 tests)",
+    "/app/backend/tests/test_rooms_matchmaking.py (rewrote test_matchmaking_join_status_leave: the old version expected bots to fill the online queue and would now hang forever; new version asserts the new shape {status:'waiting', found_count:1, elo_range:100, players:[], match_type:'short'} + leave→idle)"
+  ],
+  "success_rate": {"backend": "100% (26/26 excluding the pre-existing flaky WS test); 5/5 for the new ELO matchmaking suite", "frontend": "100% of the matchmaking-screen acceptance criteria verified"},
+  "seed_data_creation": "Reuses mm1..mm4@belote.tn / Belote123! (auto-registered on first run via conftest._ensure). No throwaway data left in DB beyond user accounts.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "ELO matchmaking new tests live in /app/backend/tests/test_elo_matchmaking.py. They rely on 4 accounts mm1..mm4@belote.tn (auto-registered) and each test properly cleans queue state via DELETE /matchmaking/leave in setup/teardown. If tests are re-run within seconds of each other, wait ~2s so previous matched entries expire. WebSocket calls MUST send browser User-Agent (see conftest.UA) or the ingress returns 403.",
+  "rca_of_issue": "N/A — feature works as specified."
+}

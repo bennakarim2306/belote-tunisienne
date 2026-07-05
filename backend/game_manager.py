@@ -15,8 +15,13 @@ logger = logging.getLogger(__name__)
 BOT_NAMES = ["Ammar", "Salah", "Hédi", "Mabrouk", "Fatma", "Zohra",
              "Baya", "Moncef", "Habib", "Naïma", "Mongi", "Aziza"]
 AVATAR_IDS = [f"av{i}" for i in range(1, 13)]
-QUEUE_WAIT_SECONDS = 10
+QUEUE_STALE_SECONDS = 12
 ELO_K = 32
+
+
+def elo_window(waited_seconds):
+    """Accepted ELO gap: ±100 at start, widening by 50 every 5s of waiting."""
+    return 100 + int(waited_seconds // 5) * 50
 
 
 def make_bots(n, taken_names):
@@ -321,12 +326,13 @@ class GameManager:
             "finished_at": now.isoformat(),
         })
 
-    # ================= matchmaking =================
+    # ================= matchmaking (ELO-based, real players only) =================
 
     def join_queue(self, player, match_type):
         self.leave_queue(player["user_id"])
         self.matched.pop(player["user_id"], None)
-        self.queues[match_type].append({"player": player, "ts": time.time()})
+        now = time.time()
+        self.queues[match_type].append({"player": player, "ts": now, "last_seen": now})
 
     def leave_queue(self, user_id):
         for q in self.queues.values():
@@ -336,12 +342,28 @@ class GameManager:
         m = self.matched.get(user_id)
         if m:
             return {"status": "found", "game_id": m["game_id"]}
+        now = time.time()
         for mt, q in self.queues.items():
-            for i, e in enumerate(q):
-                if e["player"]["user_id"] == user_id:
-                    return {"status": "waiting", "position": i + 1,
-                            "waited": round(time.time() - e["ts"]),
-                            "in_queue": len(q), "match_type": mt}
+            me = next((e for e in q if e["player"]["user_id"] == user_id), None)
+            if not me:
+                continue
+            me["last_seen"] = now
+            waited = now - me["ts"]
+            my_window = elo_window(waited)
+            my_elo = me["player"]["elo"]
+            compatible = []
+            for e in q:
+                if e is me:
+                    continue
+                window = min(my_window, elo_window(now - e["ts"]))
+                if abs(e["player"]["elo"] - my_elo) <= window:
+                    p = e["player"]
+                    compatible.append({"username": p["username"],
+                                       "avatar_id": p["avatar_id"], "elo": p["elo"]})
+            compatible = compatible[:3]
+            return {"status": "waiting", "waited": round(waited), "match_type": mt,
+                    "elo_range": my_window, "players": compatible,
+                    "found_count": 1 + len(compatible)}
         return {"status": "idle"}
 
     async def matchmaking_loop(self):
@@ -352,23 +374,41 @@ class GameManager:
                 for uid in [u for u, m in self.matched.items() if now - m["ts"] > 120]:
                     self.matched.pop(uid, None)
                 for mt, q in self.queues.items():
-                    while len(q) >= 4:
-                        batch = [q.pop(0) for _ in range(4)]
-                        self._make_match(batch, mt)
-                    if q and now - q[0]["ts"] >= QUEUE_WAIT_SECONDS:
-                        batch = list(q)
-                        q.clear()
-                        self._make_match(batch, mt)
+                    # purge players who stopped polling (left the app/screen)
+                    q[:] = [e for e in q if now - e["last_seen"] <= QUEUE_STALE_SECONDS]
+                    while True:
+                        group = self._find_group(q, now)
+                        if not group:
+                            break
+                        for e in group:
+                            q.remove(e)
+                        self._make_match(group, mt)
             except Exception:
                 logger.exception("matchmaking loop error")
 
+    def _find_group(self, q, now):
+        """Find 4 mutually ELO-compatible players (windows widen while waiting)."""
+        if len(q) < 4:
+            return None
+        entries = sorted(q, key=lambda e: e["player"]["elo"])
+        for i in range(len(entries) - 3):
+            window = entries[i:i + 4]
+            spread = window[-1]["player"]["elo"] - window[0]["player"]["elo"]
+            allowed = min(elo_window(now - e["ts"]) for e in window)
+            if spread <= allowed:
+                return window
+        return None
+
     def _make_match(self, batch, match_type):
-        players = [e["player"] for e in batch]
-        game_id = self.create_game(players, match_type, shuffle=True)
+        players = sorted((e["player"] for e in batch),
+                         key=lambda p: p["elo"], reverse=True)
+        # balanced teams: strongest + weakest (seats 0 & 2) vs the two middles (1 & 3)
+        seats = [players[0], players[1], players[3], players[2]]
+        game_id = self.create_game(seats, match_type, shuffle=False)
         now = time.time()
         for p in players:
             self.matched[p["user_id"]] = {"game_id": game_id, "ts": now}
-        logger.info("match created %s (%s humans)", game_id, len(players))
+        logger.info("match created %s (elo %s)", game_id, [p["elo"] for p in players])
 
     # ================= private rooms =================
 
