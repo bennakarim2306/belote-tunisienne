@@ -44,27 +44,30 @@ export default function HandFan({ hand, legal, myTurn, trump, onPlay }: Props) {
             layout={LinearTransition.springify().damping(18)}
             style={[
               { marginLeft: i === 0 ? 0 : -cardW * (1 - overlap) },
-              {
+              { zIndex: i },
+            ]}
+          >
+            <View
+              style={{
                 transform: [
                   { rotate: `${rot}deg` },
                   { translateY: lift + (playable ? -10 : 0) },
                 ],
-                zIndex: i,
-              },
-            ]}
-          >
-            <Pressable
-              testID={`hand-card-${card}`}
-              onPress={() => play(card)}
-              disabled={!playable}
+              }}
             >
-              <PlayingCard
-                card={card}
-                width={cardW}
-                trumpSuit={trump}
-                dimmed={myTurn && !playable}
-              />
-            </Pressable>
+              <Pressable
+                testID={`hand-card-${card}`}
+                onPress={() => play(card)}
+                disabled={!playable}
+              >
+                <PlayingCard
+                  card={card}
+                  width={cardW}
+                  trumpSuit={trump}
+                  dimmed={myTurn && !playable}
+                />
+              </Pressable>
+            </View>
           </Animated.View>
         );
       })}
