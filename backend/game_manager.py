@@ -1,0 +1,424 @@
+"""Live game orchestration: WebSocket hub, bots, timers, matchmaking, private rooms."""
+import asyncio
+import logging
+import random
+import string
+import time
+import uuid
+from datetime import datetime, timezone
+
+import bot_ai
+import game_logic as gl
+
+logger = logging.getLogger(__name__)
+
+BOT_NAMES = ["Ammar", "Salah", "Hédi", "Mabrouk", "Fatma", "Zohra",
+             "Baya", "Moncef", "Habib", "Naïma", "Mongi", "Aziza"]
+AVATAR_IDS = [f"av{i}" for i in range(1, 13)]
+QUEUE_WAIT_SECONDS = 10
+ELO_K = 32
+
+
+def make_bots(n, taken_names):
+    pool = [b for b in BOT_NAMES if b not in taken_names] or BOT_NAMES
+    names = random.sample(pool, min(n, len(pool)))
+    while len(names) < n:
+        names.append(random.choice(BOT_NAMES))
+    return [{"user_id": f"bot_{uuid.uuid4().hex[:8]}", "username": name,
+             "avatar_id": random.choice(AVATAR_IDS), "is_bot": True, "elo": 1000}
+            for name in names]
+
+
+def elo_delta(winner_avg, loser_avg):
+    expected = 1 / (1 + 10 ** ((loser_avg - winner_avg) / 400))
+    return max(1, round(ELO_K * (1 - expected)))
+
+
+def room_code():
+    return "".join(random.choices("ABCDEFGHJKLMNPQRSTUVWXYZ23456789", k=6))
+
+
+class LiveGame:
+    def __init__(self, game):
+        self.game = game
+        self.lock = asyncio.Lock()
+        self.sockets = {}  # user_id -> set[WebSocket]
+        self.pending_task = None
+        self.finalized = False
+
+
+class GameManager:
+    def __init__(self, db):
+        self.db = db
+        self.games = {}  # game_id -> LiveGame
+        self.queues = {"short": [], "long": []}  # entries {player, ts}
+        self.matched = {}  # user_id -> {game_id, ts}
+        self.rooms = {}  # code -> room dict
+
+    # ================= games =================
+
+    def create_game(self, humans, match_type, shuffle=True):
+        players = list(humans)
+        bots = make_bots(4 - len(players), {p["username"] for p in players})
+        players += bots
+        if shuffle:
+            random.shuffle(players)
+        game_id = f"g_{uuid.uuid4().hex[:12]}"
+        game = gl.BeloteGame(game_id, players, match_type)
+        live = LiveGame(game)
+        self.games[game_id] = live
+        self.schedule(live)
+        return game_id
+
+    async def connect(self, game_id, user_id, ws):
+        live = self.games.get(game_id)
+        if not live:
+            return None
+        live.sockets.setdefault(user_id, set()).add(ws)
+        seat = live.game.seat_of(user_id)
+        await self._send(ws, live.game.state_for(seat), [])
+        return live
+
+    def disconnect(self, game_id, user_id, ws):
+        live = self.games.get(game_id)
+        if not live:
+            return
+        conns = live.sockets.get(user_id)
+        if conns:
+            conns.discard(ws)
+            if not conns:
+                live.sockets.pop(user_id, None)
+        if not live.sockets and live.game.phase != "finished":
+            asyncio.create_task(self._cleanup_if_abandoned(game_id))
+
+    async def _cleanup_if_abandoned(self, game_id):
+        await asyncio.sleep(180)
+        live = self.games.get(game_id)
+        if live and not live.sockets:
+            if live.pending_task and not live.pending_task.done():
+                live.pending_task.cancel()
+            self.games.pop(game_id, None)
+            logger.info("game %s abandoned, removed", game_id)
+
+    async def _send(self, ws, state, events):
+        try:
+            await ws.send_json({"type": "update", "state": state, "events": events})
+        except Exception:
+            pass
+
+    async def broadcast(self, live, events):
+        for user_id, conns in list(live.sockets.items()):
+            seat = live.game.seat_of(user_id)
+            state = live.game.state_for(seat)
+            for ws in list(conns):
+                await self._send(ws, state, events)
+
+    async def handle_action(self, game_id, user_id, msg, ws):
+        live = self.games.get(game_id)
+        if not live:
+            await ws.send_json({"type": "error", "message": "game_not_found"})
+            return
+        g = live.game
+        seat = g.seat_of(user_id)
+        if seat is None:
+            await ws.send_json({"type": "error", "message": "not_in_game"})
+            return
+        action = msg.get("action")
+        try:
+            async with live.lock:
+                if action == "bid":
+                    events = g.apply_bid(seat, int(msg.get("value", 0)), msg.get("suit"))
+                elif action == "pass":
+                    events = g.apply_pass(seat)
+                elif action == "capot":
+                    events = g.apply_capot(seat, msg.get("suit"))
+                elif action == "contre":
+                    events = g.apply_contre(seat)
+                elif action == "surcontre":
+                    events = g.apply_surcontre(seat)
+                elif action == "decline_surcontre":
+                    events = g.apply_decline_surcontre(seat)
+                elif action == "play":
+                    events = g.apply_play(seat, msg.get("card"))
+                elif action == "leave":
+                    g.players[seat]["left"] = True
+                    events = [{"e": "left", "seat": seat}]
+                else:
+                    return
+                await self.broadcast(live, events)
+            self.schedule(live)
+        except ValueError as err:
+            await ws.send_json({"type": "error", "message": str(err)})
+
+    # ================= automatic driver (bots, timers) =================
+
+    def schedule(self, live):
+        if live.pending_task and not live.pending_task.done():
+            live.pending_task.cancel()
+        live.pending_task = asyncio.create_task(self._auto(live, live.game.version))
+
+    async def _auto(self, live, version):
+        try:
+            g = live.game
+            now = time.time()
+
+            if g.phase == "finished":
+                return
+
+            if g.phase == "hand_end":
+                await asyncio.sleep(max(0.5, g.turn_deadline - now))
+                async with live.lock:
+                    if g.version != version or g.phase != "hand_end":
+                        return
+                    if g.match_over:
+                        g.phase = "finished"
+                        g.version += 1
+                        await self._finalize(live)
+                        await self.broadcast(live, [{"e": "match_end",
+                                                     "winner_team": g.winner_team}])
+                        asyncio.create_task(self._delayed_remove(g.game_id, 600))
+                        return
+                    events = g.next_hand()
+                    await self.broadcast(live, events)
+                self.schedule(live)
+                return
+
+            if g.phase == "surcontre":
+                team = g.current_bid["seat"] % 2
+                seats = [team, team + 2]
+                bot_seat = next((s for s in seats if g.players[s]["is_bot"] or
+                                 g.players[s].get("left")), None)
+                if bot_seat is not None:
+                    await asyncio.sleep(random.uniform(1.5, 2.5))
+                else:
+                    await asyncio.sleep(max(0.5, g.turn_deadline - now))
+                    bot_seat = seats[0]
+                async with live.lock:
+                    if g.version != version or g.phase != "surcontre":
+                        return
+                    if g.players[bot_seat]["is_bot"] and bot_ai.should_surcontre(
+                            g.hands[bot_seat], g.current_bid["suit"]):
+                        events = g.apply_surcontre(bot_seat)
+                    else:
+                        events = g.apply_decline_surcontre(bot_seat)
+                    await self.broadcast(live, events)
+                self.schedule(live)
+                return
+
+            if g.phase not in ("bidding", "playing"):
+                return
+
+            actor = g.turn
+            player = g.players[actor]
+            pause = max(0, g.pause_until - now)
+            is_auto = player["is_bot"] or player.get("left") or (
+                player["user_id"] not in live.sockets and not live.sockets)
+            if player["is_bot"] or player.get("left"):
+                delay = pause + random.uniform(1.0, 2.0)
+            else:
+                delay = max(0.5, g.turn_deadline - now)
+            await asyncio.sleep(delay)
+            async with live.lock:
+                if g.version != version or g.phase not in ("bidding", "playing"):
+                    return
+                events = self._auto_move(g, actor, forced_human=not (
+                    player["is_bot"] or player.get("left")))
+                await self.broadcast(live, events)
+            self.schedule(live)
+        except asyncio.CancelledError:
+            pass
+        except Exception:
+            logger.exception("auto driver error for game %s", live.game.game_id)
+
+    def _auto_move(self, g, seat, forced_human=False):
+        if g.phase == "bidding":
+            if forced_human:
+                return g.apply_pass(seat)
+            act = bot_ai.bot_bidding_action(g.hands[seat], g.current_bid, seat)
+            if act["type"] == "bid":
+                try:
+                    return g.apply_bid(seat, act["value"], act["suit"])
+                except ValueError:
+                    return g.apply_pass(seat)
+            if act["type"] == "contre":
+                try:
+                    return g.apply_contre(seat)
+                except ValueError:
+                    return g.apply_pass(seat)
+            return g.apply_pass(seat)
+        # playing
+        if forced_human:
+            legal = gl.legal_moves(g.hands[seat], g.trick, g.trump)
+            card = min(legal, key=lambda c: gl.card_points(c, g.trump))
+        else:
+            card = bot_ai.bot_play(g.hands[seat], g.trick, g.trump, seat)
+        return g.apply_play(seat, card)
+
+    async def _delayed_remove(self, game_id, delay):
+        await asyncio.sleep(delay)
+        self.games.pop(game_id, None)
+
+    # ================= end of match: elo + stats =================
+
+    async def _finalize(self, live):
+        if live.finalized:
+            return
+        live.finalized = True
+        g = live.game
+        winner = g.winner_team
+        team_elos = [
+            (g.players[0]["elo"] + g.players[2]["elo"]) / 2,
+            (g.players[1]["elo"] + g.players[3]["elo"]) / 2,
+        ]
+        delta = elo_delta(team_elos[winner], team_elos[1 - winner])
+        g.elo_changes = {}
+        now = datetime.now(timezone.utc)
+        for p in g.players:
+            team = p["seat"] % 2
+            change = delta if team == winner else -delta
+            g.elo_changes[p["user_id"]] = change
+            if p["is_bot"]:
+                continue
+            user = await self.db.users.find_one({"user_id": p["user_id"]}, {"_id": 0})
+            if not user:
+                continue
+            won = team == winner
+            new_elo = max(100, user.get("elo", 1000) + change)
+            stats = user.get("stats", {})
+            streak = (stats.get("current_streak", 0) + 1) if won else 0
+            seat_st = g.seat_stats[p["seat"]]
+            await self.db.users.update_one({"user_id": p["user_id"]}, {
+                "$set": {
+                    "elo": new_elo,
+                    "stats.current_streak": streak,
+                    "stats.best_streak": max(stats.get("best_streak", 0), streak),
+                },
+                "$inc": {
+                    "games_played": 1,
+                    "wins": 1 if won else 0,
+                    "losses": 0 if won else 1,
+                    "stats.contracts_taken": seat_st["contracts_taken"],
+                    "stats.contracts_made": seat_st["contracts_made"],
+                    "stats.belotes": seat_st["belotes"],
+                    "stats.capots": seat_st["capots"],
+                    "stats.points_scored": g.match_scores[team],
+                },
+                "$push": {"elo_history": {"$each": [{"elo": new_elo, "ts": now.isoformat()}],
+                                          "$slice": -50}},
+            })
+        await self.db.matches.insert_one({
+            "match_id": f"m_{uuid.uuid4().hex[:12]}",
+            "game_id": g.game_id,
+            "match_type": g.match_type,
+            "target": g.target,
+            "players": [{"user_id": p["user_id"], "username": p["username"],
+                         "seat": p["seat"], "team": p["seat"] % 2, "is_bot": p["is_bot"]}
+                        for p in g.players],
+            "scores": list(g.match_scores),
+            "winner_team": winner,
+            "hands_played": g.hand_number,
+            "elo_changes": g.elo_changes,
+            "finished_at": now.isoformat(),
+        })
+
+    # ================= matchmaking =================
+
+    def join_queue(self, player, match_type):
+        self.leave_queue(player["user_id"])
+        self.matched.pop(player["user_id"], None)
+        self.queues[match_type].append({"player": player, "ts": time.time()})
+
+    def leave_queue(self, user_id):
+        for q in self.queues.values():
+            q[:] = [e for e in q if e["player"]["user_id"] != user_id]
+
+    def queue_status(self, user_id):
+        m = self.matched.get(user_id)
+        if m:
+            return {"status": "found", "game_id": m["game_id"]}
+        for mt, q in self.queues.items():
+            for i, e in enumerate(q):
+                if e["player"]["user_id"] == user_id:
+                    return {"status": "waiting", "position": i + 1,
+                            "waited": round(time.time() - e["ts"]),
+                            "in_queue": len(q), "match_type": mt}
+        return {"status": "idle"}
+
+    async def matchmaking_loop(self):
+        while True:
+            try:
+                await asyncio.sleep(2)
+                now = time.time()
+                for uid in [u for u, m in self.matched.items() if now - m["ts"] > 120]:
+                    self.matched.pop(uid, None)
+                for mt, q in self.queues.items():
+                    while len(q) >= 4:
+                        batch = [q.pop(0) for _ in range(4)]
+                        self._make_match(batch, mt)
+                    if q and now - q[0]["ts"] >= QUEUE_WAIT_SECONDS:
+                        batch = list(q)
+                        q.clear()
+                        self._make_match(batch, mt)
+            except Exception:
+                logger.exception("matchmaking loop error")
+
+    def _make_match(self, batch, match_type):
+        players = [e["player"] for e in batch]
+        game_id = self.create_game(players, match_type, shuffle=True)
+        now = time.time()
+        for p in players:
+            self.matched[p["user_id"]] = {"game_id": game_id, "ts": now}
+        logger.info("match created %s (%s humans)", game_id, len(players))
+
+    # ================= private rooms =================
+
+    def create_room(self, host_player, match_type):
+        code = room_code()
+        while code in self.rooms:
+            code = room_code()
+        self.rooms[code] = {"code": code, "host_id": host_player["user_id"],
+                            "players": [host_player], "match_type": match_type,
+                            "started": False, "game_id": None, "created": time.time()}
+        return self.rooms[code]
+
+    def get_room(self, code):
+        return self.rooms.get(code.upper())
+
+    def join_room(self, code, player):
+        room = self.get_room(code)
+        if not room:
+            raise ValueError("room_not_found")
+        if room["started"]:
+            raise ValueError("room_started")
+        if any(p["user_id"] == player["user_id"] for p in room["players"]):
+            return room
+        if len(room["players"]) >= 4:
+            raise ValueError("room_full")
+        room["players"].append(player)
+        return room
+
+    def leave_room(self, code, user_id):
+        room = self.get_room(code)
+        if not room:
+            return
+        room["players"] = [p for p in room["players"] if p["user_id"] != user_id]
+        if not room["players"] or (room["host_id"] == user_id and not room["started"]):
+            self.rooms.pop(room["code"], None)
+
+    def start_room(self, code, user_id):
+        room = self.get_room(code)
+        if not room:
+            raise ValueError("room_not_found")
+        if room["host_id"] != user_id:
+            raise ValueError("not_host")
+        if room["started"]:
+            return room["game_id"]
+        game_id = self.create_game(room["players"], room["match_type"], shuffle=False)
+        room["started"] = True
+        room["game_id"] = game_id
+        asyncio.create_task(self._delayed_remove_room(room["code"], 300))
+        return game_id
+
+    async def _delayed_remove_room(self, code, delay):
+        await asyncio.sleep(delay)
+        self.rooms.pop(code, None)

@@ -1,9 +1,15 @@
+import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import { LogBox } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { KeyboardProvider } from "react-native-keyboard-controller";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
+import { AuthProvider } from "@/src/context/AuthContext";
 import { useIconFonts } from "@/src/hooks/use-icon-fonts";
+import { LanguageProvider } from "@/src/i18n";
 
 
 // Disable logbox errors etc so that users can see the app
@@ -17,17 +23,38 @@ LogBox.ignoreAllLogs(true)
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-  const [loaded, error] = useIconFonts();
+  const [iconsLoaded, iconsError] = useIconFonts();
+  const [fontsLoaded, fontsError] = useFonts({
+    Fredoka: require("../assets/fonts/Fredoka-SemiBold.ttf"),
+    Nunito: require("../assets/fonts/Nunito-Regular.ttf"),
+    NunitoBold: require("../assets/fonts/Nunito-Bold.ttf"),
+    NunitoExtraBold: require("../assets/fonts/Nunito-ExtraBold.ttf"),
+  });
+
+  const iconsReady = iconsLoaded || !!iconsError;
+  const fontsReady = fontsLoaded || !!fontsError;
 
   useEffect(() => {
-    if (loaded || error) {
+    if (iconsReady && fontsReady) {
       SplashScreen.hideAsync();
     }
-  }, [loaded, error]);
+  }, [iconsReady, fontsReady]);
 
   // If the CDN is unreachable we fall through on error rather than wedging
   // the app — icons will tofu, but the app still boots.
-  if (!loaded && !error) return null;
+  if (!iconsReady || !fontsReady) return null;
 
-  return <Stack screenOptions={{ headerShown: false }} />;
+  return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <KeyboardProvider>
+        <SafeAreaProvider>
+          <LanguageProvider>
+            <AuthProvider>
+              <Stack screenOptions={{ headerShown: false }} />
+            </AuthProvider>
+          </LanguageProvider>
+        </SafeAreaProvider>
+      </KeyboardProvider>
+    </GestureHandlerRootView>
+  );
 }

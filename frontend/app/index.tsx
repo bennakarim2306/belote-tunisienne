@@ -1,30 +1,42 @@
-import { Text, View, StyleSheet, Image } from "react-native";
+import { Redirect } from "expo-router";
+import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 
-const EXPO_PUBLIC_BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
+import { useAuth } from "@/src/context/AuthContext";
+import { C, F } from "@/src/theme";
 
 export default function Index() {
-  console.log(EXPO_PUBLIC_BACKEND_URL, "EXPO_PUBLIC_BACKEND_URL");
+  const { user, loading } = useAuth();
 
-  return (
-    <View style={styles.container}>
-      <Image
-        source={require("../assets/images/app-image.png")}
-        style={styles.image}
-      />
-    </View>
-  );
+  if (loading) {
+    return (
+      <View style={styles.container} testID="splash-loading">
+        <Text style={styles.logo}>Belote</Text>
+        <Text style={styles.logoAr}>بلوت تونسية</Text>
+        <ActivityIndicator color={C.brand} size="large" style={{ marginTop: 24 }} />
+      </View>
+    );
+  }
+
+  if (user) return <Redirect href="/(tabs)/home" />;
+  return <Redirect href="/auth" />;
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0c0c0c",
+    backgroundColor: C.bg,
     alignItems: "center",
     justifyContent: "center",
   },
-  image: {
-    width: "100%",
-    height: "100%",
-    resizeMode: "contain",
+  logo: {
+    fontFamily: F.display,
+    fontSize: 42,
+    color: C.brand,
+  },
+  logoAr: {
+    fontFamily: F.bold,
+    fontSize: 20,
+    color: C.ink2,
+    marginTop: 4,
   },
 });
