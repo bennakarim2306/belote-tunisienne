@@ -423,7 +423,7 @@ async def create_solo(body: MatchTypeBody, request: Request):
     user = await get_current_user(request)
     game_id = manager.create_game([to_player(user)], body.match_type,
                                   shuffle=False, ranked=False, turn_timeout=None,
-                                  host_user_id=user["user_id"])
+                                  host_user_id=user["user_id"], origin="solo")
     return {"game_id": game_id}
 
 

@@ -114,6 +114,7 @@ class BeloteGame:
         self.winner_team = None
         self.cancelled = False
         self.host_user_id = None  # set for private/solo games: their creator
+        self.origin = "online"  # "online" | "solo" | "private" — for ads/analytics
         self.elo_changes = None
         self.seat_stats = {s: {"contracts_taken": 0, "contracts_made": 0,
                                "belotes": 0, "capots": 0} for s in range(4)}
@@ -553,6 +554,7 @@ class BeloteGame:
             "winner_team": self.winner_team,
             "cancelled": self.cancelled,
             "host_user_id": self.host_user_id,
+            "origin": self.origin,
             "turn_deadline": self.turn_deadline,
             "turn_timeout": self.turn_timeout,
             "elo_changes": self.elo_changes,

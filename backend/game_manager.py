@@ -66,7 +66,7 @@ class GameManager:
     # ================= games =================
 
     def create_game(self, humans, match_type, shuffle=True, ranked=True, turn_timeout=30,
-                    host_user_id=None):
+                    host_user_id=None, origin="online"):
         players = list(humans)
         bots = make_bots(4 - len(players), {p["username"] for p in players})
         players += bots
@@ -76,6 +76,7 @@ class GameManager:
         game = gl.BeloteGame(game_id, players, match_type, turn_timeout=turn_timeout)
         game.ranked = ranked
         game.host_user_id = host_user_id
+        game.origin = origin
         live = LiveGame(game)
         self.games[game_id] = live
         self.schedule(live)
@@ -623,7 +624,7 @@ class GameManager:
                 bi += 1
         game_id = self.create_game(seats, room["match_type"], shuffle=False,
                                    turn_timeout=30 if room.get("turn_timer") else None,
-                                   host_user_id=room["host_id"])
+                                   host_user_id=room["host_id"], origin="private")
         room["started"] = True
         room["game_id"] = game_id
         asyncio.create_task(self._delayed_remove_room(room["code"], 300))

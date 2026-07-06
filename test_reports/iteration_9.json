@@ -1,0 +1,41 @@
+{
+  "summary": "Iteration_9 validation for new 'origin' field (ads/analytics) + AdMob placeholder banner + no regression on solo game flow & home focus/blur. BACKEND: 3/3 new pytest tests PASS (test_origin_field.py) — POST /api/solo yields WS state.origin=='solo' + host_user_id set (1 human + 3 bots), rooms flow (tester1 create → tester2 join → host start) yields WS state.origin=='private' + host_user_id set (2 humans + 2 bots), and GameManager.create_game default origin=='online' verified by source inspection (matchmaking-created games unaffected). FRONTEND (Expo web 390x800 as tester1@belote.tn): ad-banner-placeholder present + visible on ALL 4 tabs (Accueil, Classement, Amis, Profil) sitting above the tab bar; no crash / no blank / no red-screen navigating between tabs. Solo game flow: play-solo-card → match-type-short → navigates to /game/g_2f33c786e60e (game table loaded, quit-game-button present); quit → quit-confirm-button → returns cleanly to /home. Home focus/blur regression: play-solo-card visible (y=262) by default, HIDES on join-code-input focus, RESTORES after blur/tab-renav — matches iteration_8 behaviour. AD banner still visible post-navigation. No new console errors beyond pre-existing RN Web shadow*/pointerEvents deprecation warnings (unchanged since iteration_7). Interstitial (native-only) intentionally not visually tested per instructions. Deprecated packages / SafeAreaView / expo-av: none newly introduced by this iteration.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_origin_field.py",
+    "/app/test_reports/pytest/pytest_origin.xml",
+    "/tmp/i9_01_after_login.png",
+    "/tmp/i9_02_tab_home.png",
+    "/tmp/i9_02_tab_leaderboard.png",
+    "/tmp/i9_02_tab_friends.png",
+    "/tmp/i9_02_tab_profile.png",
+    "/tmp/i9_03_solo_matchtype.png",
+    "/tmp/i9_04_game_screen.png",
+    "/tmp/i9_05_quit_modal.png",
+    "/tmp/i9_06_after_quit.png",
+    "/tmp/i9_final.png"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "game_manager.py:69 — origin defaults to 'online', explicitly set to 'solo' in server.py:426 and 'private' in game_manager.py:627 (start_room). Clean 3-value enum with no leakage.",
+    "game_logic.py:556-557 — origin + host_user_id both included in state_for() snapshot, so every WS 'update' carries them (verified in tests). No PII, safe for broadcast.",
+    "AdBanner.tsx — pure View placeholder with testID='ad-banner-placeholder', 46px height, correctly above tab bar via tabs/_layout.tsx wrapping <BottomTabBar /> in a parent <View>. adsNativeSupported gate ensures placeholder on web/Expo Go — real BannerAd only in native builds as intended.",
+    "AdBanner.tsx uses AD_UNITS.banner from config; no test IDs from Google leaked into web bundle. AdsProvider mounted only inside tabs/_layout so guest/auth screens don't include ads runtime.",
+    "game/[id].tsx:197 — quitAfterMatch calls maybeShowInterstitialAfterMatch(state.origin ?? 'online') then quit(); .finally() ensures navigation happens even if the interstitial promise rejects. Good defensive pattern for web (no-op) & native alike."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_origin_field.py (NEW — 3 pytest cases for origin field)"
+  ],
+  "success_rate": {"backend": "100% (3/3 new tests)", "frontend": "100% (7/7 checkpoints incl. regression)"},
+  "seed_data_creation": "None. Used existing tester1@belote.tn / tester2@belote.tn.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "New backend contract: WS 'update' state carries origin ∈ {online,solo,private} and host_user_id (nullable for online games). test_origin_field.py is stable and cheap — reuse for regression. AdBanner is placeholder-only on web (testID 'ad-banner-placeholder', 46px above tab bar); native builds render <BannerAd/> with testID 'ad-banner-native' (untested here — needs a native build). Interstitial (interstitial.ts) is a no-op on web, AsyncStorage-backed frequency caps (1/2 for online+solo, 1/6 for private) — behavioural test would require native runtime. Pre-existing failing tests in test_rooms_matchmaking.py (obsolete players[] key vs seats[4]) and test_leave_then_rejoin_via_ws (flaky) remain — do not re-fix, they're already flagged as known-failing before this iteration.",
+  "rca_of_issue": "N/A — no defects raised on this pass."
+}

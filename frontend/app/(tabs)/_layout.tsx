@@ -1,7 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
+import { BottomTabBar } from "@react-navigation/bottom-tabs";
 import { Redirect, Tabs } from "expo-router";
+import { View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import AdBanner from "@/src/ads/AdBanner";
+import AdsProvider from "@/src/ads/AdsProvider";
 import { useAuth } from "@/src/context/AuthContext";
 import {
   NotificationsProvider,
@@ -17,6 +21,12 @@ function TabsInner() {
 
   return (
     <Tabs
+      tabBar={(props) => (
+        <View>
+          <AdBanner />
+          <BottomTabBar {...props} />
+        </View>
+      )}
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: C.brand,
@@ -87,7 +97,9 @@ export default function TabsLayout() {
 
   return (
     <NotificationsProvider>
-      <TabsInner />
+      <AdsProvider>
+        <TabsInner />
+      </AdsProvider>
     </NotificationsProvider>
   );
 }

@@ -87,6 +87,7 @@ export interface GameState {
   winner_team: number | null;
   cancelled: boolean;
   host_user_id: string | null;
+  origin: "online" | "solo" | "private";
   turn_deadline: number;
   turn_timeout: number | null;
   elo_changes: Record<string, number> | null;

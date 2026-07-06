@@ -18,6 +18,10 @@ import Animated, { FadeOut, ZoomIn } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import ChunkyButton from "@/src/components/ChunkyButton";
+import {
+  maybeShowInterstitialAfterMatch,
+  preloadInterstitial,
+} from "@/src/ads/interstitial";
 import BiddingPanel from "@/src/components/game/BiddingPanel";
 import DealAnimation from "@/src/components/game/DealAnimation";
 import { HandEndModal, MatchEndOverlay } from "@/src/components/game/HandEndModal";
@@ -183,6 +187,14 @@ export default function GameScreen() {
   const quit = () => {
     leave();
     router.replace("/(tabs)/home");
+  };
+
+  // interstitial ad (native builds only): preload once, show after match per frequency rules
+  useEffect(() => {
+    preloadInterstitial();
+  }, []);
+  const quitAfterMatch = () => {
+    maybeShowInterstitialAfterMatch(state?.origin ?? "online").finally(quit);
   };
 
   if (fatalError) {
@@ -489,7 +501,7 @@ export default function GameScreen() {
           state={state}
           myUserId={user?.user_id ?? ""}
           t={t}
-          onHome={quit}
+          onHome={quitAfterMatch}
         />
       )}
 
