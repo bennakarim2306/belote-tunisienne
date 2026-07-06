@@ -1,10 +1,19 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import Animated, { FadeIn, ZoomIn } from "react-native-reanimated";
+import Animated, {
+  Easing,
+  FadeIn,
+  ZoomIn,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+} from "react-native-reanimated";
 
 import { SUIT_COLOR_ON_DARK, SUIT_SYMBOL } from "@/src/components/PlayingCard";
 import ChunkyButton from "@/src/components/ChunkyButton";
+import VictoryCelebration from "@/src/components/game/VictoryCelebration";
 import { GameState, HandResult } from "@/src/game/useGameSocket";
 import { TKey } from "@/src/i18n";
 import { C, F, R, SP } from "@/src/theme";
@@ -164,17 +173,44 @@ export function MatchEndOverlay({
   const won = state.winner_team === myTeam;
   const eloDelta = state.elo_changes?.[myUserId] ?? 0;
 
+  // pulsing mint glow around the trophy
+  const glowP = useSharedValue(0);
+  useEffect(() => {
+    glowP.value = withRepeat(
+      withTiming(1, { duration: 1100, easing: Easing.inOut(Easing.quad) }),
+      -1,
+      true,
+    );
+  }, [glowP]);
+  const trophyGlowStyle = useAnimatedStyle(() => ({
+    shadowOpacity: 0.45 + glowP.value * 0.5,
+    shadowRadius: 18 + glowP.value * 14,
+    borderColor: `rgba(0,229,122,${0.35 + glowP.value * 0.5})`,
+    transform: [{ scale: 1 + glowP.value * 0.05 }],
+  }));
+
   return (
     <View style={styles.scrim} testID="match-end-overlay">
       <Animated.View entering={ZoomIn.springify().damping(14)} style={styles.card}>
-        <Animated.View entering={FadeIn.delay(200)}>
-          <Ionicons
-            name={won ? "trophy" : "sad-outline"}
-            size={64}
-            color={won ? C.gold : C.ink3}
+        {won ? (
+          <Animated.View
+            entering={ZoomIn.springify().damping(10).delay(150)}
             style={{ alignSelf: "center" }}
-          />
-        </Animated.View>
+          >
+            <Animated.View style={[styles.trophyGlow, trophyGlowStyle]} testID="victory-trophy">
+              <Ionicons name="trophy" size={54} color={C.gold} />
+            </Animated.View>
+          </Animated.View>
+        ) : (
+          <Animated.View entering={FadeIn.delay(200)}>
+            <Ionicons
+              name="sad-outline"
+              size={64}
+              color={C.ink3}
+              style={{ alignSelf: "center" }}
+            />
+          </Animated.View>
+        )}
         <Text style={[styles.victoryText, { color: won ? C.green : C.error }]} testID="match-result-text">
           {won ? t("victory") : t("defeat")}
         </Text>
@@ -214,6 +250,7 @@ export function MatchEndOverlay({
           style={{ marginTop: SP.lg }}
         />
       </Animated.View>
+      {won && <VictoryCelebration />}
     </View>
   );
 }
@@ -296,6 +333,18 @@ const styles = StyleSheet.create({
     fontSize: 32,
     textAlign: "center",
     marginTop: SP.sm,
+  },
+  trophyGlow: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(0,229,122,0.10)",
+    borderWidth: 1.5,
+    shadowColor: C.brand,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 12,
   },
   finalLabel: {
     fontFamily: F.text,
