@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import Animated, {
+  ZoomIn,
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
@@ -41,6 +42,7 @@ interface Props {
   bidLabel?: string | null;
   bidSuit?: string | null;
   contractLabel?: { text: string; suit: string } | null;
+  chatText?: string | null;
   deadline?: number;
   showTimer?: boolean;
   isMe?: boolean;
@@ -54,6 +56,7 @@ export default function PlayerSeat({
   bidLabel,
   bidSuit,
   contractLabel,
+  chatText,
   deadline,
   showTimer,
   isMe,
@@ -114,6 +117,17 @@ export default function PlayerSeat({
           <Text style={styles.cardCountText}>🂠 {player.card_count}</Text>
         </View>
       )}
+      {chatText ? (
+        <Animated.View
+          entering={ZoomIn.springify().damping(14)}
+          style={[styles.bubble, styles.chatBubble]}
+          testID={`chat-bubble-${player.seat}`}
+        >
+          <Text style={styles.chatText} numberOfLines={1}>
+            {chatText}
+          </Text>
+        </Animated.View>
+      ) : null}
       {contractLabel ? (
         <View style={[styles.bubble, styles.contractBubble]} testID={`contract-holder-${player.seat}`}>
           <Ionicons name="ribbon" size={11} color="#1A1200" />
@@ -205,6 +219,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
   },
+  chatBubble: {
+    top: -34,
+    zIndex: 10,
+    backgroundColor: C.bg,
+    borderWidth: 1.5,
+    borderColor: C.brand,
+    maxWidth: 170,
+  },
+  chatText: { fontFamily: F.bold, fontSize: 12, color: C.ink },
   timerPill: {
     position: "absolute",
     bottom: -8,

@@ -53,6 +53,13 @@ class LiveGame:
         self.sockets = {}  # user_id -> set[WebSocket]
         self.pending_task = None
         self.finalized = False
+        self.chat_last = {}  # seat -> last chat timestamp (rate limit)
+
+
+CHAT_MSG_IDS = {"wellPlayed", "yezzi", "aychek", "luck", "yalla",
+                "oops", "sahha", "thinking"}
+CHAT_EMOJIS = {"😂", "😭", "😡", "🔥", "👏", "🤝", "😎", "🎉"}
+CHAT_COOLDOWN = 1.5  # seconds between messages per player
 
 
 class GameManager:
@@ -210,6 +217,16 @@ class GameManager:
                     events = g.decline_pause(seat)
                 elif action == "resume":
                     events = g.resume(seat)
+                elif action == "chat":
+                    kind = msg.get("kind")
+                    value = msg.get("value")
+                    valid = ((kind == "msg" and value in CHAT_MSG_IDS)
+                             or (kind == "emoji" and value in CHAT_EMOJIS))
+                    now = time.time()
+                    if not valid or now - live.chat_last.get(seat, 0) < CHAT_COOLDOWN:
+                        return
+                    live.chat_last[seat] = now
+                    events = [{"e": "chat", "seat": seat, "kind": kind, "msg": value}]
                 elif action == "leave":
                     if g.host_user_id == user_id and g.phase != "finished":
                         # the creator ends the game for everyone (no ELO impact)

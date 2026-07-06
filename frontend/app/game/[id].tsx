@@ -37,6 +37,9 @@ import { C, F, PATTERN_BG, R, SP } from "@/src/theme";
 
 type TFunc = (key: TKey, vars?: Record<string, string | number>) => string;
 
+const CHAT_MSGS = ["wellPlayed", "yezzi", "aychek", "luck", "yalla", "oops", "sahha", "thinking"];
+const CHAT_EMOJIS = ["😂", "😭", "😡", "🔥", "👏", "🤝", "😎", "🎉"];
+
 function PausedOverlay({
   until,
   requesterName,
@@ -111,6 +114,9 @@ export default function GameScreen() {
   const [scoresOpen, setScoresOpen] = useState(false);
   const [remaining, setRemaining] = useState<number | null>(null);
   const [dealing, setDealing] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatBubbles, setChatBubbles] = useState<Record<number, { text: string; key: number }>>({});
+  const chatTimers = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
   const lastEventId = useRef(0);
   const prevHandRef = useRef<number | null>(null);
 
@@ -141,6 +147,18 @@ export default function GameScreen() {
     for (const ev of events.list) {
       if (ev.e === "play") {
         playSound("card", 0.5);
+      } else if (ev.e === "chat" && ev.seat !== undefined) {
+        const seat = ev.seat;
+        const text = ev.kind === "msg" ? t(`chat_${ev.msg}` as TKey) : (ev.msg ?? "");
+        setChatBubbles((b) => ({ ...b, [seat]: { text, key: Date.now() } }));
+        if (chatTimers.current[seat]) clearTimeout(chatTimers.current[seat]);
+        chatTimers.current[seat] = setTimeout(() => {
+          setChatBubbles((b) => {
+            const next = { ...b };
+            delete next[seat];
+            return next;
+          });
+        }, 2800);
       } else if (ev.e === "belote") {
         playSound("belote");
         setBanner({ text: t(ev.word === "belote" ? "belote" : "rebelote"), key: Date.now() });
@@ -202,6 +220,11 @@ export default function GameScreen() {
   }, []);
   const quitAfterMatch = () => {
     maybeShowInterstitialAfterMatch(state?.origin ?? "online").finally(quit);
+  };
+
+  const sendChat = (kind: "msg" | "emoji", value: string) => {
+    send({ action: "chat", kind, value });
+    setChatOpen(false);
   };
 
   if (fatalError) {
@@ -367,6 +390,7 @@ export default function GameScreen() {
             bidLabel={bidLabels[partner.seat]?.text}
             bidSuit={bidLabels[partner.seat]?.suit}
             contractLabel={contractLabelFor(partner.seat)}
+            chatText={chatBubbles[partner.seat]?.text}
             deadline={state.turn_deadline}
             showTimer={seatTimerOn}
           />
@@ -380,6 +404,7 @@ export default function GameScreen() {
             bidLabel={bidLabels[leftP.seat]?.text}
             bidSuit={bidLabels[leftP.seat]?.suit}
             contractLabel={contractLabelFor(leftP.seat)}
+            chatText={chatBubbles[leftP.seat]?.text}
             deadline={state.turn_deadline}
             showTimer={seatTimerOn}
           />
@@ -397,6 +422,7 @@ export default function GameScreen() {
             bidLabel={bidLabels[rightP.seat]?.text}
             bidSuit={bidLabels[rightP.seat]?.suit}
             contractLabel={contractLabelFor(rightP.seat)}
+            chatText={chatBubbles[rightP.seat]?.text}
             deadline={state.turn_deadline}
             showTimer={seatTimerOn}
           />
@@ -411,6 +437,7 @@ export default function GameScreen() {
             bidLabel={bidLabels[mySeat]?.text}
             bidSuit={bidLabels[mySeat]?.suit}
             contractLabel={contractLabelFor(mySeat)}
+            chatText={chatBubbles[mySeat]?.text}
             deadline={state.turn_deadline}
             showTimer={seatTimerOn}
             isMe
@@ -512,6 +539,17 @@ export default function GameScreen() {
         />
       )}
 
+      {/* quick chat button (left side, mirrors the last-trick button) */}
+      {state.phase !== "finished" && (
+        <Pressable
+          testID="chat-button"
+          onPress={() => setChatOpen(true)}
+          style={[styles.chatBtn, { bottom: insets.bottom + 148 }]}
+        >
+          <Ionicons name="chatbubble-ellipses" size={20} color={C.cream} />
+        </Pressable>
+      )}
+
       {/* last trick viewer (available anytime once a trick was played) */}
       {state.last_trick && state.phase === "playing" && (
         <Pressable
@@ -522,6 +560,39 @@ export default function GameScreen() {
           <Ionicons name="albums" size={20} color={C.cream} />
         </Pressable>
       )}
+
+      <Modal visible={chatOpen} transparent animationType="slide">
+        <Pressable style={styles.chatScrim} onPress={() => setChatOpen(false)}>
+          <Pressable style={styles.chatSheet} onPress={() => {}} testID="chat-panel">
+            <View style={styles.sheetHandle} />
+            <Text style={styles.quitTitle}>{t("quickChat")}</Text>
+            <View style={styles.emojiRow}>
+              {CHAT_EMOJIS.map((em) => (
+                <Pressable
+                  key={em}
+                  testID={`chat-emoji-${em}`}
+                  onPress={() => sendChat("emoji", em)}
+                  style={({ pressed }) => [styles.emojiBtn, pressed && { opacity: 0.7 }]}
+                >
+                  <Text style={styles.emojiText}>{em}</Text>
+                </Pressable>
+              ))}
+            </View>
+            <View style={styles.chatMsgWrap}>
+              {CHAT_MSGS.map((id2) => (
+                <Pressable
+                  key={id2}
+                  testID={`chat-msg-${id2}`}
+                  onPress={() => sendChat("msg", id2)}
+                  style={({ pressed }) => [styles.chatMsgChip, pressed && { opacity: 0.7 }]}
+                >
+                  <Text style={styles.chatMsgText}>{t(`chat_${id2}` as TKey)}</Text>
+                </Pressable>
+              ))}
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       <Modal visible={lastTrickOpen} transparent animationType="fade">
         <Pressable style={styles.quitScrim} onPress={() => setLastTrickOpen(false)}>
@@ -848,6 +919,71 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  chatBtn: {
+    position: "absolute",
+    left: SP.lg,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.3)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  chatScrim: { flex: 1, backgroundColor: C.scrim, justifyContent: "flex-end" },
+  chatSheet: {
+    backgroundColor: C.bg,
+    borderTopLeftRadius: R.lg,
+    borderTopRightRadius: R.lg,
+    padding: SP.xl,
+    paddingBottom: SP.xxl,
+  },
+  sheetHandle: {
+    width: 44,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: C.borderStrong,
+    alignSelf: "center",
+    marginBottom: SP.md,
+  },
+  emojiRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+    gap: SP.sm,
+    marginTop: SP.md,
+  },
+  emojiBtn: {
+    width: 52,
+    height: 52,
+    borderRadius: R.md,
+    backgroundColor: C.card,
+    borderWidth: 1,
+    borderColor: C.border,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  emojiText: { fontSize: 26 },
+  chatMsgWrap: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: SP.sm,
+    marginTop: SP.lg,
+  },
+  chatMsgChip: {
+    flexGrow: 1,
+    flexBasis: "45%",
+    backgroundColor: C.card,
+    borderWidth: 1,
+    borderColor: C.border,
+    borderRadius: R.pill,
+    paddingHorizontal: SP.md,
+    height: 44,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  chatMsgText: { fontFamily: F.bold, fontSize: 13.5, color: C.ink },
   lastTrickRow: {
     flexDirection: "row",
     justifyContent: "center",

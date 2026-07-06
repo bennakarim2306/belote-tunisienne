@@ -98,6 +98,8 @@ export interface GameEvent {
   seat?: number;
   card?: string;
   value?: number;
+  kind?: string;
+  msg?: string;
   suit?: string;
   word?: string;
   winner_seat?: number;
