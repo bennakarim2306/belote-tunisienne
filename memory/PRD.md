@@ -50,8 +50,14 @@ Rules reference: /manuel_belote_tunisienne.md (uploaded artifact) — Tunisian b
 
 ## Backlog (prioritized)
 - P0: none outstanding
-- P1: Ads ACTIVATION (structure ready with Google TEST IDs — needs real AdMob unit IDs + native build); in-game emoji/quick-chat reactions; sound effects; spectator/rejoin polish (games are in-memory — lost on backend restart)
+- P1: Ads ACTIVATION (structure ready with Google TEST IDs — needs real AdMob unit IDs + native build); in-game emoji/quick-chat reactions; spectator/rejoin polish (games are in-memory — lost on backend restart)
 - P2: Paid avatar shop (catalogue is ready to extend); seasonal leaderboards; match history detail screen; RTL full mirroring for Arabic; Elo-based matchmaking buckets; push notifications for invites (only on user request)
+
+## Known Notes
+- Games live in memory: backend restart cancels running games (accepted MVP tradeoff)
+- Google OAuth can't be E2E tested in preview; flow follows Emergent playbook exactly
+- Ingress blocks non-browser User-Agents (403) — test scripts must send a UA header
+d avatar shop (catalogue is ready to extend); seasonal leaderboards; match history detail screen; RTL full mirroring for Arabic; Elo-based matchmaking buckets; push notifications for invites (only on user request)
 
 ## Known Notes
 - Games live in memory: backend restart cancels running games (accepted MVP tradeoff)

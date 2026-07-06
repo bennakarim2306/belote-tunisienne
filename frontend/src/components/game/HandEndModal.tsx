@@ -16,6 +16,7 @@ import ChunkyButton from "@/src/components/ChunkyButton";
 import VictoryCelebration from "@/src/components/game/VictoryCelebration";
 import { GameState, HandResult } from "@/src/game/useGameSocket";
 import { TKey } from "@/src/i18n";
+import { playSound } from "@/src/sound";
 import { C, F, R, SP } from "@/src/theme";
 
 type TFunc = (key: TKey, vars?: Record<string, string | number>) => string;
@@ -172,6 +173,12 @@ export function MatchEndOverlay({
   const myTeam = state.my_seat % 2;
   const won = state.winner_team === myTeam;
   const eloDelta = state.elo_changes?.[myUserId] ?? 0;
+
+  // victory fanfare / defeat tone (once, when the overlay appears)
+  useEffect(() => {
+    playSound(won ? "victory" : "defeat", won ? 0.9 : 0.65);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // pulsing mint glow around the trophy
   const glowP = useSharedValue(0);

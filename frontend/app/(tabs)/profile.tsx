@@ -6,6 +6,7 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   View,
 } from "react-native";
@@ -18,6 +19,7 @@ import Avatar from "@/src/components/Avatar";
 import ChunkyButton from "@/src/components/ChunkyButton";
 import { useAuth } from "@/src/context/AuthContext";
 import { useI18n } from "@/src/i18n";
+import { isSoundEnabled, setSoundEnabled } from "@/src/sound";
 import { C, F, R, SP } from "@/src/theme";
 
 export default function ProfileScreen() {
@@ -29,6 +31,12 @@ export default function ProfileScreen() {
   const [winRate, setWinRate] = useState(0);
   const [showAvatars, setShowAvatars] = useState(false);
   const [showStats, setShowStats] = useState(false);
+  const [soundOn, setSoundOn] = useState(isSoundEnabled());
+
+  const toggleSound = (v: boolean) => {
+    setSoundOn(v);
+    setSoundEnabled(v);
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -193,6 +201,22 @@ export default function ProfileScreen() {
             )}
           </Animated.View>
         )}
+
+        <View style={[styles.sectionToggle, { marginTop: SP.xl }]}>
+          <Ionicons
+            name={soundOn ? "volume-high" : "volume-mute"}
+            size={18}
+            color={C.brand2}
+          />
+          <Text style={styles.sectionToggleText}>{t("soundEffects")}</Text>
+          <Switch
+            testID="sound-toggle"
+            value={soundOn}
+            onValueChange={toggleSound}
+            trackColor={{ false: C.bg3, true: "rgba(0,229,122,0.45)" }}
+            thumbColor={soundOn ? C.brand : C.ink3}
+          />
+        </View>
 
         <Text style={styles.sectionTitle}>{t("language")}</Text>
         <View style={styles.langRow}>

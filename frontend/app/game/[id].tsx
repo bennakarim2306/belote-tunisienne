@@ -32,6 +32,7 @@ import PlayingCard, { SUIT_COLOR_ON_DARK, SUIT_SYMBOL } from "@/src/components/P
 import { useAuth } from "@/src/context/AuthContext";
 import { useGameSocket } from "@/src/game/useGameSocket";
 import { TKey, useI18n } from "@/src/i18n";
+import { playSound } from "@/src/sound";
 import { C, F, PATTERN_BG, R, SP } from "@/src/theme";
 
 type TFunc = (key: TKey, vars?: Record<string, string | number>) => string;
@@ -121,10 +122,12 @@ export default function GameScreen() {
       prevHandRef.current = state.hand_number;
       if (state.phase === "bidding" && state.bids.length === 0) {
         setDealing(true);
+        playSound("deal", 0.7);
       }
     } else if (state.hand_number !== prev) {
       prevHandRef.current = state.hand_number;
       setDealing(true);
+      playSound("deal", 0.7);
       if (Platform.OS !== "web") {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       }
@@ -136,7 +139,10 @@ export default function GameScreen() {
     if (!events.list.length || events.id === lastEventId.current) return;
     lastEventId.current = events.id;
     for (const ev of events.list) {
-      if (ev.e === "belote") {
+      if (ev.e === "play") {
+        playSound("card", 0.5);
+      } else if (ev.e === "belote") {
+        playSound("belote");
         setBanner({ text: t(ev.word === "belote" ? "belote" : "rebelote"), key: Date.now() });
       } else if (ev.e === "contre") {
         setBanner({ text: t("contreBang"), key: Date.now() });
@@ -149,6 +155,7 @@ export default function GameScreen() {
       } else if (ev.e === "pause_declined") {
         setBanner({ text: t("pauseDeclined"), key: Date.now() });
       } else if (ev.e === "trick_end") {
+        playSound("trick", 0.7);
         setShowLast(true);
         setTimeout(() => setShowLast(false), 1150);
         if (Platform.OS !== "web" && state && ev.winner_seat !== undefined &&
