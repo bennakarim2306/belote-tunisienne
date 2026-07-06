@@ -413,6 +413,7 @@ const styles = StyleSheet.create({
   joinRow: { flexDirection: "row", gap: SP.sm, marginTop: SP.md },
   joinInput: {
     flex: 1,
+    minWidth: 0,
     height: 52,
     borderRadius: R.md,
     backgroundColor: C.bg,

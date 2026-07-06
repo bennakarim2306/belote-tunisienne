@@ -1,0 +1,32 @@
+{
+  "summary": "Frontend-only targeted visual bug re-verification on the Accueil tab: the 'Partie privée' join row (join-code-input + join-room-button) now fits fully inside the card and viewport at 320x700, 360x800 and 390x844. Regression: entering ABCDEF and tapping join-room-button triggers testID join-error-text ('Le salon a été fermé'), proving the arrow button is fully tappable. Fix in home.tsx styles.joinInput (added minWidth:0) is effective. No backend testing done per request.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "/app/test_reports/iteration_4.json",
+    "/tmp/home_320.jpg",
+    "/tmp/home_360.jpg",
+    "/tmp/home_390.jpg",
+    "/tmp/home_after_join.jpg"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "styles.joinInput in /app/frontend/app/(tabs)/home.tsx has flex:1 + minWidth:0 which correctly lets the TextInput shrink so the sibling 52px joinBtn is preserved. Good fix.",
+    "Observation (non-blocking, pre-existing): console warnings 'shadow* style props are deprecated. Use boxShadow' and 'props.pointerEvents is deprecated. Use style.pointerEvents' are logged on load — worth cleaning up in a later pass but do not affect this bug."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "not tested (skipped per request)", "frontend": "100% (5/5 layout checks x 3 viewports + regression tap)"},
+  "seed_data_creation": "None. Used existing tester1@belote.tn / Belote123! account.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "The join row layout bug is fixed. Measured bounding boxes (all pass, btn width preserved at 52x52): 320x700 -> input.width=178, btn.right=279, card.right=304; 360x800 -> input.width=218, btn.right=319, card.right=344; 390x844 -> input.width=248, btn.right=349, card.right=374. Regression tap on join-room-button yielded backend error 'Le salon a été fermé' via testID join-error-text, confirming the button is fully hittable at its expected 52px width. No layout regressions elsewhere on the home tab observed in the screenshots.",
+  "rca_of_issue": "Root cause: in a flex row, TextInput has flex:1 but default web behavior for a flex item is min-width:auto, meaning it never shrinks below its intrinsic content width (dictated here by the wide letter-spaced placeholder 'Code du salon'). At small widths this pushed the sibling 52px joinBtn past the card's right padding and off the viewport. Mitigation: setting minWidth:0 on styles.joinInput allows the input to shrink and reserves space for the fixed-width button. Verified with getBoundingClientRect() at 320/360/390 widths; button now always sits inside the card."
+}

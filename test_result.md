@@ -101,3 +101,22 @@
 #====================================================================================================
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
+frontend:
+  - task: "Home: join room row layout (Code du salon input + arrow button)"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/app/(tabs)/home.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "user"
+        comment: "User screenshot: 'Code du salon' input overflows the private-party card's right edge; the join arrow button is partially cut off on the right."
+      - working: "NA"
+        agent: "main"
+        comment: "Root cause: TextInput had flex:1 but flexbox min-width:auto (RN Web) prevented it from shrinking below its wide placeholder (fontSize 18 + letterSpacing 4). Fix: added minWidth:0 to styles.joinInput. Verified locally at 320px viewport: button box x=227 w=52 fully inside viewport/card."
+
+agent_communication:
+  - agent: "main"
+    message: "Bug fix to verify: on Accueil (home tab), the 'Code du salon' input + arrow button row inside the 'Partie privée' card must fit fully within the card at mobile widths (320/360/390). Login tester1@belote.tn / Belote123!. Check the join flow still works (enter a code, button pressable)."
