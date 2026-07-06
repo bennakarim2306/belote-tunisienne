@@ -40,7 +40,7 @@ export default function HandFan({ hand, legal, myTurn, trump, onPlay }: Props) {
         return (
           <Animated.View
             key={card}
-            entering={FadeInDown.delay(i * 55).springify().damping(16)}
+            entering={FadeInDown.duration(320).delay(420 + i * 230).springify().damping(15)}
             layout={LinearTransition.springify().damping(18)}
             style={[
               { marginLeft: i === 0 ? 0 : -cardW * (1 - overlap) },

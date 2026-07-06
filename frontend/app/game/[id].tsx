@@ -18,6 +18,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import ChunkyButton from "@/src/components/ChunkyButton";
 import BiddingPanel from "@/src/components/game/BiddingPanel";
+import DealAnimation from "@/src/components/game/DealAnimation";
 import { HandEndModal, MatchEndOverlay } from "@/src/components/game/HandEndModal";
 import HandFan from "@/src/components/game/HandFan";
 import PlayerSeat from "@/src/components/game/PlayerSeat";
@@ -41,7 +42,27 @@ export default function GameScreen() {
   const [quitOpen, setQuitOpen] = useState(false);
   const [lastTrickOpen, setLastTrickOpen] = useState(false);
   const [remaining, setRemaining] = useState<number | null>(null);
+  const [dealing, setDealing] = useState(false);
   const lastEventId = useRef(0);
+  const prevHandRef = useRef<number | null>(null);
+
+  // trigger the dealing animation on every fresh hand
+  useEffect(() => {
+    if (!state) return;
+    const prev = prevHandRef.current;
+    if (prev === null) {
+      prevHandRef.current = state.hand_number;
+      if (state.phase === "bidding" && state.bids.length === 0) {
+        setDealing(true);
+      }
+    } else if (state.hand_number !== prev) {
+      prevHandRef.current = state.hand_number;
+      setDealing(true);
+      if (Platform.OS !== "web") {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      }
+    }
+  }, [state]);
 
   // process incoming events
   useEffect(() => {
@@ -60,7 +81,7 @@ export default function GameScreen() {
         setBanner({ text: t("allPassed"), key: Date.now() });
       } else if (ev.e === "trick_end") {
         setShowLast(true);
-        setTimeout(() => setShowLast(false), 1100);
+        setTimeout(() => setShowLast(false), 1150);
         if (Platform.OS !== "web" && state && ev.winner_seat !== undefined &&
             ev.winner_seat % 2 === state.my_seat % 2) {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -270,6 +291,15 @@ export default function GameScreen() {
             </View>
           )}
         </View>
+
+        {/* dealing animation overlay */}
+        {dealing && (
+          <DealAnimation
+            mySeat={mySeat}
+            dealer={state.dealer}
+            onDone={() => setDealing(false)}
+          />
+        )}
       </View>
 
       {/* my hand */}
@@ -283,13 +313,15 @@ export default function GameScreen() {
         />
       </View>
 
-      {/* bidding overlays */}
-      <View
-        style={[styles.biddingWrap, { bottom: insets.bottom + 140 }]}
-        pointerEvents="box-none"
-      >
-        <BiddingPanel state={state} t={t} onAction={send} />
-      </View>
+      {/* bidding overlays (hidden while cards are being dealt) */}
+      {!dealing && (
+        <View
+          style={[styles.biddingWrap, { bottom: insets.bottom + 140 }]}
+          pointerEvents="box-none"
+        >
+          <BiddingPanel state={state} t={t} onAction={send} />
+        </View>
+      )}
 
       {/* banner */}
       {banner && (
@@ -523,7 +555,7 @@ const styles = StyleSheet.create({
   quitRow: { flexDirection: "row", gap: SP.md, marginTop: SP.lg },
   lastTrickBtn: {
     position: "absolute",
-    left: SP.lg,
+    right: SP.lg,
     width: 44,
     height: 44,
     borderRadius: 22,
