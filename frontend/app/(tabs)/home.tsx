@@ -33,7 +33,7 @@ export default function HomeScreen() {
   const { user, refreshUser } = useAuth();
   const { t } = useI18n();
 
-  const [typeModal, setTypeModal] = useState<null | "online" | "create">(null);
+  const [typeModal, setTypeModal] = useState<null | "online" | "create" | "solo">(null);
   const [joinCode, setJoinCode] = useState("");
   const [joinError, setJoinError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -66,6 +66,18 @@ export default function HomeScreen() {
       setTimeout(() => {
         router.push({ pathname: "/matchmaking", params: { type: matchType } });
       }, 150);
+    } else if (mode === "solo") {
+      setBusy(true);
+      try {
+        const res = await api.post("/solo", { match_type: matchType });
+        setTimeout(() => {
+          router.push({ pathname: "/game/[id]", params: { id: res.game_id } });
+        }, 150);
+      } catch {
+        setJoinError(t("error_generic"));
+      } finally {
+        setBusy(false);
+      }
     } else if (mode === "create") {
       setBusy(true);
       try {
@@ -172,6 +184,29 @@ export default function HomeScreen() {
             <Text style={styles.bigCardTitle}>{t("playOnline")}</Text>
             <Text style={styles.bigCardDesc}>{t("playOnlineDesc")}</Text>
             <Text style={styles.cardSuits}>♠ ♥ ♦ ♣</Text>
+          </Pressable>
+        </Animated.View>
+
+        <Animated.View entering={FadeInUp.delay(85)}>
+          <Pressable
+            testID="play-solo-card"
+            onPress={() => setTypeModal("solo")}
+            style={({ pressed }) => [styles.bigCard, styles.soloCard, pressed && styles.pressed]}
+          >
+            <View style={styles.soloRow}>
+              <View style={[styles.bigCardIcon, styles.soloIcon]}>
+                <Ionicons name="game-controller" size={26} color={C.onBrand} />
+              </View>
+              <View style={{ flex: 1, marginLeft: SP.md }}>
+                <Text style={[styles.bigCardTitle, { color: C.ink, fontSize: 20 }]}>
+                  {t("playVsAI")}
+                </Text>
+                <Text style={[styles.bigCardDesc, { color: C.ink2 }]}>{t("playVsAIDesc")}</Text>
+              </View>
+              <View style={styles.trainingBadge}>
+                <Text style={styles.trainingBadgeText}>{t("trainingBadge")}</Text>
+              </View>
+            </View>
           </Pressable>
         </Animated.View>
 
@@ -307,6 +342,28 @@ const styles = StyleSheet.create({
   },
   onlineCard: { backgroundColor: C.felt, overflow: "hidden" },
   privateCard: { backgroundColor: C.cream, borderWidth: 1, borderColor: C.border },
+  soloCard: {
+    backgroundColor: "#FBEFE2",
+    borderWidth: 1,
+    borderColor: C.brand3,
+    padding: SP.lg,
+  },
+  soloRow: { flexDirection: "row", alignItems: "center" },
+  soloIcon: {
+    backgroundColor: C.brand2,
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    marginBottom: 0,
+  },
+  trainingBadge: {
+    backgroundColor: C.gold,
+    borderRadius: R.pill,
+    paddingHorizontal: SP.md,
+    paddingVertical: 4,
+    flexShrink: 0,
+  },
+  trainingBadgeText: { fontFamily: F.bold, fontSize: 11, color: C.ink },
   pressed: { transform: [{ scale: 0.98 }], opacity: 0.92 },
   bigCardIcon: {
     width: 56,

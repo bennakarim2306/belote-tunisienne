@@ -387,6 +387,16 @@ async def mm_leave(request: Request):
     return {"ok": True}
 
 
+# ---------------- solo vs AI ----------------
+
+@api.post("/solo")
+async def create_solo(body: MatchTypeBody, request: Request):
+    user = await get_current_user(request)
+    game_id = manager.create_game([to_player(user)], body.match_type,
+                                  shuffle=False, ranked=False)
+    return {"game_id": game_id}
+
+
 # ---------------- private rooms ----------------
 
 def room_public(room):

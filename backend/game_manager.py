@@ -62,7 +62,7 @@ class GameManager:
 
     # ================= games =================
 
-    def create_game(self, humans, match_type, shuffle=True):
+    def create_game(self, humans, match_type, shuffle=True, ranked=True):
         players = list(humans)
         bots = make_bots(4 - len(players), {p["username"] for p in players})
         players += bots
@@ -70,6 +70,7 @@ class GameManager:
             random.shuffle(players)
         game_id = f"g_{uuid.uuid4().hex[:12]}"
         game = gl.BeloteGame(game_id, players, match_type)
+        game.ranked = ranked
         live = LiveGame(game)
         self.games[game_id] = live
         self.schedule(live)
@@ -271,13 +272,32 @@ class GameManager:
         live.finalized = True
         g = live.game
         winner = g.winner_team
+        now = datetime.now(timezone.utc)
+        if not getattr(g, "ranked", True):
+            # solo/training games: no ELO, no stats
+            g.elo_changes = {}
+            await self.db.matches.insert_one({
+                "match_id": f"m_{uuid.uuid4().hex[:12]}",
+                "game_id": g.game_id,
+                "match_type": g.match_type,
+                "ranked": False,
+                "target": g.target,
+                "players": [{"user_id": p["user_id"], "username": p["username"],
+                             "seat": p["seat"], "team": p["seat"] % 2, "is_bot": p["is_bot"]}
+                            for p in g.players],
+                "scores": list(g.match_scores),
+                "winner_team": winner,
+                "hands_played": g.hand_number,
+                "elo_changes": {},
+                "finished_at": now.isoformat(),
+            })
+            return
         team_elos = [
             (g.players[0]["elo"] + g.players[2]["elo"]) / 2,
             (g.players[1]["elo"] + g.players[3]["elo"]) / 2,
         ]
         delta = elo_delta(team_elos[winner], team_elos[1 - winner])
         g.elo_changes = {}
-        now = datetime.now(timezone.utc)
         for p in g.players:
             team = p["seat"] % 2
             change = delta if team == winner else -delta
@@ -315,6 +335,7 @@ class GameManager:
             "match_id": f"m_{uuid.uuid4().hex[:12]}",
             "game_id": g.game_id,
             "match_type": g.match_type,
+            "ranked": True,
             "target": g.target,
             "players": [{"user_id": p["user_id"], "username": p["username"],
                          "seat": p["seat"], "team": p["seat"] % 2, "is_bot": p["is_bot"]}

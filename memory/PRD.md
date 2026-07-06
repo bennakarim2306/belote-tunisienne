@@ -28,6 +28,7 @@ Rules reference: /manuel_belote_tunisienne.md (uploaded artifact) — Tunisian b
 - Bots: bidding heuristics, contre/surcontre decisions, legal play heuristics; fill matchmaking + private rooms; auto-play for AFK humans (30s timer)
 - Auth: JWT register/login + Emergent Google (web hash + mobile deep link flows), sessions in Mongo (7d, TTL index)
 - Matchmaking (ELO-based, humans only): queue per match type; 4 players matched when pairwise ELO spread fits windows (±100, +50 every 5s); balanced teams (strongest+weakest vs middles); stale-poll purge (12s); live status with found players (avatars, count, elo_range). No bot fill online — bots only fill private rooms. "Play vs AI" mode planned later.
+- Solo "Jouer contre l'IA": POST /api/solo → instant game vs 3 bots, UNRANKED (no ELO/stats impact, match stored with ranked:false), "Entraînement" badge on home card
 - Private rooms with 6-char codes, room invites, friends (search/request/accept/decline)
 - Leaderboard (top 50 + my rank), stats (games/wins/winrate/contracts/belotes/capots/streak/points + ELO history chart)
 - Screens: auth, tabs (home/leaderboard/friends/profile), matchmaking, room lobby, game table (animated trick area, hand fan, bidding panel, hand-end + match-end modals, quit confirm, reconnecting badge)
@@ -36,7 +37,7 @@ Rules reference: /manuel_belote_tunisienne.md (uploaded artifact) — Tunisian b
 
 ## Backlog (prioritized)
 - P0: none outstanding
-- P1: "Jouer contre l'IA" mode (explicitly requested for later — solo game vs 3 bots, reuse create_game bot fill); Ads activation hooks (AdMob placeholders + toggle — needs native build); in-game emoji/quick-chat reactions; sound effects; spectator/rejoin polish (games are in-memory — lost on backend restart)
+- P1: Ads activation hooks (AdMob placeholders + toggle — needs native build); in-game emoji/quick-chat reactions; sound effects; spectator/rejoin polish (games are in-memory — lost on backend restart)
 - P2: Paid avatar shop (catalogue is ready to extend); seasonal leaderboards; match history detail screen; RTL full mirroring for Arabic; Elo-based matchmaking buckets; push notifications for invites (only on user request)
 
 ## Known Notes
