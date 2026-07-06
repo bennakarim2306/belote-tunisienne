@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import Animated, { FadeIn, ZoomIn } from "react-native-reanimated";
 
-import { SUIT_COLOR, SUIT_SYMBOL } from "@/src/components/PlayingCard";
+import { SUIT_COLOR_ON_DARK, SUIT_SYMBOL } from "@/src/components/PlayingCard";
 import ChunkyButton from "@/src/components/ChunkyButton";
 import { GameState, HandResult } from "@/src/game/useGameSocket";
 import { TKey } from "@/src/i18n";
@@ -56,7 +56,7 @@ export function HandEndModal({
       <Animated.View entering={ZoomIn.springify().damping(16)} style={styles.card}>
         <Text style={styles.contractLine}>
           {t("contract")} : {c.capot ? t("capot") : c.value}
-          <Text style={{ color: SUIT_COLOR[c.suit] }}> {SUIT_SYMBOL[c.suit]}</Text>
+          <Text style={{ color: SUIT_COLOR_ON_DARK[c.suit] }}> {SUIT_SYMBOL[c.suit]}</Text>
           {c.surcontre ? ` · ${t("surcontred")}` : c.contre ? ` · ${t("contred")}` : ""}
           {" — "}
           {teamLabel(c.team)}
@@ -71,9 +71,11 @@ export function HandEndModal({
           <Ionicons
             name={result.success ? "checkmark-circle" : "close-circle"}
             size={18}
-            color={C.cream}
+            color={result.success ? "#051A10" : C.cream}
           />
-          <Text style={styles.resultBadgeText}>
+          <Text
+            style={[styles.resultBadgeText, result.success && { color: "#051A10" }]}
+          >
             {result.capot_team !== null
               ? t("capotLine")
               : result.success
@@ -185,7 +187,7 @@ export function MatchEndOverlay({
           <View
             style={[
               styles.eloDelta,
-              { backgroundColor: eloDelta > 0 ? "#E4F2E5" : "#FBE9EB" },
+              { backgroundColor: eloDelta > 0 ? "rgba(0,229,122,0.14)" : "rgba(255,68,68,0.14)" },
             ]}
             testID="elo-delta-badge"
           >

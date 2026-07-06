@@ -24,7 +24,7 @@ import { HandEndModal, MatchEndOverlay } from "@/src/components/game/HandEndModa
 import HandFan from "@/src/components/game/HandFan";
 import PlayerSeat from "@/src/components/game/PlayerSeat";
 import TrickArea from "@/src/components/game/TrickArea";
-import PlayingCard, { SUIT_COLOR, SUIT_COLOR_ON_DARK, SUIT_SYMBOL } from "@/src/components/PlayingCard";
+import PlayingCard, { SUIT_COLOR_ON_DARK, SUIT_SYMBOL } from "@/src/components/PlayingCard";
 import { useAuth } from "@/src/context/AuthContext";
 import { useGameSocket } from "@/src/game/useGameSocket";
 import { TKey, useI18n } from "@/src/i18n";
@@ -407,7 +407,7 @@ export default function GameScreen() {
           )}
           {!connected && (
             <View style={[styles.turnPill, { backgroundColor: C.warning }]}>
-              <Text style={[styles.turnPillText, { color: C.ink }]}>{t("reconnecting")}</Text>
+              <Text style={[styles.turnPillText, { color: "#1A1200" }]}>{t("reconnecting")}</Text>
             </View>
           )}
         </View>
@@ -630,7 +630,7 @@ export default function GameScreen() {
                       <Text style={styles.historyHand}>
                         {t("hand", { n: h.hand_number })} ·{" "}
                         {h.contract.capot ? t("capot") : h.contract.value}
-                        <Text style={{ color: SUIT_COLOR[h.contract.suit] }}>
+                        <Text style={{ color: SUIT_COLOR_ON_DARK[h.contract.suit] }}>
                           {" "}
                           {SUIT_SYMBOL[h.contract.suit]}
                         </Text>
@@ -772,8 +772,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: SP.sm,
   },
-  turnPillText: { fontFamily: F.display, fontSize: 13, color: C.ink },
-  turnTimer: { fontFamily: F.extra, fontSize: 14, color: C.error },
+  turnPillText: { fontFamily: F.display, fontSize: 13, color: "#1A1200" },
+  turnTimer: { fontFamily: F.extra, fontSize: 14, color: C.brand3 },
   biddingWrap: {
     position: "absolute",
     left: 0,
@@ -793,7 +793,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 10,
   },
-  bannerText: { fontFamily: F.display, fontSize: 24, color: C.ink },
+  bannerText: { fontFamily: F.display, fontSize: 24, color: "#1A1200" },
   quitScrim: {
     flex: 1,
     backgroundColor: C.scrim,

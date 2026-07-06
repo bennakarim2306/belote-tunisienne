@@ -1,0 +1,50 @@
+{
+  "summary": "Frontend-only regression pass after full 'Midnight Tunisian Café x E-sport' restyle (dark espresso + electric mint + lantern copper/gold). Backend skipped per request. Verified end-to-end on Expo web preview (390x844) as tester1@belote.tn/Belote123!. All 8 requested surfaces render correctly on the new dark theme with legible text and no contrast issues. Screens verified: auth (dark card, mint 'Se connecter' button, mint suit glyphs in header), home (glowing 'Jouer en ligne' hero card on felt gradient, 'Jouer contre l'IA' with copper icon + gold 'Entraînement' badge, mint 'Créer une partie', copper arrow join button, resume-game-banner with mint 'Reprendre', ELO pill '1000', notifications-bell with badge '2', dark tab bar with mint active tint and orange '2' badge on Amis tab), notifications-panel (dark bottom sheet with 'Demandes d'amis', mint 'Accepter' buttons — panel is not empty despite prior race concern), match-type sheet (mint bolt for 'Partie courte' + copper hourglass for 'Partie longue'), solo game (bidding-panel DARK with 'À toi de jouer !' in cream, spades/clubs cream and hearts/diamonds red, bid pills 90-160, Passer/Capot=gold/Annoncer=mint/Contrer=red all legible; hand cards white with proper red/black suits; contract chip '90♦'/'110♠' + gold 'Taker · Eux' pill on taker seat; dealer 'D' gold badge; face-down piles show 🂠 + count), pause-request-button (dark overlay with gold pause icon, 'Partie en pause · Pause demandée par Tester1 · Reprise auto dans 2:59', mint 'Reprendre' resumes), match-score-header (opens 'Historique de la partie' modal with mint scoreline + cream body + cream 'Fermer'), room (mint room code 'RTCWGY' on green felt card with copper border, dashed empty seats with mint hand icon, red 'Équipe 1'/copper 'Équipe 2' badges, cream 'Inviter des amis' + mint 'Lancer la partie'), seat-action-modal (title 'Équipe 2', mint 'S'asseoir ici' + cream 'Inviter un ami ici' — dark sheet), invite-friends-button opens dark bottom sheet with Tester2 row + mint 'Inviter' + cream 'Fermer', leaderboard (gold #1 with green tint highlight for my rank, silver #2, copper #3, remaining ranks in dark rows with mint ELO values), friends (search input, mint check / red X on requests, red-heart favorite on Tester2 — populated, not empty), profile (avatar grid with mint highlight on 'Chef Slim', ELO+Rang pills, stats grid legible with copper/orange/mint icons, logout visible below fold). No red screens, no runtime errors, no dark-on-dark or illegible text spots found. Only non-blocking console noise: RN Web deprecation warnings for shadow* / pointerEvents (pre-existing framework noise, not from restyle).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "auth", "issues": ["Header suit glyphs (♠ ♥ ♦ ♣) at top of Belote Tunisienne title are all rendered in electric mint. Decoratively intentional per gaming theme, but slightly loses the traditional red-hearts/red-diamonds signal that appears elsewhere (bidding panel + hand cards). Not a legibility issue — flagging as a stylistic observation only. Reference: app/auth.tsx"]},
+      {"screen": "home", "issues": ["Passive stylistic note: the mint suit strip inside the 'Jouer en ligne' hero card is also all-mint (♠♥♦♣) — matches auth. Consistent, non-blocking."]}
+    ],
+    "react_native_issues": [
+      {"component": "theme.ts shadow()/glow()", "issue": "RN Web console spam: '\"shadow*\" style props are deprecated. Use \"boxShadow\".' fires on every render because theme.shadow and theme.glow() emit shadowColor/shadowOffset/shadowOpacity/shadowRadius (RN native props). On web these should be a boxShadow string. Not blocking (both platforms render correctly), but pollutes logs. Reference: /app/frontend/src/theme.ts:42-57"},
+      {"component": "some react-native-web wrapper", "issue": "Recurrent warning 'props.pointerEvents is deprecated. Use style.pointerEvents'. Likely from an internal lib (react-native-reanimated / bottom sheet / gesture handler wrapper), not the restyle itself. Non-blocking. Reference: browser console during any screen render."}
+    ]
+  },
+  "test_report_links": [
+    "/tmp/r_landing.jpg",
+    "/tmp/r_home.jpg",
+    "/tmp/r_notif.jpg",
+    "/tmp/r_solo_sheet.jpg",
+    "/tmp/r_game_deal.jpg",
+    "/tmp/r_game_bid.jpg",
+    "/tmp/r_paused.jpg",
+    "/tmp/r_score_history.jpg",
+    "/tmp/r_leaderboard.jpg",
+    "/tmp/r_friends.jpg",
+    "/tmp/r_profile.jpg",
+    "/tmp/r_room.jpg",
+    "/tmp/r_seat_modal.jpg",
+    "/tmp/r_invite_sheet.jpg"
+  ],
+  "action_items": [
+    "OPTIONAL (non-blocking): silence RN Web deprecation noise by converting theme.shadow / theme.glow() to platform-branched styles — on web emit boxShadow: '0 6px 12px rgba(0,0,0,0.4)' (and matching neon glow: '0 0 14px rgba(0,229,122,0.65)') while keeping shadowColor/shadowOffset/etc. on native via Platform.select. File: /app/frontend/src/theme.ts.",
+    "OPTIONAL stylistic call for E1: decide whether the decorative ♥/♦ glyphs on the auth header and 'Jouer en ligne' hero card should be recolored to the traditional red (theme.C.brand3 or #E63946) so the color-coded suit language is consistent with the bidding panel and player hand. Non-blocking; not a defect.",
+    "The friend-list race concern flagged in the request did NOT reproduce on this pass: Amis tab (navigated via bottom tab, not direct URL) rendered 2 pending requests and 1 accepted friend correctly. If the direct URL hard-load race still exists, capture the /api/friends response timing separately — no repro today."
+  ],
+  "critical_code_review_comments": [
+    "theme.ts is clean and well documented — single source of truth for the new dark palette. Token names preserved (C.brand, C.brand2, C.gold, C.ink, etc.) so downstream screens don't need refactor. Good.",
+    "F (fonts) tokens map to SpaceGrotesk / Jakarta / JakartaBold / SpaceGroteskMedium — expo-font local TTFs confirmed loaded (headings render in Space Grotesk display face on home/leaderboard/profile, body in Jakarta). No FOUT observed.",
+    "All interactive testIDs from the review request are present and clickable: notifications-bell, home-elo-pill, play-solo-card, play-online-card, create-party-button, join-code-input, join-room-button, resume-game-banner/button, pause-request-button, match-score-header, contract-chip, hand-card-*, bidding-panel + bid-suit-*/bid-value-*/pass-button/capot-button/announce-bid-button/contre-button, room-seat-0..3, seat-action-modal, seat-sit-button, seat-invite-button, invite-friends-button, start-game-button, leaderboard-screen + my-rank-card + leaderboard-row-*, friends-screen + request-row-* + friend-row-*, profile-screen + avatar-option-* + stats-grid + logout-button.",
+    "Contrast passes: all text I sampled is either C.ink (#FDFBF9) or C.ink2 (#EDE0D3) on C.bg/C.bg2 (contrast ratio ~15:1+), or C.onBrand (#051A10) on mint/gold buttons (~13:1). No AA violations spotted in the audit."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (skipped per request)", "frontend": "100% (11/11 flows: auth login, home hero+CTAs+resume banner, notifications panel, match-type sheet, solo game deal+bidding panel+contract chip+dealer badge, pause overlay+resume, score history modal, room create+mint code+seats, seat-action modal, invite-friends sheet, leaderboard medal ranks, friends populated lists, profile avatar grid+stats)"},
+  "seed_data_creation": "None. Reused tester1@belote.tn/Belote123! and pre-existing pending friend requests (Notif7303, seed0aceb) from iteration 6.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Restyle regression is green — dark 'Midnight Tunisian Café x E-sport' theme is fully wired in /app/frontend/src/theme.ts and every screen respects the new tokens. testID inventory unchanged from iteration 6. RN Web console fires repeated 'shadow*' + 'pointerEvents' deprecation warnings on every render — this is pre-existing framework noise (RN Web >= 0.19), not a regression. If future iterations touch theme.ts, watch that any Platform.select() branching doesn't drop the neon glow on native (glow() must keep shadowColor+shadowOffset+shadowOpacity+shadowRadius for iOS/Android). The auth-page decorative suits and hero-card suits are currently all-mint by design, not a bug.",
+  "rca_of_issue": "N/A — no defects raised. All 8 review checkpoints (auth, home, solo full flow, room, leaderboard, friends, profile, contrast audit) passed on the new restyle."
+}

@@ -1,44 +1,57 @@
-// Design tokens — warm oriental palette (terracotta / sand / emerald). No blues.
+// Design tokens — "Midnight Tunisian Café × E-sport"
+// Deep espresso surfaces, electric mint + lantern copper glow. No blues/purples.
 export const C = {
-  bg: "#FAF8F5",
-  bg2: "#F0EAE1",
-  bg3: "#E6DED4",
-  ink: "#2A2421",
-  ink2: "#4A423C",
-  ink3: "#8A7E70",
-  brand: "#C85A43",
-  brand2: "#D68C45",
-  brand3: "#E8A87C",
-  onBrand: "#FFFFFF",
-  cream: "#FFFFFF",
-  green: "#2E7D32",
-  felt: "#1E5B3F",
-  feltDark: "#123D2A",
-  gold: "#D9A441",
-  warning: "#F4A261",
-  error: "#D1495B",
-  border: "#E6DED4",
-  borderStrong: "#C4B9A9",
-  scrim: "rgba(26,20,16,0.55)",
+  bg: "#120F0D", // deep espresso / obsidian
+  bg2: "#1C1714", // surface secondary
+  bg3: "#26201B", // surface tertiary
+  card: "#1C1714", // elevated card surface
+  ink: "#FDFBF9", // primary text on dark
+  ink2: "#EDE0D3", // secondary text
+  ink3: "#A08D7C", // muted text
+  brand: "#00E57A", // electric mint
+  brand2: "#FF7B00", // lantern copper
+  brand3: "#C23B22", // terracotta
+  onBrand: "#051A10", // dark ink on mint / gold
+  cream: "#FDFBF9", // light — text & icons over felt/dark
+  green: "#00E57A",
+  felt: "#0F4D33", // table felt
+  feltDark: "#082A1D", // table felt edge / screens
+  gold: "#FFB800", // lantern gold
+  warning: "#FFB800",
+  error: "#FF4444",
+  border: "#2E241E",
+  borderStrong: "#4A3B30",
+  scrim: "rgba(4,3,2,0.74)",
+  glowMint: "rgba(0,229,122,0.45)",
+  glowCopper: "rgba(255,123,0,0.45)",
 };
 
 export const F = {
-  display: "Fredoka",
-  text: "Nunito",
-  bold: "NunitoBold",
-  extra: "NunitoExtraBold",
+  display: "SpaceGrotesk", // headings & buttons (gaming display)
+  text: "Jakarta", // body
+  bold: "JakartaBold",
+  extra: "SpaceGroteskMedium", // metrics, scores, codes
 };
 
 export const SP = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32, xxxl: 48 };
 export const R = { sm: 6, md: 12, lg: 20, pill: 999 };
 
 export const PATTERN_BG =
-  "https://images.unsplash.com/photo-1632399161628-cc285b33166f?crop=entropy&cs=srgb&fm=jpg&q=60&w=1080";
+  "https://images.pexels.com/photos/30310074/pexels-photo-30310074.jpeg?auto=compress&cs=tinysrgb&w=1080";
 
 export const shadow = {
-  shadowColor: "#2A2421",
-  shadowOffset: { width: 0, height: 4 },
-  shadowOpacity: 0.12,
-  shadowRadius: 10,
-  elevation: 4,
+  shadowColor: "#000000",
+  shadowOffset: { width: 0, height: 6 },
+  shadowOpacity: 0.4,
+  shadowRadius: 12,
+  elevation: 6,
 };
+
+// Neon glow for flashy gaming accents (buttons, active rings, CTA cards)
+export const glow = (color: string) => ({
+  shadowColor: color,
+  shadowOffset: { width: 0, height: 0 },
+  shadowOpacity: 0.65,
+  shadowRadius: 14,
+  elevation: 10,
+});

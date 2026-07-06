@@ -180,3 +180,20 @@ frontend:
 agent_communication:
   - agent: "main"
     message: "Pack 2 (5 items) implemented on top of pack 1. USER-REPORTED BUG to verify: 'friend quit accidentally and could NOT reconnect' -> verify full rejoin flow E2E: player (non-host) leaves game via WS action leave (or abrupt socket close), /api/games/current returns game, WS reconnect clears left flag + auto-resumes disconnect pause. Also verify host cancel, notifications, seats. tester1/tester2@belote.tn Belote123!."
+
+frontend:
+  - task: "Complete design overhaul: 'Midnight Tunisian Cafe x E-sport' dark gaming theme (deep espresso #120F0D surfaces, electric mint #00E57A, lantern copper #FF7B00, terracotta, gold), new fonts (Space Grotesk display + Plus Jakarta Sans), glowing buttons, dark card backs with copper/mint zellige, pulsing hero card on home, dark bidding panel, gold contract chips"
+    implemented: true
+    working: "NA"
+    file: "src/theme.ts, src/components/ChunkyButton.tsx, src/components/PlayingCard.tsx, all screens (token remap) + targeted contrast fixes"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Token names kept identical (C.bg/ink/brand...) so all screens flipped to dark automatically; fixed 24 cream-background spots -> C.card, hardcoded light hexes, SUIT_COLOR->SUIT_COLOR_ON_DARK on dark surfaces, gold-bg text contrast (#1A1200), BiddingPanel light bg -> dark. Fonts loaded via expo-font from local TTFs. Verified by screenshots: auth, home, leaderboard, profile, room, matchmaking, game (deal/bidding/playing). NO functional changes intended - verify all flows still work."
+
+agent_communication:
+  - agent: "main"
+    message: "Design overhaul complete (visual only). Please run a FRONTEND regression pass over all main flows to ensure the restyle broke nothing: auth login, home cards + notifications bell, solo game full flow (deal anim, bidding, play card, trick collection, hand-end continue, pause/resume, score history), room create + seat move + invite sheet, leaderboard, friends, profile (avatar select, stats). Also flag any illegible text/contrast issues you spot in screenshots. tester1@belote.tn / Belote123!."

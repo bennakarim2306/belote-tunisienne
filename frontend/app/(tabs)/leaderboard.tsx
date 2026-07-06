@@ -25,7 +25,7 @@ interface LeaderRow {
   wins: number;
 }
 
-const MEDAL_COLORS = [C.gold, "#B9B0A2", "#C58A5A"];
+const MEDAL_COLORS = [C.gold, "#C9C2B6", "#C86A2E"];
 
 export default function LeaderboardScreen() {
   const insets = useSafeAreaInsets();
@@ -94,7 +94,7 @@ export default function LeaderboardScreen() {
                   index < 3 && { backgroundColor: MEDAL_COLORS[index] },
                 ]}
               >
-                <Text style={[styles.rankText, index < 3 && { color: C.cream }]}>
+                <Text style={[styles.rankText, index < 3 && { color: "#1A1200" }]}>
                   {index + 1}
                 </Text>
               </View>
@@ -120,7 +120,7 @@ export default function LeaderboardScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.bg },
   header: {
-    backgroundColor: C.cream,
+    backgroundColor: C.card,
     borderBottomWidth: 1,
     borderBottomColor: C.border,
     paddingHorizontal: SP.lg,
@@ -141,14 +141,14 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: C.cream,
+    backgroundColor: C.card,
     borderRadius: R.md,
     padding: SP.md,
     marginBottom: SP.sm,
     borderLeftWidth: 4,
     borderLeftColor: C.bg3,
   },
-  rowMe: { borderLeftColor: C.brand, backgroundColor: "#FBEFE9" },
+  rowMe: { borderLeftColor: C.brand, backgroundColor: "rgba(0,229,122,0.08)" },
   rankBadge: {
     width: 32,
     height: 32,

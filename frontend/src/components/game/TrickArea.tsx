@@ -215,6 +215,6 @@ const styles = StyleSheet.create({
   pointsText: {
     fontFamily: F.display,
     fontSize: 18,
-    color: C.ink,
+    color: "#1A1200",
   },
 });

@@ -124,19 +124,20 @@ const styles = StyleSheet.create({
     right: 6,
   },
   back: {
-    backgroundColor: C.brand,
-    borderColor: "#A8482F",
+    backgroundColor: "#1C1714",
+    borderColor: "#FF7B00",
+    borderWidth: 1.5,
     padding: 4,
   },
   backInner: {
     flex: 1,
     borderWidth: 1.5,
-    borderColor: "rgba(255,255,255,0.55)",
+    borderColor: "rgba(0,229,122,0.5)",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#B44E37",
+    backgroundColor: "#26201B",
   },
   backMotif: {
-    color: "rgba(255,255,255,0.75)",
+    color: "#00E57A",
   },
 });

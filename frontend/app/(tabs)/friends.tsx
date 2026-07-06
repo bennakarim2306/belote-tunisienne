@@ -222,7 +222,7 @@ export default function FriendsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.bg },
   header: {
-    backgroundColor: C.cream,
+    backgroundColor: C.card,
     borderBottomWidth: 1,
     borderBottomColor: C.border,
     paddingHorizontal: SP.lg,
@@ -251,7 +251,7 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: C.cream,
+    backgroundColor: C.card,
     borderRadius: R.md,
     padding: SP.md,
     marginBottom: SP.sm,

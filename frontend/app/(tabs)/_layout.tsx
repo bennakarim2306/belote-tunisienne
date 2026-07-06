@@ -22,7 +22,7 @@ function TabsInner() {
         tabBarActiveTintColor: C.brand,
         tabBarInactiveTintColor: C.ink3,
         tabBarStyle: {
-          backgroundColor: C.cream,
+          backgroundColor: C.card,
           borderTopWidth: 1,
           borderTopColor: C.border,
           height: 60 + insets.bottom,

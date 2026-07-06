@@ -81,9 +81,9 @@ export default function AuthScreen() {
   };
 
   return (
-    <ImageBackground source={{ uri: PATTERN_BG }} style={styles.bg} imageStyle={{ opacity: 0.5 }}>
+    <ImageBackground source={{ uri: PATTERN_BG }} style={styles.bg} imageStyle={{ opacity: 0.35 }}>
       <LinearGradient
-        colors={["rgba(250,248,245,0.75)", "rgba(250,248,245,0.96)", C.bg]}
+        colors={["rgba(18,15,13,0.55)", "rgba(18,15,13,0.92)", C.bg]}
         style={StyleSheet.absoluteFill}
       />
       <KeyboardAwareScrollView
@@ -242,7 +242,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   card: {
-    backgroundColor: C.cream,
+    backgroundColor: C.card,
     borderRadius: R.lg,
     padding: SP.xl,
     borderWidth: 1,
@@ -296,7 +296,7 @@ const styles = StyleSheet.create({
     borderRadius: R.pill,
     borderWidth: 1.5,
     borderColor: C.borderStrong,
-    backgroundColor: C.cream,
+    backgroundColor: C.card,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",

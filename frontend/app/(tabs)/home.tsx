@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useRouter } from "expo-router";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Modal,
   Pressable,
@@ -10,7 +11,15 @@ import {
   TextInput,
   View,
 } from "react-native";
-import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
+import Animated, {
+  Easing,
+  FadeInDown,
+  FadeInUp,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+} from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { api, ApiError } from "@/src/api";
@@ -37,6 +46,20 @@ export default function HomeScreen() {
   const { user, refreshUser } = useAuth();
   const { t } = useI18n();
   const { invites, friendRequests, refresh } = useNotifications();
+
+  // pulsing neon glow on the hero card
+  const glowPulse = useSharedValue(0);
+  useEffect(() => {
+    glowPulse.value = withRepeat(
+      withTiming(1, { duration: 1600, easing: Easing.inOut(Easing.quad) }),
+      -1,
+      true,
+    );
+  }, [glowPulse]);
+  const heroGlowStyle = useAnimatedStyle(() => ({
+    shadowOpacity: 0.3 + glowPulse.value * 0.45,
+    borderColor: `rgba(0,229,122,${0.3 + glowPulse.value * 0.55})`,
+  }));
 
   const [typeModal, setTypeModal] = useState<null | "online" | "create" | "solo">(null);
   const [timerOn, setTimerOn] = useState(false);
@@ -225,18 +248,26 @@ export default function HomeScreen() {
         ))}
 
         <Animated.View entering={FadeInUp.delay(50)}>
-          <Pressable
-            testID="play-online-card"
-            onPress={() => setTypeModal("online")}
-            style={({ pressed }) => [styles.bigCard, styles.onlineCard, pressed && styles.pressed]}
-          >
-            <View style={styles.bigCardIcon}>
-              <Ionicons name="globe" size={30} color={C.onBrand} />
-            </View>
-            <Text style={styles.bigCardTitle}>{t("playOnline")}</Text>
-            <Text style={styles.bigCardDesc}>{t("playOnlineDesc")}</Text>
-            <Text style={styles.cardSuits}>♠ ♥ ♦ ♣</Text>
-          </Pressable>
+          <Animated.View style={[styles.heroGlow, heroGlowStyle]}>
+            <Pressable
+              testID="play-online-card"
+              onPress={() => setTypeModal("online")}
+              style={({ pressed }) => [styles.bigCard, styles.onlineCard, pressed && styles.pressed]}
+            >
+              <LinearGradient
+                colors={[C.felt, C.feltDark]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={StyleSheet.absoluteFill}
+              />
+              <View style={styles.bigCardIcon}>
+                <Ionicons name="globe" size={30} color={C.cream} />
+              </View>
+              <Text style={[styles.bigCardTitle, { color: C.cream }]}>{t("playOnline")}</Text>
+              <Text style={styles.bigCardDesc}>{t("playOnlineDesc")}</Text>
+              <Text style={styles.cardSuits}>♠ ♥ ♦ ♣</Text>
+            </Pressable>
+          </Animated.View>
         </Animated.View>
 
         <Animated.View entering={FadeInUp.delay(85)}>
@@ -438,7 +469,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.bg },
   header: {
-    backgroundColor: C.cream,
+    backgroundColor: C.card,
     borderBottomWidth: 1,
     borderBottomColor: C.border,
     paddingHorizontal: SP.lg,
@@ -518,7 +549,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: SP.sm,
-    backgroundColor: "#FBEFE2",
+    backgroundColor: C.bg3,
     borderRadius: R.md,
     borderWidth: 1,
     borderColor: C.brand3,
@@ -528,7 +559,7 @@ const styles = StyleSheet.create({
   resumeBanner: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: C.cream,
+    backgroundColor: C.card,
     borderRadius: R.md,
     borderWidth: 1.5,
     borderColor: C.brand,
@@ -562,10 +593,19 @@ const styles = StyleSheet.create({
     marginBottom: SP.lg,
     ...shadow,
   },
-  onlineCard: { backgroundColor: C.felt, overflow: "hidden" },
-  privateCard: { backgroundColor: C.cream, borderWidth: 1, borderColor: C.border },
+  heroGlow: {
+    borderRadius: R.lg,
+    borderWidth: 1.5,
+    marginBottom: SP.lg,
+    shadowColor: C.brand,
+    shadowOffset: { width: 0, height: 0 },
+    shadowRadius: 18,
+    elevation: 10,
+  },
+  onlineCard: { backgroundColor: C.felt, overflow: "hidden", marginBottom: 0 },
+  privateCard: { backgroundColor: C.card, borderWidth: 1, borderColor: C.border },
   soloCard: {
-    backgroundColor: "#FBEFE2",
+    backgroundColor: C.bg3,
     borderWidth: 1,
     borderColor: C.brand3,
     padding: SP.lg,
@@ -585,7 +625,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     flexShrink: 0,
   },
-  trainingBadgeText: { fontFamily: F.bold, fontSize: 11, color: C.ink },
+  trainingBadgeText: { fontFamily: F.bold, fontSize: 11, color: "#1A1200" },
   pressed: { transform: [{ scale: 0.98 }], opacity: 0.92 },
   bigCardIcon: {
     width: 56,
@@ -655,7 +695,7 @@ const styles = StyleSheet.create({
   typeOption: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: C.cream,
+    backgroundColor: C.card,
     borderRadius: R.md,
     borderWidth: 1,
     borderColor: C.border,
@@ -667,7 +707,7 @@ const styles = StyleSheet.create({
   timerToggle: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: C.cream,
+    backgroundColor: C.card,
     borderRadius: R.md,
     borderWidth: 1,
     borderColor: C.border,

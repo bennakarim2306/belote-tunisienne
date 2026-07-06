@@ -9,7 +9,7 @@ import {
   ViewStyle,
 } from "react-native";
 
-import { C, F, R, SP, shadow } from "@/src/theme";
+import { C, F, R, SP, glow, shadow } from "@/src/theme";
 
 interface Props {
   label: string;
@@ -43,15 +43,23 @@ export default function ChunkyButton({
           ? C.error
           : variant === "ghost"
             ? "transparent"
-            : C.bg2;
+            : C.bg3;
   const fg =
-    variant === "primary" || variant === "danger"
+    variant === "primary" || variant === "gold"
       ? C.onBrand
-      : variant === "gold"
-        ? C.ink
+      : variant === "danger"
+        ? "#FFFFFF"
         : variant === "ghost"
           ? C.brand
           : C.ink;
+  const glowStyle =
+    variant === "primary"
+      ? glow(C.glowMint)
+      : variant === "gold"
+        ? glow(C.glowCopper)
+        : variant === "danger"
+          ? glow("rgba(255,68,68,0.4)")
+          : shadow;
 
   const handlePress = () => {
     if (disabled || loading) return;
@@ -71,7 +79,8 @@ export default function ChunkyButton({
         small && styles.small,
         { backgroundColor: bg, opacity: disabled ? 0.45 : pressed ? 0.85 : 1 },
         variant === "ghost" && styles.ghost,
-        variant !== "ghost" && shadow,
+        variant === "secondary" && styles.secondary,
+        variant !== "ghost" && !disabled && glowStyle,
         pressed && { transform: [{ scale: 0.97 }] },
         style,
       ]}
@@ -114,6 +123,10 @@ const styles = StyleSheet.create({
   ghost: {
     borderWidth: 2,
     borderColor: C.brand,
+  },
+  secondary: {
+    borderWidth: 1,
+    borderColor: C.borderStrong,
   },
   label: {
     fontFamily: F.display,

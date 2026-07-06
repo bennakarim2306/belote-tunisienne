@@ -9,7 +9,7 @@ import Animated, {
 } from "react-native-reanimated";
 
 import Avatar from "@/src/components/Avatar";
-import { SUIT_COLOR, SUIT_SYMBOL } from "@/src/components/PlayingCard";
+import { SUIT_COLOR_ON_DARK, SUIT_SYMBOL } from "@/src/components/PlayingCard";
 import { GamePlayer } from "@/src/game/useGameSocket";
 import { C, F, R } from "@/src/theme";
 
@@ -116,11 +116,11 @@ export default function PlayerSeat({
       )}
       {contractLabel ? (
         <View style={[styles.bubble, styles.contractBubble]} testID={`contract-holder-${player.seat}`}>
-          <Ionicons name="ribbon" size={11} color={C.ink} />
-          <Text style={styles.bubbleText}>
+          <Ionicons name="ribbon" size={11} color="#1A1200" />
+          <Text style={[styles.bubbleText, { color: "#1A1200" }]}>
             {" "}
             {contractLabel.text}
-            <Text style={{ color: SUIT_COLOR[contractLabel.suit] }}>
+            <Text style={{ color: contractLabel.suit === "H" || contractLabel.suit === "D" ? "#B3261E" : "#1A1200" }}>
               {" "}
               {SUIT_SYMBOL[contractLabel.suit]}
             </Text>
@@ -131,7 +131,7 @@ export default function PlayerSeat({
           <Text style={styles.bubbleText}>
             {bidLabel}
             {bidSuit ? (
-              <Text style={{ color: SUIT_COLOR[bidSuit] }}> {SUIT_SYMBOL[bidSuit]}</Text>
+              <Text style={{ color: SUIT_COLOR_ON_DARK[bidSuit] }}> {SUIT_SYMBOL[bidSuit]}</Text>
             ) : null}
           </Text>
         </Animated.View>
@@ -154,7 +154,7 @@ const styles = StyleSheet.create({
     width: 18,
     height: 18,
     borderRadius: 9,
-    backgroundColor: C.cream,
+    backgroundColor: C.card,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -189,7 +189,7 @@ const styles = StyleSheet.create({
   bubble: {
     position: "absolute",
     top: -26,
-    backgroundColor: C.cream,
+    backgroundColor: C.card,
     borderRadius: R.pill,
     paddingHorizontal: 10,
     paddingVertical: 3,

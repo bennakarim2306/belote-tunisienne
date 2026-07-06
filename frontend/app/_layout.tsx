@@ -25,10 +25,11 @@ SplashScreen.preventAutoHideAsync();
 export default function RootLayout() {
   const [iconsLoaded, iconsError] = useIconFonts();
   const [fontsLoaded, fontsError] = useFonts({
-    Fredoka: require("../assets/fonts/Fredoka-SemiBold.ttf"),
-    Nunito: require("../assets/fonts/Nunito-Regular.ttf"),
-    NunitoBold: require("../assets/fonts/Nunito-Bold.ttf"),
-    NunitoExtraBold: require("../assets/fonts/Nunito-ExtraBold.ttf"),
+    SpaceGrotesk: require("../assets/fonts/SpaceGrotesk-Bold.ttf"),
+    SpaceGroteskMedium: require("../assets/fonts/SpaceGrotesk-Medium.ttf"),
+    Jakarta: require("../assets/fonts/PlusJakartaSans-Regular.ttf"),
+    JakartaBold: require("../assets/fonts/PlusJakartaSans-Bold.ttf"),
+    JakartaExtraBold: require("../assets/fonts/PlusJakartaSans-ExtraBold.ttf"),
   });
 
   const iconsReady = iconsLoaded || !!iconsError;
@@ -50,7 +51,12 @@ export default function RootLayout() {
         <SafeAreaProvider>
           <LanguageProvider>
             <AuthProvider>
-              <Stack screenOptions={{ headerShown: false }} />
+              <Stack
+                screenOptions={{
+                  headerShown: false,
+                  contentStyle: { backgroundColor: "#120F0D" },
+                }}
+              />
             </AuthProvider>
           </LanguageProvider>
         </SafeAreaProvider>

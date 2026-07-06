@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 
-import { SUIT_COLOR, SUIT_SYMBOL } from "@/src/components/PlayingCard";
+import { SUIT_COLOR_ON_DARK, SUIT_SYMBOL } from "@/src/components/PlayingCard";
 import { GameState } from "@/src/game/useGameSocket";
 import { TKey } from "@/src/i18n";
 import { C, F, R, SP } from "@/src/theme";
@@ -90,7 +90,7 @@ export default function BiddingPanel({ state, t, onAction }: Props) {
                 }}
                 style={styles.capotSuitBtn}
               >
-                <Text style={[styles.capotSuitText, { color: SUIT_COLOR[s] }]}>
+                <Text style={[styles.capotSuitText, { color: SUIT_COLOR_ON_DARK[s] }]}>
                   {SUIT_SYMBOL[s]}
                 </Text>
               </Pressable>
@@ -103,7 +103,7 @@ export default function BiddingPanel({ state, t, onAction }: Props) {
             onPress={() => setCapotOpen((v) => !v)}
             style={[styles.contreBtn, { backgroundColor: C.gold }]}
           >
-            <Text style={[styles.contreBtnText, { color: C.ink }]}>{t("capot")}</Text>
+            <Text style={[styles.contreBtnText, { color: "#1A1200" }]}>{t("capot")}</Text>
           </Pressable>
           {state.can_contre && (
             <Pressable
@@ -133,7 +133,7 @@ export default function BiddingPanel({ state, t, onAction }: Props) {
             onPress={() => setSuit(s)}
             style={[styles.suitBtn, suit === s && styles.suitBtnActive]}
           >
-            <Text style={[styles.suitText, { color: SUIT_COLOR[s] }]}>
+            <Text style={[styles.suitText, { color: SUIT_COLOR_ON_DARK[s] }]}>
               {SUIT_SYMBOL[s]}
             </Text>
           </Pressable>
@@ -177,7 +177,7 @@ export default function BiddingPanel({ state, t, onAction }: Props) {
           disabled={!suit}
           style={[styles.bigAction, { backgroundColor: C.gold, opacity: suit ? 1 : 0.4 }]}
         >
-          <Text style={[styles.bigActionText, { color: C.ink }]}>{t("capot")}</Text>
+          <Text style={[styles.bigActionText, { color: "#1A1200" }]}>{t("capot")}</Text>
         </Pressable>
         <Pressable
           testID="announce-bid-button"
@@ -211,14 +211,16 @@ export default function BiddingPanel({ state, t, onAction }: Props) {
 
 const styles = StyleSheet.create({
   panel: {
-    backgroundColor: "rgba(250,248,245,0.97)",
+    backgroundColor: "rgba(28,23,20,0.97)",
     borderRadius: R.lg,
+    borderWidth: 1,
+    borderColor: C.borderStrong,
     padding: SP.lg,
     marginHorizontal: SP.md,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
+    shadowOpacity: 0.45,
+    shadowRadius: 10,
     elevation: 8,
   },
   panelTitle: {
@@ -238,13 +240,13 @@ const styles = StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: R.md,
-    backgroundColor: C.cream,
+    backgroundColor: C.card,
     borderWidth: 2,
     borderColor: C.border,
     alignItems: "center",
     justifyContent: "center",
   },
-  suitBtnActive: { borderColor: C.brand, backgroundColor: "#FBEFE9" },
+  suitBtnActive: { borderColor: C.brand, backgroundColor: "rgba(0,229,122,0.12)" },
   suitText: { fontSize: 28 },
   valueGrid: {
     flexDirection: "row",
@@ -257,7 +259,7 @@ const styles = StyleSheet.create({
     width: "22%",
     minWidth: 56,
     borderRadius: R.pill,
-    backgroundColor: C.cream,
+    backgroundColor: C.card,
     borderWidth: 1.5,
     borderColor: C.borderStrong,
     alignItems: "center",
@@ -310,7 +312,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: C.cream,
+    backgroundColor: C.card,
     borderWidth: 1.5,
     borderColor: C.borderStrong,
     alignItems: "center",
