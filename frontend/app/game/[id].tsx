@@ -677,7 +677,11 @@ export default function GameScreen() {
         <View style={styles.quitScrim}>
           <View style={styles.quitCard}>
             <Text style={styles.quitTitle}>{t("quitGame")}</Text>
-            <Text style={styles.quitDesc}>{t("quitGameDesc")}</Text>
+            <Text style={styles.quitDesc}>
+              {state.host_user_id === user?.user_id
+                ? t("quitGameHostDesc")
+                : t("quitGameDesc")}
+            </Text>
             <View style={styles.quitRow}>
               <ChunkyButton
                 testID="quit-cancel-button"
