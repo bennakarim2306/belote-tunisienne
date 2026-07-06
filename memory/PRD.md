@@ -41,6 +41,8 @@ Rules reference: /manuel_belote_tunisienne.md (uploaded artifact) — Tunisian b
 - i18n FR/AR complete, testIDs everywhere
 - Test accounts in /app/memory/test_credentials.md (tester1/tester2@belote.tn / Belote123!)
 
+- Post-redesign layout fixes (2026-06, fork session): (1) Home — 3 mode cards compacted (row layouts, 46px icons) to fit one screen; focusing "Code du salon" hides other cards/banners (codeFocused state + KeyboardEvents keyboardDidHide restore, LinearTransition), input text unclipped (fontSize 16 / letterSpacing 2 / paddingVertical 0), keyboardShouldPersistTaps; (2) Leaderboard — native scrollbar hidden, custom slim mint scroll indicator (reanimated) visible only while scrolling, fades out after ~700ms; (3) Profile — "Choisir un avatar" & "Statistiques" (incl. ELO chart) collapsible via toggle rows, collapsed by default so page fits one screen. Frontend regression GREEN (iteration_8).
+
 ## Backlog (prioritized)
 - P0: none outstanding
 - P1: Ads activation hooks (AdMob placeholders + toggle — needs native build); in-game emoji/quick-chat reactions; sound effects; spectator/rejoin polish (games are in-memory — lost on backend restart)
