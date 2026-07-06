@@ -25,15 +25,24 @@ export interface InviteNotif {
   from_user: { username: string; avatar_id: string };
 }
 
+export interface DuoInviteNotif {
+  invite_id: string;
+  match_type: string;
+  mode: string;
+  from_user: { user_id: string; username: string; avatar_id: string };
+}
+
 interface NotifValue {
   friendRequests: FriendRequestNotif[];
   invites: InviteNotif[];
+  duoInvites: DuoInviteNotif[];
   refresh: () => Promise<void>;
 }
 
 const NotificationsContext = createContext<NotifValue>({
   friendRequests: [],
   invites: [],
+  duoInvites: [],
   refresh: async () => {},
 });
 
@@ -42,6 +51,7 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
   const userId = user?.user_id ?? null;
   const [friendRequests, setFriendRequests] = useState<FriendRequestNotif[]>([]);
   const [invites, setInvites] = useState<InviteNotif[]>([]);
+  const [duoInvites, setDuoInvites] = useState<DuoInviteNotif[]>([]);
 
   const refresh = useCallback(async () => {
     if (!userId) return;
@@ -49,6 +59,7 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
       const res = await api.get("/notifications");
       setFriendRequests(res.friend_requests ?? []);
       setInvites(res.invites ?? []);
+      setDuoInvites(res.duo_invites ?? []);
     } catch {}
   }, [userId]);
 
@@ -56,6 +67,7 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
     if (!userId) {
       setFriendRequests([]);
       setInvites([]);
+      setDuoInvites([]);
       return;
     }
     refresh();
@@ -64,8 +76,8 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
   }, [userId, refresh]);
 
   const value = useMemo(
-    () => ({ friendRequests, invites, refresh }),
-    [friendRequests, invites, refresh],
+    () => ({ friendRequests, invites, duoInvites, refresh }),
+    [friendRequests, invites, duoInvites, refresh],
   );
 
   return (

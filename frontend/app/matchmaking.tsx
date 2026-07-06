@@ -28,6 +28,12 @@ interface FoundPlayer {
   elo: number;
 }
 
+interface DuoStatusInfo {
+  partner: FoundPlayer;
+  mode: "wait" | "duo_only" | "fill";
+  duo_wait_remaining: number | null;
+}
+
 function ShufflingCard({ delay }: { delay: number }) {
   const rot = useSharedValue(0);
   useEffect(() => {
@@ -71,24 +77,30 @@ function EmptySlot({ label }: { label: string }) {
 export default function MatchmakingScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { type } = useLocalSearchParams<{ type: string }>();
+  const { type, duo } = useLocalSearchParams<{ type: string; duo?: string }>();
+  const isDuo = duo === "1";
   const { user } = useAuth();
   const { t } = useI18n();
   const [seconds, setSeconds] = useState(0);
   const [found, setFound] = useState(false);
   const [players, setPlayers] = useState<FoundPlayer[]>([]);
   const [eloRange, setEloRange] = useState(100);
+  const [duoInfo, setDuoInfo] = useState<DuoStatusInfo | null>(null);
+  const [pendingPartner, setPendingPartner] = useState<FoundPlayer | null>(null);
+  const [endMsg, setEndMsg] = useState<string | null>(null);
   const cancelledRef = useRef(false);
 
   useEffect(() => {
     let poll: ReturnType<typeof setInterval> | null = null;
     let tick: ReturnType<typeof setInterval> | null = null;
     (async () => {
-      try {
-        await api.post("/matchmaking/join", { match_type: type === "long" ? "long" : "short" });
-      } catch {
-        router.back();
-        return;
+      if (!isDuo) {
+        try {
+          await api.post("/matchmaking/join", { match_type: type === "long" ? "long" : "short" });
+        } catch {
+          router.back();
+          return;
+        }
       }
       tick = setInterval(() => setSeconds((s) => s + 1), 1000);
       poll = setInterval(async () => {
@@ -105,8 +117,23 @@ export default function MatchmakingScreen() {
               router.replace({ pathname: "/game/[id]", params: { id: st.game_id } });
             }, 700);
           } else if (st.status === "waiting") {
+            setPendingPartner(null);
             setPlayers(st.players ?? []);
             setEloRange(st.elo_range ?? 100);
+            setDuoInfo(st.duo ?? null);
+          } else if (st.status === "duo_pending") {
+            setPendingPartner(st.partner ?? null);
+          } else if (isDuo) {
+            // declined / cancelled / expired -> inform and go back
+            cancelledRef.current = true;
+            const key =
+              st.status === "duo_declined"
+                ? "duoDeclinedMsg"
+                : st.status === "duo_cancelled"
+                  ? "duoCancelledMsg"
+                  : "duoExpiredMsg";
+            setEndMsg(t(key as never));
+            setTimeout(() => router.back(), 1800);
           }
         } catch {}
       }, 1500);
@@ -126,7 +153,22 @@ export default function MatchmakingScreen() {
     router.back();
   };
 
-  const foundCount = 1 + players.length;
+  const partnerSlot = duoInfo?.partner ?? pendingPartner;
+  const foundCount = (duoInfo ? 2 : 1) + players.length;
+  const emptySlots = Math.max(0, 4 - foundCount - (pendingPartner ? 1 : 0));
+
+  if (endMsg) {
+    return (
+      <View style={[styles.container, { paddingTop: insets.top }]} testID="matchmaking-screen">
+        <View style={styles.center}>
+          <Ionicons name="information-circle" size={44} color={C.gold} />
+          <Text style={[styles.title, { marginTop: SP.md }]} testID="duo-end-message">
+            {endMsg}
+          </Text>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]} testID="matchmaking-screen">
@@ -138,7 +180,11 @@ export default function MatchmakingScreen() {
         </View>
 
         <Text style={styles.title} testID="matchmaking-status-text">
-          {found ? t("matchFound") : t("searching")}
+          {found
+            ? t("matchFound")
+            : pendingPartner
+              ? t("duoWaitingPartner", { name: pendingPartner.username })
+              : t("searching")}
         </Text>
         <Text style={styles.counter} testID="matchmaking-players-count">
           {t("playersCount", { n: foundCount })}
@@ -152,27 +198,67 @@ export default function MatchmakingScreen() {
             </Text>
             <Text style={styles.slotElo}>{user?.elo ?? 1000}</Text>
           </View>
-          {[0, 1, 2].map((i) =>
-            players[i] ? (
-              <Animated.View key={players[i].username} entering={FadeInDown.springify().damping(14)}>
-                <View style={styles.slot} testID={`matchmaking-player-${players[i].username}`}>
-                  <Avatar avatarId={players[i].avatar_id} size={52} />
-                  <Text style={styles.slotName} numberOfLines={1}>
-                    {players[i].username}
-                  </Text>
-                  <Text style={styles.slotElo}>{players[i].elo}</Text>
-                </View>
-              </Animated.View>
-            ) : (
-              <EmptySlot key={`empty-${i}`} label={t("waitingSlot")} />
-            ),
+          {partnerSlot && (
+            <View style={styles.slot} testID="matchmaking-duo-partner">
+              <View>
+                <Avatar
+                  avatarId={partnerSlot.avatar_id}
+                  size={52}
+                  ringColor={pendingPartner ? "rgba(255,255,255,0.4)" : C.gold}
+                />
+                {pendingPartner ? (
+                  <View style={styles.pendingBadge}>
+                    <Ionicons name="hourglass" size={11} color="#1A1200" />
+                  </View>
+                ) : (
+                  <View style={[styles.pendingBadge, { backgroundColor: C.brand }]}>
+                    <Ionicons name="people" size={11} color={C.onBrand} />
+                  </View>
+                )}
+              </View>
+              <Text style={styles.slotName} numberOfLines={1}>
+                {partnerSlot.username}
+              </Text>
+              <Text style={styles.slotElo}>
+                {pendingPartner ? "…" : partnerSlot.elo}
+              </Text>
+            </View>
           )}
+          {players.map((p) => (
+            <Animated.View key={p.username} entering={FadeInDown.springify().damping(14)}>
+              <View style={styles.slot} testID={`matchmaking-player-${p.username}`}>
+                <Avatar avatarId={p.avatar_id} size={52} />
+                <Text style={styles.slotName} numberOfLines={1}>
+                  {p.username}
+                </Text>
+                <Text style={styles.slotElo}>{p.elo}</Text>
+              </View>
+            </Animated.View>
+          ))}
+          {Array.from({ length: emptySlots }).map((_, i) => (
+            <EmptySlot key={`empty-${i}`} label={t("waitingSlot")} />
+          ))}
         </View>
 
         <View style={styles.rangeChip} testID="matchmaking-elo-range">
           <Ionicons name="flame" size={13} color={C.gold} />
           <Text style={styles.rangeText}>{t("eloRangeLabel", { n: eloRange })}</Text>
         </View>
+
+        {duoInfo && (
+          <View style={[styles.rangeChip, { marginTop: SP.sm, borderColor: C.brand, borderWidth: 1 }]} testID="duo-mode-chip">
+            <Ionicons name="people" size={13} color={C.brand} />
+            <Text style={styles.rangeText}>
+              {duoInfo.mode === "wait"
+                ? duoInfo.duo_wait_remaining && duoInfo.duo_wait_remaining > 0
+                  ? t("duoSearchingDuo", { s: duoInfo.duo_wait_remaining })
+                  : t("duoFallbackNow")
+                : duoInfo.mode === "duo_only"
+                  ? t("duoModeOnly")
+                  : t("duoModeFill")}
+            </Text>
+          </View>
+        )}
 
         <Text style={styles.timer}>{seconds}s</Text>
         <Text style={styles.hint}>{t("searchingHint")}</Text>
@@ -213,6 +299,17 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   slotElo: { fontFamily: F.text, fontSize: 10, color: "rgba(255,255,255,0.6)" },
+  pendingBadge: {
+    position: "absolute",
+    bottom: -2,
+    right: -2,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: C.gold,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   emptyCircle: {
     width: 56,
     height: 56,

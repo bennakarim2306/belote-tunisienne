@@ -73,6 +73,12 @@ class FriendRequestBody(BaseModel):
     user_id: str
 
 
+class DuoInviteBody(BaseModel):
+    to_user_id: str
+    match_type: str = "short"
+    mode: str = "wait"  # wait | duo_only | fill
+
+
 class FriendRespondBody(BaseModel):
     friendship_id: str
     accept: bool
@@ -390,7 +396,14 @@ async def notifications(request: Request):
         room = manager.get_room(inv["room_code"])
         if room and not room["started"]:
             invites.append(inv)
-    return {"friend_requests": friend_requests, "invites": invites}
+    duo_invites = [{"invite_id": v["invite_id"],
+                    "from_user": {"user_id": v["from_player"]["user_id"],
+                                  "username": v["from_player"]["username"],
+                                  "avatar_id": v["from_player"]["avatar_id"]},
+                    "match_type": v["match_type"], "mode": v["mode"]}
+                   for v in manager.pending_duo_invites_for(uid)]
+    return {"friend_requests": friend_requests, "invites": invites,
+            "duo_invites": duo_invites}
 
 
 # ---------------- matchmaking ----------------
@@ -412,7 +425,97 @@ async def mm_status(request: Request):
 async def mm_leave(request: Request):
     user = await get_current_user(request)
     manager.leave_queue(user["user_id"])
+    manager.cancel_duo_invite(user["user_id"])
     manager.matched.pop(user["user_id"], None)
+    return {"ok": True}
+
+
+# ---------------- duo matchmaking ----------------
+
+async def _recent_coplayer_ids(uid: str, limit_matches: int = 3):
+    """Human players seen in my last N finished matches."""
+    rows = await db.matches.find(
+        {"players.user_id": uid}, {"_id": 0, "players": 1, "finished_at": 1}
+    ).sort("finished_at", -1).to_list(limit_matches)
+    ids = []
+    for m in rows:
+        for p in m["players"]:
+            if not p.get("is_bot") and p["user_id"] != uid and p["user_id"] not in ids:
+                ids.append(p["user_id"])
+    return ids
+
+
+async def _friend_ids(uid: str):
+    rows = await db.friendships.find(
+        {"status": "accepted",
+         "$or": [{"requester_id": uid}, {"recipient_id": uid}]},
+        {"_id": 0}).to_list(200)
+    return [r["recipient_id"] if r["requester_id"] == uid else r["requester_id"]
+            for r in rows]
+
+
+@api.get("/matchmaking/duo/candidates")
+async def duo_candidates(request: Request):
+    """Who can I invite as duo partner: friends + last-3-games co-players."""
+    user = await get_current_user(request)
+    uid = user["user_id"]
+    fids = await _friend_ids(uid)
+    friends = []
+    for fid in fids:
+        b = await user_brief(fid)
+        if b:
+            friends.append({**b, "friend_status": "friends"})
+    recent = []
+    for rid in await _recent_coplayer_ids(uid):
+        if rid in fids:
+            continue
+        b = await user_brief(rid)
+        if not b:
+            continue
+        fr = await db.friendships.find_one({
+            "$or": [{"requester_id": uid, "recipient_id": rid},
+                    {"requester_id": rid, "recipient_id": uid}]}, {"_id": 0})
+        b["friend_status"] = "none" if not fr else (
+            "friends" if fr["status"] == "accepted" else "pending")
+        recent.append(b)
+    return {"friends": friends, "recent": recent}
+
+
+@api.post("/matchmaking/duo/invite")
+async def duo_invite(body: DuoInviteBody, request: Request):
+    user = await get_current_user(request)
+    uid = user["user_id"]
+    if body.mode not in ("wait", "duo_only", "fill"):
+        raise HTTPException(status_code=400, detail="bad_mode")
+    if body.match_type not in ("short", "long"):
+        raise HTTPException(status_code=400, detail="bad_match_type")
+    if body.to_user_id == uid:
+        raise HTTPException(status_code=400, detail="cannot_invite_self")
+    target = await user_brief(body.to_user_id)
+    if not target:
+        raise HTTPException(status_code=404, detail="user_not_found")
+    allowed = (body.to_user_id in await _friend_ids(uid)
+               or body.to_user_id in await _recent_coplayer_ids(uid))
+    if not allowed:
+        raise HTTPException(status_code=403, detail="not_allowed")
+    invite_id = manager.create_duo_invite(to_player(user), target,
+                                          body.match_type, body.mode)
+    return {"invite_id": invite_id}
+
+
+@api.post("/matchmaking/duo/{invite_id}/accept")
+async def duo_accept(invite_id: str, request: Request):
+    user = await get_current_user(request)
+    inv = manager.accept_duo_invite(invite_id, to_player(user))
+    if not inv:
+        raise HTTPException(status_code=404, detail="invite_gone")
+    return {"ok": True, "match_type": inv["match_type"], "mode": inv["mode"]}
+
+
+@api.post("/matchmaking/duo/{invite_id}/decline")
+async def duo_decline(invite_id: str, request: Request):
+    user = await get_current_user(request)
+    manager.decline_duo_invite(invite_id, user["user_id"])
     return {"ok": True}
 
 

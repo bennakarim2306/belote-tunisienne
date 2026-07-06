@@ -1,0 +1,24 @@
+{
+  "summary": "Frontend-only end-to-end validation of the new online DUO matchmaking flow with two live browser contexts (tester1@belote.tn = ctx1 launcher, tester2@belote.tn = ctx2 invitee). ALL 8 acceptance criteria PASS.\n\n(1) Home 'Jouer en ligne' card opens the modal; segmented control shows online-mode-solo / online-mode-duo. (2) Clicking online-mode-duo reveals duo-setup with duo-candidate-Tester2 (single friend candidate as expected). (3) Before selecting a partner, match-type-short computed opacity = 0.45 and the Pressable is disabled; after selecting Tester2 it becomes opacity = 1 and enabled. (4) With duo-mode-wait selected, clicking match-type-short POSTs /matchmaking/duo/invite and navigates to /matchmaking?duo=1 — the launcher sees title 'En attente de Tester2…' and the matchmaking-duo-partner slot with hourglass badge. (5) ctx2 sees the duo-invite-accept-{id} banner on home within ~8s (banner variant used, notif panel fallback not needed); accepting navigates ctx2 to matchmaking. (6) After accept, BOTH contexts show status 'Recherche de joueurs…', players count '2/4 joueurs', and duo-mode-chip 'Recherche d'un duo adverse (119s)' (wait-mode countdown correct). (7) CANCEL: ctx1 taps cancel-search-button → returns home; ctx2 within ~1.5s shows duo-end-message 'Le duo a été annulé' then auto-returns home. (8) DECLINE (mode duo_only): ctx1 re-invites, ctx2 clicks duo-invite-decline; ctx1 shows duo-end-message 'Invitation refusée' then auto-returns home. REGRESSION: solo online search still works — 'Seul' + match-type-short → matchmaking with 1/4 joueurs, no duo-mode-chip, no duo-partner slot, cancel → home OK. No JS crash, no red screen, only pre-existing benign RN-Web warnings (shadow* deprecation, props.pointerEvents).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "home.tsx is 925 lines — still under the 700-line guideline threshold in effect but the type-choice Modal (online segmented control + DuoSetup + match-type list) has grown enough to warrant extraction into its own component (e.g. GameTypeSheet.tsx) for clarity and unit-testability.",
+    "matchmaking.tsx polls /matchmaking/status every 1.5s but does not throttle the seconds tick when the tab is hidden (setInterval keeps firing). Low priority, but consider AppState listener to pause polling in background — the 12s purge window means users backgrounding briefly will be dropped from the queue anyway.",
+    "DuoSetup: the recentDivider text is rotated -90deg but has a fixed width of 70 which makes it visually cramped/overlapping other chips on narrow devices. Not tested here (only 1 friend, no recents), but worth reviewing on tablets/wider viewports."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (skipped per request)", "frontend": "100%"},
+  "seed_data_creation": "None — used existing tester1@belote.tn / tester2@belote.tn accounts (already friends per test_credentials.md).",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Duo matchmaking is fully working end-to-end. TestIDs verified live: play-online-card, online-mode-solo, online-mode-duo, duo-setup, duo-candidate-{username}, duo-mode-{wait|duo_only|fill}, match-type-short (opacity 0.45 when duo+noPartner else 1), matchmaking-screen, matchmaking-status-text, matchmaking-players-count, matchmaking-duo-partner, duo-mode-chip, cancel-search-button, duo-end-message, duo-invite-accept-{id}, duo-invite-decline-{id}, notif-duo-accept-{id}, notif-duo-decline-{id}. Duo invite banner on ctx2 home appears within the 8s notification poll interval; opening the notifications-bell is a safe fallback. i18n strings verified: 'En attente de {name}…', 'Recherche de joueurs…', 'X/4 joueurs', 'Recherche d\\'un duo adverse (Ns)', 'Le duo a été annulé', 'Invitation refusée'. When taking screenshots via Playwright, note that .png does NOT accept a quality kwarg — use .jpg or omit quality.",
+  "rca_of_issue": "No bugs found. All success paths exercised twice per context in a single ~90s run with no flakiness."
+}

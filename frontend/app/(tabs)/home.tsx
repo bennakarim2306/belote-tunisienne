@@ -28,8 +28,10 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { api, ApiError } from "@/src/api";
 import Avatar from "@/src/components/Avatar";
 import ChunkyButton from "@/src/components/ChunkyButton";
+import DuoSetup, { DuoCandidate, DuoMode } from "@/src/components/DuoSetup";
 import { useAuth } from "@/src/context/AuthContext";
 import {
+  DuoInviteNotif,
   InviteNotif,
   useNotifications,
 } from "@/src/context/NotificationsContext";
@@ -48,7 +50,7 @@ export default function HomeScreen() {
   const router = useRouter();
   const { user, refreshUser } = useAuth();
   const { t } = useI18n();
-  const { invites, friendRequests, refresh } = useNotifications();
+  const { invites, friendRequests, duoInvites, refresh } = useNotifications();
 
   // pulsing neon glow on the hero card
   const glowPulse = useSharedValue(0);
@@ -65,6 +67,9 @@ export default function HomeScreen() {
   }));
 
   const [typeModal, setTypeModal] = useState<null | "online" | "create" | "solo">(null);
+  const [onlineMode, setOnlineMode] = useState<"solo" | "duo">("solo");
+  const [duoPartner, setDuoPartner] = useState<DuoCandidate | null>(null);
+  const [duoModeSel, setDuoModeSel] = useState<DuoMode>("wait");
   const [timerOn, setTimerOn] = useState(false);
   const [joinCode, setJoinCode] = useState("");
   const [joinError, setJoinError] = useState<string | null>(null);
@@ -73,6 +78,15 @@ export default function HomeScreen() {
   const [codeFocused, setCodeFocused] = useState(false);
   const [currentGame, setCurrentGame] = useState<CurrentGame | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // reset duo selections whenever the type modal closes
+  useEffect(() => {
+    if (typeModal === null) {
+      setOnlineMode("solo");
+      setDuoPartner(null);
+      setDuoModeSel("wait");
+    }
+  }, [typeModal]);
 
   // when the keyboard closes (back button / done), restore the full layout
   useEffect(() => {
@@ -103,6 +117,27 @@ export default function HomeScreen() {
 
   const chooseType = async (matchType: "short" | "long") => {
     const mode = typeModal;
+    if (mode === "online" && onlineMode === "duo") {
+      if (!duoPartner) return;
+      setBusy(true);
+      try {
+        await api.post("/matchmaking/duo/invite", {
+          to_user_id: duoPartner.user_id,
+          match_type: matchType,
+          mode: duoModeSel,
+        });
+        setTypeModal(null);
+        setTimeout(() => {
+          router.push({ pathname: "/matchmaking", params: { type: matchType, duo: "1" } });
+        }, 150);
+      } catch {
+        setTypeModal(null);
+        setJoinError(t("error_generic"));
+      } finally {
+        setBusy(false);
+      }
+      return;
+    }
     setTypeModal(null);
     if (mode === "online") {
       // let the modal close before navigating (web Modal can linger otherwise)
@@ -176,7 +211,23 @@ export default function HomeScreen() {
     refresh();
   };
 
-  const notifCount = invites.length + friendRequests.length;
+  const acceptDuoInvite = async (inv: DuoInviteNotif) => {
+    try {
+      await api.post(`/matchmaking/duo/${inv.invite_id}/accept`);
+      refresh();
+      setNotifOpen(false);
+      router.push({ pathname: "/matchmaking", params: { type: inv.match_type, duo: "1" } });
+    } catch {
+      refresh();
+    }
+  };
+
+  const declineDuoInvite = async (inv: DuoInviteNotif) => {
+    await api.post(`/matchmaking/duo/${inv.invite_id}/decline`).catch(() => {});
+    refresh();
+  };
+
+  const notifCount = invites.length + friendRequests.length + duoInvites.length;
 
   return (
     <View style={styles.container} testID="home-screen">
@@ -253,6 +304,34 @@ export default function HomeScreen() {
             <Pressable
               testID={`invite-dismiss-${inv.room_code}`}
               onPress={() => dismissInvite(inv)}
+              hitSlop={8}
+            >
+              <Ionicons name="close" size={20} color={C.ink3} />
+            </Pressable>
+          </Animated.View>
+        ))}
+
+        {!codeFocused && duoInvites.map((inv) => (
+          <Animated.View
+            key={inv.invite_id}
+            entering={FadeInDown}
+            exiting={FadeOut.duration(120)}
+            style={[styles.inviteBanner, { borderColor: C.brand3 }]}
+          >
+            <Avatar avatarId={inv.from_user.avatar_id} size={36} />
+            <Text style={styles.inviteText} numberOfLines={2}>
+              {t("duoInvitedYou", { name: inv.from_user.username })}
+            </Text>
+            <Pressable
+              testID={`duo-invite-accept-${inv.invite_id}`}
+              onPress={() => acceptDuoInvite(inv)}
+              style={styles.inviteJoin}
+            >
+              <Text style={styles.inviteJoinText}>{t("accept")}</Text>
+            </Pressable>
+            <Pressable
+              testID={`duo-invite-decline-${inv.invite_id}`}
+              onPress={() => declineDuoInvite(inv)}
               hitSlop={8}
             >
               <Ionicons name="close" size={20} color={C.ink3} />
@@ -412,6 +491,28 @@ export default function HomeScreen() {
                   </Pressable>
                 </View>
               ))}
+              {duoInvites.map((inv) => (
+                <View key={inv.invite_id} style={styles.notifRow} testID={`notif-duo-${inv.invite_id}`}>
+                  <Avatar avatarId={inv.from_user.avatar_id} size={38} />
+                  <Text style={styles.notifText} numberOfLines={2}>
+                    {t("duoInvitedYou", { name: inv.from_user.username })}
+                  </Text>
+                  <Pressable
+                    testID={`notif-duo-accept-${inv.invite_id}`}
+                    onPress={() => acceptDuoInvite(inv)}
+                    style={styles.notifPrimary}
+                  >
+                    <Text style={styles.notifPrimaryText}>{t("accept")}</Text>
+                  </Pressable>
+                  <Pressable
+                    testID={`notif-duo-decline-${inv.invite_id}`}
+                    onPress={() => declineDuoInvite(inv)}
+                    hitSlop={8}
+                  >
+                    <Ionicons name="close" size={20} color={C.ink3} />
+                  </Pressable>
+                </View>
+              ))}
               {friendRequests.length > 0 && (
                 <Text style={styles.notifSection}>{t("friendRequestsSection")}</Text>
               )}
@@ -450,9 +551,50 @@ export default function HomeScreen() {
 
       <Modal visible={typeModal !== null} transparent animationType="fade">
         <Pressable style={styles.modalScrim} onPress={() => setTypeModal(null)}>
-          <Pressable style={styles.modalSheet} onPress={() => {}}>
+          <Pressable style={[styles.modalSheet, { maxHeight: "88%" }]} onPress={() => {}}>
             <View style={styles.sheetHandle} />
             <Text style={styles.modalTitle}>{t("chooseMatchType")}</Text>
+            <ScrollView showsVerticalScrollIndicator={false}>
+            {typeModal === "online" && (
+              <View style={styles.segmentRow}>
+                <Pressable
+                  testID="online-mode-solo"
+                  onPress={() => setOnlineMode("solo")}
+                  style={[styles.segment, onlineMode === "solo" && styles.segmentActive]}
+                >
+                  <Ionicons
+                    name="person"
+                    size={15}
+                    color={onlineMode === "solo" ? C.onBrand : C.ink2}
+                  />
+                  <Text style={[styles.segmentText, onlineMode === "solo" && styles.segmentTextActive]}>
+                    {t("playAlone")}
+                  </Text>
+                </Pressable>
+                <Pressable
+                  testID="online-mode-duo"
+                  onPress={() => setOnlineMode("duo")}
+                  style={[styles.segment, onlineMode === "duo" && styles.segmentActive]}
+                >
+                  <Ionicons
+                    name="people"
+                    size={15}
+                    color={onlineMode === "duo" ? C.onBrand : C.ink2}
+                  />
+                  <Text style={[styles.segmentText, onlineMode === "duo" && styles.segmentTextActive]}>
+                    {t("playDuo")}
+                  </Text>
+                </Pressable>
+              </View>
+            )}
+            {typeModal === "online" && onlineMode === "duo" && (
+              <DuoSetup
+                partner={duoPartner}
+                onPartner={setDuoPartner}
+                mode={duoModeSel}
+                onMode={setDuoModeSel}
+              />
+            )}
             {typeModal === "create" && (
               <Pressable
                 testID="room-timer-toggle"
@@ -476,7 +618,12 @@ export default function HomeScreen() {
             <Pressable
               testID="match-type-short"
               onPress={() => chooseType("short")}
-              style={({ pressed }) => [styles.typeOption, pressed && styles.pressed]}
+              disabled={busy || (typeModal === "online" && onlineMode === "duo" && !duoPartner)}
+              style={({ pressed }) => [
+                styles.typeOption,
+                pressed && styles.pressed,
+                typeModal === "online" && onlineMode === "duo" && !duoPartner && { opacity: 0.45 },
+              ]}
             >
               <Ionicons name="flash" size={26} color={C.brand} />
               <View style={{ flex: 1, marginLeft: SP.md }}>
@@ -488,7 +635,12 @@ export default function HomeScreen() {
             <Pressable
               testID="match-type-long"
               onPress={() => chooseType("long")}
-              style={({ pressed }) => [styles.typeOption, pressed && styles.pressed]}
+              disabled={busy || (typeModal === "online" && onlineMode === "duo" && !duoPartner)}
+              style={({ pressed }) => [
+                styles.typeOption,
+                pressed && styles.pressed,
+                typeModal === "online" && onlineMode === "duo" && !duoPartner && { opacity: 0.45 },
+              ]}
             >
               <Ionicons name="hourglass" size={26} color={C.brand2} />
               <View style={{ flex: 1, marginLeft: SP.md }}>
@@ -497,6 +649,7 @@ export default function HomeScreen() {
               </View>
               <Ionicons name="chevron-forward" size={20} color={C.ink3} />
             </Pressable>
+            </ScrollView>
           </Pressable>
         </Pressable>
       </Modal>
@@ -707,6 +860,27 @@ const styles = StyleSheet.create({
   },
   joinError: { fontFamily: F.bold, color: C.error, fontSize: 12, marginTop: SP.sm },
   modalScrim: { flex: 1, backgroundColor: C.scrim, justifyContent: "flex-end" },
+  segmentRow: {
+    flexDirection: "row",
+    backgroundColor: C.bg2,
+    borderRadius: R.pill,
+    borderWidth: 1,
+    borderColor: C.border,
+    padding: 3,
+    marginBottom: SP.sm,
+  },
+  segment: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    height: 38,
+    borderRadius: R.pill,
+  },
+  segmentActive: { backgroundColor: C.brand },
+  segmentText: { fontFamily: F.bold, fontSize: 13.5, color: C.ink2 },
+  segmentTextActive: { color: C.onBrand },
   modalSheet: {
     backgroundColor: C.bg,
     borderTopLeftRadius: R.lg,

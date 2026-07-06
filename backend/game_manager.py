@@ -16,6 +16,8 @@ BOT_NAMES = ["Ammar", "Salah", "Hédi", "Mabrouk", "Fatma", "Zohra",
              "Baya", "Moncef", "Habib", "Naïma", "Mongi", "Aziza"]
 AVATAR_IDS = [f"av{i}" for i in range(1, 13)]
 QUEUE_STALE_SECONDS = 12
+DUO_WAIT_SECONDS = 120  # "wait" duo mode: prefer duo opponents for 2 minutes
+DUO_INVITE_TTL = 120  # duo invites expire after 2 minutes
 ELO_K = 32
 DISCONNECT_GRACE = 4          # seconds before a lost socket triggers the auto-pause
 DISCONNECT_PAUSE_SECONDS = 120  # network pause: bot substitutes after 2 min
@@ -66,9 +68,11 @@ class GameManager:
     def __init__(self, db):
         self.db = db
         self.games = {}  # game_id -> LiveGame
-        self.queues = {"short": [], "long": []}  # entries {player, ts}
+        self.queues = {"short": [], "long": []}  # entries {players[], duo, mode, ts}
         self.matched = {}  # user_id -> {game_id, ts}
         self.rooms = {}  # code -> room dict
+        self.duo_invites = {}  # invite_id -> {from_player, to_user, match_type, mode, ts, status}
+        self.duo_feedback = {}  # user_id -> {"status", "ts"} one-shot info (declined/cancelled)
 
     # ================= games =================
 
@@ -476,43 +480,162 @@ class GameManager:
         })
 
     # ================= matchmaking (ELO-based, real players only) =================
+    # Queue entries: {"players": [p] or [p1, p2], "duo": bool,
+    #                 "mode": None | "wait" | "duo_only" | "fill",
+    #                 "ts": float, "last_seen": float}
+    # Duo modes: "wait" = prefer duo opponents for DUO_WAIT_SECONDS then accept
+    # solos; "duo_only" = only duo opponents; "fill" = anyone right away.
 
     def join_queue(self, player, match_type):
         self.leave_queue(player["user_id"])
         self.matched.pop(player["user_id"], None)
         now = time.time()
-        self.queues[match_type].append({"player": player, "ts": now, "last_seen": now})
+        self.queues[match_type].append({"players": [player], "duo": False,
+                                        "mode": None, "ts": now, "last_seen": now})
+
+    def join_queue_duo(self, p1, p2, match_type, mode):
+        for p in (p1, p2):
+            self.leave_queue(p["user_id"])
+            self.matched.pop(p["user_id"], None)
+            self.duo_feedback.pop(p["user_id"], None)
+        now = time.time()
+        self.queues[match_type].append({"players": [p1, p2], "duo": True,
+                                        "mode": mode, "ts": now, "last_seen": now})
 
     def leave_queue(self, user_id):
+        """Remove the whole entry containing the user (dissolves a duo)."""
         for q in self.queues.values():
-            q[:] = [e for e in q if e["player"]["user_id"] != user_id]
+            for e in list(q):
+                if any(p["user_id"] == user_id for p in e["players"]):
+                    q.remove(e)
+                    if e["duo"]:
+                        for p in e["players"]:
+                            if p["user_id"] != user_id:
+                                self.duo_feedback[p["user_id"]] = {
+                                    "status": "duo_cancelled", "ts": time.time()}
+
+    # ---------- duo invites ----------
+
+    def create_duo_invite(self, from_player, to_user, match_type, mode):
+        self.cancel_duo_invite(from_player["user_id"])
+        iid = f"di_{uuid.uuid4().hex[:10]}"
+        self.duo_invites[iid] = {"invite_id": iid, "from_player": from_player,
+                                 "to_user": to_user, "match_type": match_type,
+                                 "mode": mode, "ts": time.time(), "status": "pending"}
+        return iid
+
+    def _purge_duo_invites(self):
+        now = time.time()
+        for iid in [i for i, v in self.duo_invites.items()
+                    if now - v["ts"] > DUO_INVITE_TTL]:
+            self.duo_invites.pop(iid, None)
+
+    def pending_duo_invites_for(self, user_id):
+        self._purge_duo_invites()
+        return [v for v in self.duo_invites.values()
+                if v["to_user"]["user_id"] == user_id and v["status"] == "pending"]
+
+    def accept_duo_invite(self, invite_id, to_player):
+        self._purge_duo_invites()
+        inv = self.duo_invites.get(invite_id)
+        if (not inv or inv["status"] != "pending"
+                or inv["to_user"]["user_id"] != to_player["user_id"]):
+            return None
+        self.duo_invites.pop(invite_id, None)
+        self.join_queue_duo(inv["from_player"], to_player,
+                            inv["match_type"], inv["mode"])
+        return inv
+
+    def decline_duo_invite(self, invite_id, user_id):
+        inv = self.duo_invites.get(invite_id)
+        if inv and inv["to_user"]["user_id"] == user_id and inv["status"] == "pending":
+            self.duo_invites.pop(invite_id, None)
+            self.duo_feedback[inv["from_player"]["user_id"]] = {
+                "status": "duo_declined", "ts": time.time()}
+
+    def cancel_duo_invite(self, from_user_id):
+        for iid, v in list(self.duo_invites.items()):
+            if v["from_player"]["user_id"] == from_user_id and v["status"] == "pending":
+                self.duo_invites.pop(iid, None)
+
+    # ---------- status & matching ----------
+
+    @staticmethod
+    def _entry_elo(e):
+        return sum(p["elo"] for p in e["players"]) / len(e["players"])
+
+    @staticmethod
+    def _duo_allows(entry, other_is_duo, now):
+        """Whether `entry` accepts being matched with a duo/solo counterpart now."""
+        if not entry["duo"] or other_is_duo:
+            return True
+        mode = entry["mode"]
+        if mode == "fill":
+            return True
+        if mode == "wait":
+            return now - entry["ts"] >= DUO_WAIT_SECONDS
+        return False  # duo_only
+
+    def _mutually_allowed(self, a, b, now):
+        return (self._duo_allows(a, b["duo"], now)
+                and self._duo_allows(b, a["duo"], now))
 
     def queue_status(self, user_id):
         m = self.matched.get(user_id)
         if m:
             return {"status": "found", "game_id": m["game_id"]}
+        fb = self.duo_feedback.pop(user_id, None)
+        if fb and time.time() - fb["ts"] < 30:
+            return {"status": fb["status"]}
         now = time.time()
         for mt, q in self.queues.items():
-            me = next((e for e in q if e["player"]["user_id"] == user_id), None)
+            me = next((e for e in q
+                       if any(p["user_id"] == user_id for p in e["players"])), None)
             if not me:
                 continue
             me["last_seen"] = now
             waited = now - me["ts"]
             my_window = elo_window(waited)
-            my_elo = me["player"]["elo"]
+            my_elo = self._entry_elo(me)
+            remaining = 4 - len(me["players"])
             compatible = []
             for e in q:
-                if e is me:
+                if e is me or len(compatible) >= remaining:
+                    continue
+                if len(e["players"]) > remaining:
+                    continue
+                if not self._mutually_allowed(me, e, now):
                     continue
                 window = min(my_window, elo_window(now - e["ts"]))
-                if abs(e["player"]["elo"] - my_elo) <= window:
-                    p = e["player"]
-                    compatible.append({"username": p["username"],
-                                       "avatar_id": p["avatar_id"], "elo": p["elo"]})
-            compatible = compatible[:3]
-            return {"status": "waiting", "waited": round(waited), "match_type": mt,
-                    "elo_range": my_window, "players": compatible,
-                    "found_count": 1 + len(compatible)}
+                if abs(self._entry_elo(e) - my_elo) <= window:
+                    for p in e["players"]:
+                        compatible.append({"username": p["username"],
+                                           "avatar_id": p["avatar_id"],
+                                           "elo": p["elo"]})
+            compatible = compatible[:remaining]
+            res = {"status": "waiting", "waited": round(waited), "match_type": mt,
+                   "elo_range": my_window, "players": compatible,
+                   "found_count": len(me["players"]) + len(compatible)}
+            if me["duo"]:
+                partner = next(p for p in me["players"] if p["user_id"] != user_id)
+                res["duo"] = {
+                    "partner": {"username": partner["username"],
+                                "avatar_id": partner["avatar_id"],
+                                "elo": partner["elo"]},
+                    "mode": me["mode"],
+                    "duo_wait_remaining": (max(0, DUO_WAIT_SECONDS - int(waited))
+                                           if me["mode"] == "wait" else None),
+                }
+            return res
+        # launcher waiting for the invited partner to accept
+        self._purge_duo_invites()
+        inv = next((v for v in self.duo_invites.values()
+                    if v["from_player"]["user_id"] == user_id
+                    and v["status"] == "pending"), None)
+        if inv:
+            return {"status": "duo_pending", "invite_id": inv["invite_id"],
+                    "match_type": inv["match_type"], "mode": inv["mode"],
+                    "partner": inv["to_user"]}
         return {"status": "idle"}
 
     async def matchmaking_loop(self):
@@ -523,7 +646,7 @@ class GameManager:
                 for uid in [u for u, m in self.matched.items() if now - m["ts"] > 120]:
                     self.matched.pop(uid, None)
                 for mt, q in self.queues.items():
-                    # purge players who stopped polling (left the app/screen)
+                    # purge entries whose members stopped polling
                     q[:] = [e for e in q if now - e["last_seen"] <= QUEUE_STALE_SECONDS]
                     while True:
                         group = self._find_group(q, now)
@@ -535,29 +658,64 @@ class GameManager:
             except Exception:
                 logger.exception("matchmaking loop error")
 
+    def _elo_ok(self, entries, now):
+        elos = [self._entry_elo(e) for e in entries]
+        allowed = min(elo_window(now - e["ts"]) for e in entries)
+        return max(elos) - min(elos) <= allowed
+
     def _find_group(self, q, now):
-        """Find 4 mutually ELO-compatible players (windows widen while waiting)."""
-        if len(q) < 4:
-            return None
-        entries = sorted(q, key=lambda e: e["player"]["elo"])
-        for i in range(len(entries) - 3):
-            window = entries[i:i + 4]
-            spread = window[-1]["player"]["elo"] - window[0]["player"]["elo"]
-            allowed = min(elo_window(now - e["ts"]) for e in window)
-            if spread <= allowed:
-                return window
+        """Pick entries totalling exactly 4 players, mutually compatible."""
+        duos = sorted([e for e in q if e["duo"]], key=lambda e: e["ts"])
+        solos = sorted([e for e in q if not e["duo"]], key=lambda e: e["ts"])
+        # 1) duo vs duo (always the preferred pairing)
+        for i, a in enumerate(duos):
+            for b in duos[i + 1:]:
+                if self._elo_ok([a, b], now):
+                    return [a, b]
+        # 2) duo + two solos, when the duo's mode currently accepts solos
+        for d in duos:
+            if not self._duo_allows(d, False, now):
+                continue
+            for i, s1 in enumerate(solos):
+                for s2 in solos[i + 1:]:
+                    if self._elo_ok([d, s1, s2], now):
+                        return [d, s1, s2]
+        # 3) four solos (balanced on individual ELO)
+        if len(solos) >= 4:
+            entries = sorted(solos, key=lambda e: e["players"][0]["elo"])
+            for i in range(len(entries) - 3):
+                window = entries[i:i + 4]
+                spread = (window[-1]["players"][0]["elo"]
+                          - window[0]["players"][0]["elo"])
+                allowed = min(elo_window(now - e["ts"]) for e in window)
+                if spread <= allowed:
+                    return window
         return None
 
     def _make_match(self, batch, match_type):
-        players = sorted((e["player"] for e in batch),
-                         key=lambda p: p["elo"], reverse=True)
-        # balanced teams: strongest + weakest (seats 0 & 2) vs the two middles (1 & 3)
-        seats = [players[0], players[1], players[3], players[2]]
+        duos = [e for e in batch if e["duo"]]
+        solos = [e for e in batch if not e["duo"]]
+        if len(duos) == 2:
+            a, b = duos
+            # duo partners on the same team (seats 0&2 vs 1&3)
+            seats = [a["players"][0], b["players"][0],
+                     a["players"][1], b["players"][1]]
+        elif len(duos) == 1:
+            d = duos[0]
+            s = [e["players"][0] for e in solos]
+            seats = [d["players"][0], s[0], d["players"][1], s[1]]
+        else:
+            players = sorted((e["players"][0] for e in batch),
+                             key=lambda p: p["elo"], reverse=True)
+            # balanced teams: strongest + weakest (seats 0 & 2) vs the two middles
+            seats = [players[0], players[1], players[3], players[2]]
         game_id = self.create_game(seats, match_type, shuffle=False)
         now = time.time()
-        for p in players:
-            self.matched[p["user_id"]] = {"game_id": game_id, "ts": now}
-        logger.info("match created %s (elo %s)", game_id, [p["elo"] for p in players])
+        for e in batch:
+            for p in e["players"]:
+                self.matched[p["user_id"]] = {"game_id": game_id, "ts": now}
+        logger.info("match created %s (duo=%d, elo %s)", game_id, len(duos),
+                    [p["elo"] for p in seats])
 
     # ================= private rooms =================
 
