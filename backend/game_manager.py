@@ -365,7 +365,7 @@ class GameManager:
             return g.apply_pass(seat)
         # playing
         if forced_human:
-            legal = gl.legal_moves(g.hands[seat], g.trick, g.trump)
+            legal = gl.legal_moves(g.hands[seat], g.trick, g.trump, seat)
             card = min(legal, key=lambda c: gl.card_points(c, g.trump))
         else:
             card = bot_ai.bot_play(g.hands[seat], g.trick, g.trump, seat)

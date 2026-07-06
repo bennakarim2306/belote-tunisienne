@@ -62,7 +62,7 @@ def bot_bidding_action(hand, current_bid, seat):
 
 
 def bot_play(hand, trick, trump, seat):
-    legal = legal_moves(hand, trick, trump)
+    legal = legal_moves(hand, trick, trump, seat)
     if len(legal) == 1:
         return legal[0]
 
@@ -79,11 +79,13 @@ def bot_play(hand, trick, trump, seat):
     current_winner = trick_winner(trick, trump)
 
     if current_winner == partner:
+        # Prefer discarding a plain card (Tfaskira lets us keep our trumps)
+        non_tr = [c for c in legal if suit_of(c) != trump]
         if len(trick) == 3:
-            non_tr = [c for c in legal if suit_of(c) != trump]
             pool = non_tr or legal
             return max(pool, key=lambda c: card_points(c, trump))
-        return min(legal, key=lambda c: card_points(c, trump))
+        pool = non_tr or legal
+        return min(pool, key=lambda c: card_points(c, trump))
 
     winning = [c for c in legal
                if trick_winner(trick + [{"seat": seat, "card": c}], trump) == seat]

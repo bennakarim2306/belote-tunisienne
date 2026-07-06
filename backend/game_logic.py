@@ -62,9 +62,11 @@ def trick_winner(trick, trump) -> int:
     return max(follows, key=lambda t: plain_str(t["card"]))["seat"]
 
 
-def legal_moves(hand, trick, trump):
-    """Strict Tunisian rules: follow suit; if void must trump (couper);
-    at trump must overtrump if possible — even if partner is winning."""
+def legal_moves(hand, trick, trump, seat=None):
+    """Tunisian rules: follow suit; at trump must overtrump if possible.
+    If void in the led suit you must trump (couper) — EXCEPT when your
+    partner is currently winning the trick: then you may play any card
+    (fausse-carte / "Tfaskira"). Requires `seat` to detect the partner."""
     if not trick:
         return list(hand)
     lead = suit_of(trick[0]["card"])
@@ -83,6 +85,11 @@ def legal_moves(hand, trick, trump):
 
     if lead_cards:
         return lead_cards
+
+    # void in the led suit — Tfaskira: if the partner is currently master
+    # of the trick, no obligation to cut, any card may be played.
+    if seat is not None and trick_winner(trick, trump) == (seat + 2) % 4:
+        return list(hand)
 
     my_trumps = [c for c in hand if suit_of(c) == trump]
     if my_trumps:
@@ -282,7 +289,7 @@ class BeloteGame:
             raise ValueError("not_your_turn")
         if card not in self.hands[seat]:
             raise ValueError("card_not_in_hand")
-        legal = legal_moves(self.hands[seat], self.trick, self.trump)
+        legal = legal_moves(self.hands[seat], self.trick, self.trump, seat)
         if card not in legal:
             raise ValueError("illegal_move")
         events = []
@@ -511,7 +518,7 @@ class BeloteGame:
         my_hand = sorted_hand(self.hands[seat], self.trump) if seat is not None else []
         legal = []
         if self.phase == "playing" and self.turn == seat:
-            legal = legal_moves(self.hands[seat], self.trick, self.trump)
+            legal = legal_moves(self.hands[seat], self.trick, self.trump, seat)
         can_contre = (self.phase == "bidding" and cb is not None and not cb["capot"]
                       and self.contre is None and seat is not None
                       and seat % 2 != cb["seat"] % 2)
