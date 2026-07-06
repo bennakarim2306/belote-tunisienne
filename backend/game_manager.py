@@ -542,6 +542,23 @@ class GameManager:
                 or inv["to_user"]["user_id"] != to_player["user_id"]):
             return None
         self.duo_invites.pop(invite_id, None)
+        if inv["mode"] == "vs_ai":
+            # duo vs AI: create the training game right away (humans seats 0&2)
+            p1 = inv["from_player"]
+            for p in (p1, to_player):
+                self.leave_queue(p["user_id"])
+                self.matched.pop(p["user_id"], None)
+                self.duo_feedback.pop(p["user_id"], None)
+            bots = make_bots(2, {p1["username"], to_player["username"]})
+            game_id = self.create_game([p1, bots[0], to_player, bots[1]],
+                                       inv["match_type"], shuffle=False,
+                                       ranked=False, turn_timeout=None,
+                                       host_user_id=p1["user_id"], origin="solo")
+            now = time.time()
+            for uid in (p1["user_id"], to_player["user_id"]):
+                self.matched[uid] = {"game_id": game_id, "ts": now}
+            inv["game_id"] = game_id
+            return inv
         self.join_queue_duo(inv["from_player"], to_player,
                             inv["match_type"], inv["mode"])
         return inv

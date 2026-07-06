@@ -485,7 +485,7 @@ async def duo_candidates(request: Request):
 async def duo_invite(body: DuoInviteBody, request: Request):
     user = await get_current_user(request)
     uid = user["user_id"]
-    if body.mode not in ("wait", "duo_only", "fill"):
+    if body.mode not in ("wait", "duo_only", "fill", "vs_ai"):
         raise HTTPException(status_code=400, detail="bad_mode")
     if body.match_type not in ("short", "long"):
         raise HTTPException(status_code=400, detail="bad_match_type")
@@ -509,7 +509,8 @@ async def duo_accept(invite_id: str, request: Request):
     inv = manager.accept_duo_invite(invite_id, to_player(user))
     if not inv:
         raise HTTPException(status_code=404, detail="invite_gone")
-    return {"ok": True, "match_type": inv["match_type"], "mode": inv["mode"]}
+    return {"ok": True, "match_type": inv["match_type"], "mode": inv["mode"],
+            "game_id": inv.get("game_id")}
 
 
 @api.post("/matchmaking/duo/{invite_id}/decline")

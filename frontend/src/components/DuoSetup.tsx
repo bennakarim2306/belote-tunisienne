@@ -35,11 +35,12 @@ interface Props {
   onPartner: (c: DuoCandidate | null) => void;
   mode: DuoMode;
   onMode: (m: DuoMode) => void;
+  showModes?: boolean;
 }
 
 // Partner picker (friends + recent co-players) and opponents-wait mode selector
 // shown inside the "Jouer en ligne" modal when "En duo" is active.
-export default function DuoSetup({ partner, onPartner, mode, onMode }: Props) {
+export default function DuoSetup({ partner, onPartner, mode, onMode, showModes = true }: Props) {
   const { t } = useI18n();
   const [loading, setLoading] = useState(true);
   const [friends, setFriends] = useState<DuoCandidate[]>([]);
@@ -118,35 +119,39 @@ export default function DuoSetup({ partner, onPartner, mode, onMode }: Props) {
         </ScrollView>
       )}
 
-      <Text style={styles.label}>{t("duoOpponents")}</Text>
-      {MODES.map((m) => {
-        const active = mode === m.id;
-        return (
-          <Pressable
-            key={m.id}
-            testID={`duo-mode-${m.id}`}
-            onPress={() => onMode(m.id)}
-            style={[styles.modeRow, active && styles.modeRowActive]}
-          >
-            <Ionicons
-              name={m.icon as never}
-              size={18}
-              color={active ? C.brand : C.ink3}
-            />
-            <View style={{ flex: 1, marginLeft: SP.md }}>
-              <Text style={[styles.modeLabel, active && { color: C.brand }]}>
-                {t(m.label as never)}
-              </Text>
-              <Text style={styles.modeDesc}>{t(m.desc as never)}</Text>
-            </View>
-            <Ionicons
-              name={active ? "radio-button-on" : "radio-button-off"}
-              size={19}
-              color={active ? C.brand : C.ink3}
-            />
-          </Pressable>
-        );
-      })}
+      {showModes && (
+        <>
+          <Text style={styles.label}>{t("duoOpponents")}</Text>
+          {MODES.map((m) => {
+            const active = mode === m.id;
+            return (
+              <Pressable
+                key={m.id}
+                testID={`duo-mode-${m.id}`}
+                onPress={() => onMode(m.id)}
+                style={[styles.modeRow, active && styles.modeRowActive]}
+              >
+                <Ionicons
+                  name={m.icon as never}
+                  size={18}
+                  color={active ? C.brand : C.ink3}
+                />
+                <View style={{ flex: 1, marginLeft: SP.md }}>
+                  <Text style={[styles.modeLabel, active && { color: C.brand }]}>
+                    {t(m.label as never)}
+                  </Text>
+                  <Text style={styles.modeDesc}>{t(m.desc as never)}</Text>
+                </View>
+                <Ionicons
+                  name={active ? "radio-button-on" : "radio-button-off"}
+                  size={19}
+                  color={active ? C.brand : C.ink3}
+                />
+              </Pressable>
+            );
+          })}
+        </>
+      )}
     </View>
   );
 }

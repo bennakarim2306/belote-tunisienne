@@ -117,14 +117,14 @@ export default function HomeScreen() {
 
   const chooseType = async (matchType: "short" | "long") => {
     const mode = typeModal;
-    if (mode === "online" && onlineMode === "duo") {
+    if ((mode === "online" || mode === "solo") && onlineMode === "duo") {
       if (!duoPartner) return;
       setBusy(true);
       try {
         await api.post("/matchmaking/duo/invite", {
           to_user_id: duoPartner.user_id,
           match_type: matchType,
-          mode: duoModeSel,
+          mode: mode === "solo" ? "vs_ai" : duoModeSel,
         });
         setTypeModal(null);
         setTimeout(() => {
@@ -213,10 +213,15 @@ export default function HomeScreen() {
 
   const acceptDuoInvite = async (inv: DuoInviteNotif) => {
     try {
-      await api.post(`/matchmaking/duo/${inv.invite_id}/accept`);
+      const res = await api.post(`/matchmaking/duo/${inv.invite_id}/accept`);
       refresh();
       setNotifOpen(false);
-      router.push({ pathname: "/matchmaking", params: { type: inv.match_type, duo: "1" } });
+      if (res.game_id) {
+        // duo vs AI: the game is created immediately
+        router.push({ pathname: "/game/[id]", params: { id: res.game_id } });
+      } else {
+        router.push({ pathname: "/matchmaking", params: { type: inv.match_type, duo: "1" } });
+      }
     } catch {
       refresh();
     }
@@ -320,7 +325,9 @@ export default function HomeScreen() {
           >
             <Avatar avatarId={inv.from_user.avatar_id} size={36} />
             <Text style={styles.inviteText} numberOfLines={2}>
-              {t("duoInvitedYou", { name: inv.from_user.username })}
+              {t(inv.mode === "vs_ai" ? "duoInvitedYouAI" : "duoInvitedYou", {
+                name: inv.from_user.username,
+              })}
             </Text>
             <Pressable
               testID={`duo-invite-accept-${inv.invite_id}`}
@@ -495,7 +502,9 @@ export default function HomeScreen() {
                 <View key={inv.invite_id} style={styles.notifRow} testID={`notif-duo-${inv.invite_id}`}>
                   <Avatar avatarId={inv.from_user.avatar_id} size={38} />
                   <Text style={styles.notifText} numberOfLines={2}>
-                    {t("duoInvitedYou", { name: inv.from_user.username })}
+                    {t(inv.mode === "vs_ai" ? "duoInvitedYouAI" : "duoInvitedYou", {
+                      name: inv.from_user.username,
+                    })}
                   </Text>
                   <Pressable
                     testID={`notif-duo-accept-${inv.invite_id}`}
@@ -555,7 +564,7 @@ export default function HomeScreen() {
             <View style={styles.sheetHandle} />
             <Text style={styles.modalTitle}>{t("chooseMatchType")}</Text>
             <ScrollView showsVerticalScrollIndicator={false}>
-            {typeModal === "online" && (
+            {(typeModal === "online" || typeModal === "solo") && (
               <View style={styles.segmentRow}>
                 <Pressable
                   testID="online-mode-solo"
@@ -587,12 +596,13 @@ export default function HomeScreen() {
                 </Pressable>
               </View>
             )}
-            {typeModal === "online" && onlineMode === "duo" && (
+            {(typeModal === "online" || typeModal === "solo") && onlineMode === "duo" && (
               <DuoSetup
                 partner={duoPartner}
                 onPartner={setDuoPartner}
                 mode={duoModeSel}
                 onMode={setDuoModeSel}
+                showModes={typeModal === "online"}
               />
             )}
             {typeModal === "create" && (
@@ -618,11 +628,11 @@ export default function HomeScreen() {
             <Pressable
               testID="match-type-short"
               onPress={() => chooseType("short")}
-              disabled={busy || (typeModal === "online" && onlineMode === "duo" && !duoPartner)}
+              disabled={busy || ((typeModal === "online" || typeModal === "solo") && onlineMode === "duo" && !duoPartner)}
               style={({ pressed }) => [
                 styles.typeOption,
                 pressed && styles.pressed,
-                typeModal === "online" && onlineMode === "duo" && !duoPartner && { opacity: 0.45 },
+                (typeModal === "online" || typeModal === "solo") && onlineMode === "duo" && !duoPartner && { opacity: 0.45 },
               ]}
             >
               <Ionicons name="flash" size={26} color={C.brand} />
@@ -635,11 +645,11 @@ export default function HomeScreen() {
             <Pressable
               testID="match-type-long"
               onPress={() => chooseType("long")}
-              disabled={busy || (typeModal === "online" && onlineMode === "duo" && !duoPartner)}
+              disabled={busy || ((typeModal === "online" || typeModal === "solo") && onlineMode === "duo" && !duoPartner)}
               style={({ pressed }) => [
                 styles.typeOption,
                 pressed && styles.pressed,
-                typeModal === "online" && onlineMode === "duo" && !duoPartner && { opacity: 0.45 },
+                (typeModal === "online" || typeModal === "solo") && onlineMode === "duo" && !duoPartner && { opacity: 0.45 },
               ]}
             >
               <Ionicons name="hourglass" size={26} color={C.brand2} />
