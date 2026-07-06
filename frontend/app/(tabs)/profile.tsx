@@ -9,6 +9,7 @@ import {
   Text,
   View,
 } from "react-native";
+import Animated, { FadeInDown } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { api } from "@/src/api";
@@ -26,6 +27,8 @@ export default function ProfileScreen() {
   const { t, lang, setLang } = useI18n();
   const [rank, setRank] = useState<number | null>(null);
   const [winRate, setWinRate] = useState(0);
+  const [showAvatars, setShowAvatars] = useState(false);
+  const [showStats, setShowStats] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -100,63 +103,95 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        <Text style={styles.sectionTitle}>{t("chooseAvatar")}</Text>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: SP.lg, gap: SP.md }}
+        <Pressable
+          testID="toggle-avatars"
+          onPress={() => setShowAvatars((v) => !v)}
+          style={styles.sectionToggle}
         >
-          {AVATARS.map((av) => (
-            <Pressable
-              key={av.id}
-              testID={`avatar-option-${av.id}`}
-              onPress={() => pickAvatar(av.id)}
-              style={[
-                styles.avatarOption,
-                user?.avatar_id === av.id && styles.avatarSelected,
-              ]}
+          <Ionicons name="color-palette" size={18} color={C.brand2} />
+          <Text style={styles.sectionToggleText}>{t("chooseAvatar")}</Text>
+          <Ionicons
+            name={showAvatars ? "chevron-up" : "chevron-down"}
+            size={18}
+            color={C.ink3}
+          />
+        </Pressable>
+        {showAvatars && (
+          <Animated.View entering={FadeInDown.duration(160)} style={{ marginTop: SP.md }}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ paddingHorizontal: SP.lg, gap: SP.md }}
             >
-              <Image
-                source={{ uri: avatarUrl(av.id) }}
-                style={styles.avatarImg}
-                contentFit="cover"
-                transition={100}
-              />
-              <Text style={styles.avatarName} numberOfLines={1}>
-                {av.name}
-              </Text>
-            </Pressable>
-          ))}
-        </ScrollView>
+              {AVATARS.map((av) => (
+                <Pressable
+                  key={av.id}
+                  testID={`avatar-option-${av.id}`}
+                  onPress={() => pickAvatar(av.id)}
+                  style={[
+                    styles.avatarOption,
+                    user?.avatar_id === av.id && styles.avatarSelected,
+                  ]}
+                >
+                  <Image
+                    source={{ uri: avatarUrl(av.id) }}
+                    style={styles.avatarImg}
+                    contentFit="cover"
+                    transition={100}
+                  />
+                  <Text style={styles.avatarName} numberOfLines={1}>
+                    {av.name}
+                  </Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+          </Animated.View>
+        )}
 
-        <Text style={styles.sectionTitle}>{t("statistics")}</Text>
-        <View style={styles.statsGrid} testID="stats-grid">
-          {statBlocks.map((s) => (
-            <View key={s.key} style={styles.statBlock} testID={`stat-${s.key}`}>
-              <Ionicons name={s.icon as never} size={20} color={C.brand2} />
-              <Text style={styles.statValue}>{s.value}</Text>
-              <Text style={styles.statLabel} numberOfLines={1}>
-                {s.label}
-              </Text>
+        <Pressable
+          testID="toggle-stats"
+          onPress={() => setShowStats((v) => !v)}
+          style={styles.sectionToggle}
+        >
+          <Ionicons name="stats-chart" size={18} color={C.brand2} />
+          <Text style={styles.sectionToggleText}>{t("statistics")}</Text>
+          <Ionicons
+            name={showStats ? "chevron-up" : "chevron-down"}
+            size={18}
+            color={C.ink3}
+          />
+        </Pressable>
+        {showStats && (
+          <Animated.View entering={FadeInDown.duration(160)}>
+            <View style={[styles.statsGrid, { marginTop: SP.md }]} testID="stats-grid">
+              {statBlocks.map((s) => (
+                <View key={s.key} style={styles.statBlock} testID={`stat-${s.key}`}>
+                  <Ionicons name={s.icon as never} size={20} color={C.brand2} />
+                  <Text style={styles.statValue}>{s.value}</Text>
+                  <Text style={styles.statLabel} numberOfLines={1}>
+                    {s.label}
+                  </Text>
+                </View>
+              ))}
             </View>
-          ))}
-        </View>
 
-        {last.length > 1 && (
-          <>
-            <Text style={styles.sectionTitle}>{t("eloProgress")}</Text>
-            <View style={styles.chart} testID="elo-chart">
-              {last.map((h, i) => {
-                const range = Math.max(maxElo - minElo, 1);
-                const hPct = 0.2 + 0.8 * ((h.elo - minElo) / range);
-                return (
-                  <View key={i} style={styles.chartCol}>
-                    <View style={[styles.chartBar, { height: `${hPct * 100}%` }]} />
-                  </View>
-                );
-              })}
-            </View>
-          </>
+            {last.length > 1 && (
+              <>
+                <Text style={styles.sectionTitle}>{t("eloProgress")}</Text>
+                <View style={styles.chart} testID="elo-chart">
+                  {last.map((h, i) => {
+                    const range = Math.max(maxElo - minElo, 1);
+                    const hPct = 0.2 + 0.8 * ((h.elo - minElo) / range);
+                    return (
+                      <View key={i} style={styles.chartCol}>
+                        <View style={[styles.chartBar, { height: `${hPct * 100}%` }]} />
+                      </View>
+                    );
+                  })}
+                </View>
+              </>
+            )}
+          </Animated.View>
         )}
 
         <Text style={styles.sectionTitle}>{t("language")}</Text>
@@ -186,7 +221,7 @@ export default function ProfileScreen() {
           label={t("logout")}
           variant="ghost"
           onPress={doLogout}
-          style={{ marginHorizontal: SP.lg, marginTop: SP.xl }}
+          style={{ marginHorizontal: SP.lg, marginTop: SP.lg }}
         />
       </ScrollView>
     </View>
@@ -200,7 +235,7 @@ const styles = StyleSheet.create({
     backgroundColor: C.card,
     marginHorizontal: SP.lg,
     borderRadius: R.lg,
-    padding: SP.xl,
+    padding: SP.lg,
     borderWidth: 1,
     borderColor: C.border,
   },
@@ -228,6 +263,20 @@ const styles = StyleSheet.create({
     marginBottom: SP.md,
     paddingHorizontal: SP.lg,
   },
+  sectionToggle: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: SP.sm,
+    backgroundColor: C.card,
+    borderWidth: 1,
+    borderColor: C.border,
+    borderRadius: R.md,
+    paddingHorizontal: SP.lg,
+    height: 52,
+    marginHorizontal: SP.lg,
+    marginTop: SP.md,
+  },
+  sectionToggleText: { flex: 1, fontFamily: F.display, fontSize: 16, color: C.ink },
   avatarOption: {
     width: 86,
     alignItems: "center",

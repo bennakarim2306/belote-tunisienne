@@ -11,10 +11,13 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { KeyboardEvents } from "react-native-keyboard-controller";
 import Animated, {
   Easing,
   FadeInDown,
   FadeInUp,
+  FadeOut,
+  LinearTransition,
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
@@ -67,8 +70,17 @@ export default function HomeScreen() {
   const [joinError, setJoinError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
+  const [codeFocused, setCodeFocused] = useState(false);
   const [currentGame, setCurrentGame] = useState<CurrentGame | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // when the keyboard closes (back button / done), restore the full layout
+  useEffect(() => {
+    const sub = KeyboardEvents.addListener("keyboardDidHide", () =>
+      setCodeFocused(false),
+    );
+    return () => sub.remove();
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
@@ -198,11 +210,12 @@ export default function HomeScreen() {
       </View>
 
       <ScrollView
-        contentContainerStyle={{ padding: SP.lg, paddingBottom: SP.xl }}
+        contentContainerStyle={{ padding: SP.lg, paddingTop: SP.md, paddingBottom: SP.lg }}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
-        {currentGame && (
-          <Animated.View entering={FadeInDown} style={styles.resumeBanner} testID="resume-game-banner">
+        {currentGame && !codeFocused && (
+          <Animated.View entering={FadeInDown} exiting={FadeOut.duration(120)} style={styles.resumeBanner} testID="resume-game-banner">
             <Ionicons name="play-circle" size={32} color={C.brand} />
             <View style={{ flex: 1, minWidth: 0, marginLeft: SP.md }}>
               <Text style={styles.resumeTitle}>{t("resumeGame")}</Text>
@@ -224,8 +237,8 @@ export default function HomeScreen() {
           </Animated.View>
         )}
 
-        {invites.map((inv) => (
-          <Animated.View key={inv.invite_id} entering={FadeInDown} style={styles.inviteBanner}>
+        {!codeFocused && invites.map((inv) => (
+          <Animated.View key={inv.invite_id} entering={FadeInDown} exiting={FadeOut.duration(120)} style={styles.inviteBanner}>
             <Avatar avatarId={inv.from_user.avatar_id} size={36} />
             <Text style={styles.inviteText} numberOfLines={2}>
               {t("invitedYou", { name: inv.from_user.username })}
@@ -247,66 +260,87 @@ export default function HomeScreen() {
           </Animated.View>
         ))}
 
-        <Animated.View entering={FadeInUp.delay(50)}>
-          <Animated.View style={[styles.heroGlow, heroGlowStyle]}>
+        {!codeFocused && (
+          <Animated.View entering={FadeInUp.delay(50)} exiting={FadeOut.duration(120)}>
+            <Animated.View style={[styles.heroGlow, heroGlowStyle]}>
+              <Pressable
+                testID="play-online-card"
+                onPress={() => setTypeModal("online")}
+                style={({ pressed }) => [styles.bigCard, styles.onlineCard, pressed && styles.pressed]}
+              >
+                <LinearGradient
+                  colors={[C.felt, C.feltDark]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={StyleSheet.absoluteFill}
+                />
+                <View style={styles.cardRow}>
+                  <View style={styles.bigCardIcon}>
+                    <Ionicons name="globe" size={26} color={C.cream} />
+                  </View>
+                  <View style={styles.cardRowText}>
+                    <Text style={[styles.bigCardTitle, { color: C.cream }]}>{t("playOnline")}</Text>
+                    <Text style={styles.bigCardDesc} numberOfLines={2}>
+                      {t("playOnlineDesc")}
+                    </Text>
+                  </View>
+                </View>
+                <Text style={styles.cardSuits}>♠ ♥ ♦ ♣</Text>
+              </Pressable>
+            </Animated.View>
+          </Animated.View>
+        )}
+
+        {!codeFocused && (
+          <Animated.View entering={FadeInUp.delay(85)} exiting={FadeOut.duration(120)}>
             <Pressable
-              testID="play-online-card"
-              onPress={() => setTypeModal("online")}
-              style={({ pressed }) => [styles.bigCard, styles.onlineCard, pressed && styles.pressed]}
+              testID="play-solo-card"
+              onPress={() => setTypeModal("solo")}
+              style={({ pressed }) => [styles.bigCard, styles.soloCard, pressed && styles.pressed]}
             >
-              <LinearGradient
-                colors={[C.felt, C.feltDark]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={StyleSheet.absoluteFill}
-              />
-              <View style={styles.bigCardIcon}>
-                <Ionicons name="globe" size={30} color={C.cream} />
+              <View style={styles.cardRow}>
+                <View style={[styles.bigCardIcon, { backgroundColor: C.brand2 }]}>
+                  <Ionicons name="game-controller" size={24} color={C.onBrand} />
+                </View>
+                <View style={styles.cardRowText}>
+                  <Text style={[styles.bigCardTitle, { color: C.ink }]}>
+                    {t("playVsAI")}
+                  </Text>
+                  <Text style={[styles.bigCardDesc, { color: C.ink2 }]} numberOfLines={2}>
+                    {t("playVsAIDesc")}
+                  </Text>
+                </View>
+                <View style={styles.trainingBadge}>
+                  <Text style={styles.trainingBadgeText}>{t("trainingBadge")}</Text>
+                </View>
               </View>
-              <Text style={[styles.bigCardTitle, { color: C.cream }]}>{t("playOnline")}</Text>
-              <Text style={styles.bigCardDesc}>{t("playOnlineDesc")}</Text>
-              <Text style={styles.cardSuits}>♠ ♥ ♦ ♣</Text>
             </Pressable>
           </Animated.View>
-        </Animated.View>
+        )}
 
-        <Animated.View entering={FadeInUp.delay(85)}>
-          <Pressable
-            testID="play-solo-card"
-            onPress={() => setTypeModal("solo")}
-            style={({ pressed }) => [styles.bigCard, styles.soloCard, pressed && styles.pressed]}
-          >
-            <View style={styles.soloRow}>
-              <View style={[styles.bigCardIcon, styles.soloIcon]}>
-                <Ionicons name="game-controller" size={26} color={C.onBrand} />
-              </View>
-              <View style={{ flex: 1, marginLeft: SP.md }}>
-                <Text style={[styles.bigCardTitle, { color: C.ink, fontSize: 20 }]}>
-                  {t("playVsAI")}
-                </Text>
-                <Text style={[styles.bigCardDesc, { color: C.ink2 }]}>{t("playVsAIDesc")}</Text>
-              </View>
-              <View style={styles.trainingBadge}>
-                <Text style={styles.trainingBadgeText}>{t("trainingBadge")}</Text>
-              </View>
-            </View>
-          </Pressable>
-        </Animated.View>
-
-        <Animated.View entering={FadeInUp.delay(120)}>
+        <Animated.View
+          entering={FadeInUp.delay(120)}
+          layout={LinearTransition.duration(180)}
+        >
           <View style={[styles.bigCard, styles.privateCard]}>
-            <View style={[styles.bigCardIcon, { backgroundColor: C.brand2 }]}>
-              <Ionicons name="people" size={30} color={C.onBrand} />
+            <View style={styles.cardRow}>
+              <View style={[styles.bigCardIcon, { backgroundColor: C.brand2 }]}>
+                <Ionicons name="people" size={24} color={C.onBrand} />
+              </View>
+              <View style={styles.cardRowText}>
+                <Text style={[styles.bigCardTitle, { color: C.ink }]}>{t("privateParty")}</Text>
+                <Text style={[styles.bigCardDesc, { color: C.ink2 }]} numberOfLines={2}>
+                  {t("privatePartyDesc")}
+                </Text>
+              </View>
             </View>
-            <Text style={[styles.bigCardTitle, { color: C.ink }]}>{t("privateParty")}</Text>
-            <Text style={[styles.bigCardDesc, { color: C.ink2 }]}>{t("privatePartyDesc")}</Text>
 
             <ChunkyButton
               testID="create-party-button"
               label={t("createParty")}
               onPress={() => setTypeModal("create")}
               loading={busy}
-              style={{ marginTop: SP.lg }}
+              style={{ marginTop: SP.md }}
             />
 
             <View style={styles.joinRow}>
@@ -319,6 +353,10 @@ export default function HomeScreen() {
                 onChangeText={(v) => setJoinCode(v.toUpperCase())}
                 autoCapitalize="characters"
                 maxLength={6}
+                onFocus={() => setCodeFocused(true)}
+                onBlur={() => setCodeFocused(false)}
+                returnKeyType="go"
+                onSubmitEditing={joinRoom}
               />
               <Pressable
                 testID="join-room-button"
@@ -589,14 +627,14 @@ const styles = StyleSheet.create({
   inviteJoinText: { fontFamily: F.display, color: C.onBrand, fontSize: 13 },
   bigCard: {
     borderRadius: R.lg,
-    padding: SP.xl,
-    marginBottom: SP.lg,
+    padding: SP.lg,
+    marginBottom: SP.md,
     ...shadow,
   },
   heroGlow: {
     borderRadius: R.lg,
     borderWidth: 1.5,
-    marginBottom: SP.lg,
+    marginBottom: SP.md,
     shadowColor: C.brand,
     shadowOffset: { width: 0, height: 0 },
     shadowRadius: 18,
@@ -608,16 +646,9 @@ const styles = StyleSheet.create({
     backgroundColor: C.bg3,
     borderWidth: 1,
     borderColor: C.brand3,
-    padding: SP.lg,
   },
-  soloRow: { flexDirection: "row", alignItems: "center" },
-  soloIcon: {
-    backgroundColor: C.brand2,
-    width: 48,
-    height: 48,
-    borderRadius: 16,
-    marginBottom: 0,
-  },
+  cardRow: { flexDirection: "row", alignItems: "center" },
+  cardRowText: { flex: 1, marginLeft: SP.md },
   trainingBadge: {
     backgroundColor: C.gold,
     borderRadius: R.pill,
@@ -628,28 +659,27 @@ const styles = StyleSheet.create({
   trainingBadgeText: { fontFamily: F.bold, fontSize: 11, color: "#1A1200" },
   pressed: { transform: [{ scale: 0.98 }], opacity: 0.92 },
   bigCardIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 18,
+    width: 46,
+    height: 46,
+    borderRadius: 15,
     backgroundColor: "rgba(255,255,255,0.18)",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: SP.md,
   },
-  bigCardTitle: { fontFamily: F.display, fontSize: 24, color: C.onBrand },
+  bigCardTitle: { fontFamily: F.display, fontSize: 19, color: C.onBrand },
   bigCardDesc: {
     fontFamily: F.text,
-    fontSize: 14,
+    fontSize: 12.5,
     color: "rgba(255,255,255,0.85)",
-    marginTop: 4,
+    marginTop: 2,
   },
   cardSuits: {
     position: "absolute",
-    right: SP.lg,
-    top: SP.lg,
+    right: SP.md,
+    top: SP.sm,
     color: "rgba(255,255,255,0.35)",
-    fontSize: 18,
-    letterSpacing: 3,
+    fontSize: 13,
+    letterSpacing: 2,
   },
   joinRow: { flexDirection: "row", gap: SP.sm, marginTop: SP.md },
   joinInput: {
@@ -661,9 +691,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: C.border,
     paddingHorizontal: SP.lg,
+    paddingVertical: 0,
     fontFamily: F.extra,
-    fontSize: 18,
-    letterSpacing: 4,
+    fontSize: 16,
+    letterSpacing: 2,
     color: C.ink,
   },
   joinBtn: {

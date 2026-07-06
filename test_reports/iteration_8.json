@@ -1,0 +1,36 @@
+{
+  "summary": "Frontend-only regression pass on the 3 layout/UX fixes reported by the user (home compact + focus-hide, leaderboard custom scrollbar, profile collapsible sections). Ran on Expo web preview at 390x800 as tester1@belote.tn. ALL 7 requested checkpoints PASS. Home tab: play-online-card / play-solo-card / create-party-button / join-code-input all render visible without scroll (join-code bottom at y=482 well under 800). Focusing join-code-input hides play-online-card + play-solo-card (only Partie privée card remains) and blurring (click outside via home-user-avatar) restores both cards. Typed 'ABC123' — full text is legible (input value read back exactly), tapped join-room-button and join-error-text shows 'Le salon a été fermé' (backend returned 400 as expected). Leaderboard: leaderboard-row-1 renders, no native scrollbar visible in DOM, custom-scroll-indicator element exists (count=1) and becomes visible after wheel-scrolling; opacity fade animation working. Profile tab: toggle-avatars and toggle-stats visible, stats-grid count=0 and avatar-option-* count=0 by default (COLLAPSED as expected). Tapping toggle-stats reveals stats-grid with 9 stat blocks. Tapping toggle-avatars reveals 12 avatar options. Tapping again collapses both back to 0. Regression smoke: navigation between Accueil, Classement, Amis, Profil all works without red screens or errors. Only console noise: pre-existing RN Web deprecation warnings for shadow* / pointerEvents (already flagged iteration_7 — not a regression).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "/tmp/01_landing.png",
+    "/tmp/02_home.png",
+    "/tmp/03_focused.png",
+    "/tmp/04_after_blur.png",
+    "/tmp/05_leader.png",
+    "/tmp/06_leader_scrolled.png",
+    "/tmp/07_profile_collapsed.png",
+    "/tmp/08_profile_stats.png",
+    "/tmp/09_profile_expanded.png",
+    "/tmp/10_final.png"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "home.tsx: codeFocused state is driven by both onFocus/onBlur AND KeyboardEvents.keyboardDidHide — safe fallback on native. On web onBlur alone handles it (verified: clicking home-user-avatar blurs and restores both hidden cards).",
+    "home.tsx: Animated.View wrapping the private card uses layout=LinearTransition.duration(180) so the card animates smoothly when siblings mount/unmount. Working as intended.",
+    "leaderboard.tsx: showsVerticalScrollIndicator={false} + custom Animated.View with pointerEvents='none' positioned right:3 is a clean implementation. indicatorStyle correctly maps scrollY/contentH/viewH to translateY + opacity. Fade timing (450ms out after 700ms idle) matches spec.",
+    "profile.tsx: showAvatars/showStats defaults are false — both sections truly collapsed on mount (verified: 0 stats-grid, 0 avatar-option-* in DOM). Content mounts only when expanded (conditional {&&} render), so screen fits in one viewport on 390x800."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (skipped per request)", "frontend": "100% (7/7 checkpoints)"},
+  "seed_data_creation": "None. Used existing tester1@belote.tn/Belote123!.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "All 3 UI fixes verified. Home focus/blur, leaderboard custom-scroll-indicator, and profile collapsible sections all work correctly on Expo web preview. testID inventory (join-code-input, join-room-button, join-error-text, play-online-card, play-solo-card, create-party-button, custom-scroll-indicator, toggle-avatars, toggle-stats, stats-grid, avatar-option-*, stat-*) is stable and clickable. Pre-existing RN Web shadow*/pointerEvents deprecation console warnings are unchanged framework noise (flagged in iteration_7).",
+  "rca_of_issue": "N/A — no defects raised on this pass."
+}
