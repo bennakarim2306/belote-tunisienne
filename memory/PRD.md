@@ -43,9 +43,12 @@ Rules reference: /manuel_belote_tunisienne.md (uploaded artifact) — Tunisian b
 
 - Post-redesign layout fixes (2026-06, fork session): (1) Home — 3 mode cards compacted (row layouts, 46px icons) to fit one screen; focusing "Code du salon" hides other cards/banners (codeFocused state + KeyboardEvents keyboardDidHide restore, LinearTransition), input text unclipped (fontSize 16 / letterSpacing 2 / paddingVertical 0), keyboardShouldPersistTaps; (2) Leaderboard — native scrollbar hidden, custom slim mint scroll indicator (reanimated) visible only while scrolling, fades out after ~700ms; (3) Profile — "Choisir un avatar" & "Statistiques" (incl. ELO chart) collapsible via toggle rows, collapsed by default so page fits one screen. Frontend regression GREEN (iteration_8).
 
+- Victory celebration (2026-06, fork session): confetti rain (36 pieces, single-clock reanimated driver, 4 bursts ~13s, mint/gold/copper/terracotta/cream) + trophy in pulsing mint-glow ring on the match-end overlay — win only (defeat keeps sad icon). testIDs: victory-confetti, victory-trophy. Visually verified via temp route.
+- Ads preparation (2026-06, fork session): react-native-google-mobile-ads 16.4 + app.json config plugin with GOOGLE TEST app IDs (replace before store release, real unit IDs in src/ads/config.ts). Architecture: src/ads/{env,config,AdsProvider,AdBanner,interstitial,nativeAdsModule(.native)}.ts — platform-split .native.ts so web bundle never includes the SDK; Expo Go/web get a themed placeholder banner ("AD Espace publicitaire") above the tab bar on ALL 4 tabs (via custom tabBar in (tabs)/_layout.tsx); interstitial after match with frequency caps (1/2 online+solo, 1/6 private, AsyncStorage counters), hooked on MatchEndOverlay back-home (quitAfterMatch in game/[id].tsx). Backend: game state exposes origin ("online"|"solo"|"private") set at create_game. REAL ADS ONLY WORK IN NATIVE BUILDS (Emergent Publish). Tested iteration_9 (backend 3/3 origin tests + frontend 7/7).
+
 ## Backlog (prioritized)
 - P0: none outstanding
-- P1: Ads activation hooks (AdMob placeholders + toggle — needs native build); in-game emoji/quick-chat reactions; sound effects; spectator/rejoin polish (games are in-memory — lost on backend restart)
+- P1: Ads ACTIVATION (structure ready with Google TEST IDs — needs real AdMob unit IDs + native build); in-game emoji/quick-chat reactions; sound effects; spectator/rejoin polish (games are in-memory — lost on backend restart)
 - P2: Paid avatar shop (catalogue is ready to extend); seasonal leaderboards; match history detail screen; RTL full mirroring for Arabic; Elo-based matchmaking buckets; push notifications for invites (only on user request)
 
 ## Known Notes
