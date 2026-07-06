@@ -119,7 +119,7 @@ export default function PlayerSeat({
       )}
       {chatText ? (
         <Animated.View
-          entering={ZoomIn.springify().damping(14)}
+          entering={ZoomIn.duration(180)}
           style={[styles.bubble, styles.chatBubble]}
           testID={`chat-bubble-${player.seat}`}
         >

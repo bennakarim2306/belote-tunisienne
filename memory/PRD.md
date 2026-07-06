@@ -48,6 +48,8 @@ Rules reference: /manuel_belote_tunisienne.md (uploaded artifact) — Tunisian b
 
 - Tfaskira / fausse-carte rule (2026-06, fork session): exception to the obligation to cut — a player void in the (non-trump) led suit may play ANY card if their partner is currently master of the trick (3rd pos: partner led & still wins; 4th pos: partner winning). Never in 2nd position; obligation to climb at trump when trump is led unchanged; must still follow suit when holding it. Implemented in legal_moves(hand, trick, trump, seat) (game_logic.py) — server-authoritative, drives UI highlights & bots. Bot heuristic: prefers discarding a plain card to preserve trumps when partner is master. Tests: tests/test_tfaskira.py 12/12 + 30 full bot matches simulated (250 Tfaskira situations) + WS flow suite 26/26.
 
+- Quick chat in game (2026-06, fork session): predefined Tunisian messages (8 ids: wellPlayed/yezzi/aychek/luck/yalla/oops/sahha/thinking, i18n keys chat_*) + 8 emojis (😂😭😡🔥👏🤝😎🎉). WS action {action:"chat",kind,value}, server whitelist + 1.5s/player rate limit (game_manager CHAT_* consts, LiveGame.chat_last), broadcast event {e:"chat",seat,kind,msg}. UI: chat-button (bottom-left, game screen) -> bottom sheet chat-panel; bubbles (chat-bubble-{seat}, mint border) above sender avatar 2.8s (chatText prop on PlayerSeat). Tests: pytest tests/test_chat.py PASS + frontend E2E PASS (iteration_10-level run). Note: game/[id].tsx now ~1080 lines — split modals into components someday (refactor backlog).
+
 ## Backlog (prioritized)
 - P0: none outstanding
 - P1: Ads ACTIVATION (structure ready with Google TEST IDs — needs real AdMob unit IDs + native build); in-game emoji/quick-chat reactions; spectator/rejoin polish (games are in-memory — lost on backend restart)
