@@ -1,68 +1,38 @@
 {
   "app_name": "Belote Tunisienne",
-  "personality": "4 Tactile / Playful LIGHT",
-  "personality_one_liner": "A friendly, touchable, and vibrant card game experience grounded in warm oriental terracotta and sand tones.",
+  "personality": "7 Dark-First Utility DARK",
+  "personality_one_liner": "A high-stakes, glowing gaming experience anchored in deep espresso with electric mint and lantern amber accents, capturing the lively yet modern essence of a Tunisian café.",
   "color": {
-    "light": {
-      "surface": "#FAF8F5",
-      "onSurface": "#2A2421",
-      "surfaceSecondary": "#F0EAE1",
-      "onSurfaceSecondary": "#2A2421",
-      "surfaceTertiary": "#E6DED4",
-      "onSurfaceTertiary": "#4A423C",
-      "surfaceInverse": "#2A2421",
-      "onSurfaceInverse": "#FAF8F5",
-      "brand": "#C85A43",
-      "brandPrimary": "#C85A43",
-      "onBrandPrimary": "#FFFFFF",
-      "brandSecondary": "#D68C45",
-      "onBrandSecondary": "#2A2421",
-      "brandTertiary": "#E8A87C",
-      "onBrandTertiary": "#2A2421",
-      "success": "#2E7D32",
-      "onSuccess": "#FFFFFF",
-      "warning": "#F4A261",
-      "onWarning": "#2A2421",
-      "error": "#D1495B",
-      "onError": "#FFFFFF",
-      "info": "#4A5759",
-      "onInfo": "#FFFFFF",
-      "border": "#E6DED4",
-      "borderStrong": "#C4B9A9",
-      "divider": "#E6DED4"
-    },
-    "dark": {
-      "surface": "#1C1917",
-      "onSurface": "#F5EAE1",
-      "surfaceSecondary": "#292521",
-      "onSurfaceSecondary": "#F5EAE1",
-      "surfaceTertiary": "#36302B",
-      "onSurfaceTertiary": "#D4C9BD",
-      "surfaceInverse": "#F5EAE1",
-      "onSurfaceInverse": "#1C1917",
-      "brand": "#D9735E",
-      "brandPrimary": "#D9735E",
-      "onBrandPrimary": "#FFFFFF",
-      "brandSecondary": "#E3A05B",
-      "onBrandSecondary": "#1C1917",
-      "brandTertiary": "#8C5845",
-      "onBrandTertiary": "#F5EAE1",
-      "success": "#388E3C",
-      "onSuccess": "#FFFFFF",
-      "warning": "#E69C55",
-      "onWarning": "#1C1917",
-      "error": "#E05A6B",
-      "onError": "#FFFFFF",
-      "info": "#5E6C6E",
-      "onInfo": "#FFFFFF",
-      "border": "#36302B",
-      "borderStrong": "#4A423C",
-      "divider": "#36302B"
-    }
+    "surface": "#120F0D",
+    "onSurface": "#FDFBF9",
+    "surfaceSecondary": "#1C1714",
+    "onSurfaceSecondary": "#F5EBE1",
+    "surfaceTertiary": "#26201B",
+    "onSurfaceTertiary": "#D6C7B8",
+    "surfaceInverse": "#F5EBE1",
+    "onSurfaceInverse": "#120F0D",
+    "brand": "#00E57A",
+    "brandPrimary": "#00E57A",
+    "onBrandPrimary": "#051A10",
+    "brandSecondary": "#FF7B00",
+    "onBrandSecondary": "#1A0C00",
+    "brandTertiary": "#C23B22",
+    "onBrandTertiary": "#FFFFFF",
+    "success": "#00E57A",
+    "onSuccess": "#051A10",
+    "warning": "#FFB800",
+    "onWarning": "#1A1200",
+    "error": "#FF4444",
+    "onError": "#FFFFFF",
+    "info": "#00E57A",
+    "onInfo": "#051A10",
+    "border": "#2E241E",
+    "borderStrong": "#4A3B30",
+    "divider": "#211A16"
   },
   "typography": {
-    "displayFontFamily": "Fredoka",
-    "textFontFamily": "Nunito",
+    "displayFontFamily": "Space Grotesk",
+    "textFontFamily": "Plus Jakarta Sans",
     "scale": {
       "sm": 12,
       "base": 14,
@@ -72,7 +42,7 @@
     }
   },
   "spacing": {
-    "rule": "Generous padding around content to enhance the tactile feel. No cramped elements. Touch targets at least 44pt.",
+    "rule": "Generous spacing around gaming interactive elements to prevent accidental touches. Dense utility layout for data screens like leaderboards. Use md (12) and lg (16) for inner padding of cards.",
     "xs": 4,
     "sm": 8,
     "md": 12,
@@ -87,19 +57,19 @@
     "lg": 20,
     "pill": 999
   },
-  "shadow_tier": "2",
+  "shadow_tier": "1",
   "navigation": "bottom_tabs",
   "icon_set": "Phosphor",
   "glassmorphism": {
     "enabled": true,
     "do's": [
-      "Use glass effect for bottom tab bar and featured event cards over oriental patterned backgrounds.",
-      "Pair blur with tinted base (≥70% opacity) for readability.",
-      "Apply glass to modals/overlays over the game table."
+      "Use on the bidding panel bottom sheet",
+      "Use on the sticky bottom tab bar over table or list content",
+      "Use for player detail popups on the table"
     ],
     "dont's": [
-      "Never blur body text regions or form fields.",
-      "Do not over-use glass on individual playing cards; they should feel solid and tactile."
+      "Do not use on interactive gaming buttons where raw performance is needed",
+      "Do not use on background table felt"
     ]
   },
   "platform_libraries": {
@@ -117,101 +87,72 @@
   "screens": [
     {
       "name": "Auth",
-      "purpose": "Google and email login with language selection (FR/AR).",
+      "purpose": "Log into the game via Email or Google.",
       "states": {
-        "loading": "Spinner over patterned background.",
+        "loading": "Spinner over the geometric pattern background",
         "empty": "N/A",
-        "error": "Toast using error token with Retry button."
+        "error": "Toast with warning colors"
       },
-      "layout": "Screen background uses moroccan_pattern layered with brandTertiary gradient. Oversized brandword mark at top, large chunky pill buttons for Google and Email at the bottom thumb zone."
+      "layout": "Full screen background image with vertical dark gradient scrim. Central form container using surfaceSecondary. Primary button 'Connexion' in glowing brandPrimary. Google button outlined."
     },
     {
-      "name": "Home Lobby",
-      "purpose": "Matchmaking hub to choose short/long match, or create/join private parties.",
+      "name": "Home Hub",
+      "purpose": "Main landing showing ELO, quick play, and notifications.",
       "states": {
-        "loading": "Animated card shuffle skeleton.",
-        "empty": "No active match found - prompt to create party.",
-        "error": "Failed to connect to matchmaking server."
+        "loading": "Skeleton of cards",
+        "empty": "No active games, prominent 'Jouer en ligne' button",
+        "error": "Failed to load connection"
       },
-      "layout": "Large featured cards for 'Play Online' and 'Private Party' stacked vertically. Glassmorphism over the patterned background. Bottom sheet for selecting 1000/2000 points and activating commercials (toggle)."
+      "layout": "Sticky profile/ELO header at top. Big main action 'Jouer en ligne' card with subtle pulsing border. Secondary grid for 'Jouer contre l'IA' and 'Partie privée'. Bottom tabs layout."
     },
     {
       "name": "Game Table",
-      "purpose": "First-person immersive multiplayer card game view.",
+      "purpose": "The core gameplay interface for 4 players.",
       "states": {
-        "loading": "Connecting players around table...",
-        "empty": "Waiting for players to join seats.",
-        "error": "Connection lost, attempting reconnect."
+        "loading": "Table felt with 'En attente des joueurs...'",
+        "empty": "N/A",
+        "error": "Disconnected overlay"
       },
-      "layout": "Horizontal perspective table filling the screen with emerald/sand texture. 3 opponent avatars placed in 'seats' around the top edge and sides. The player's hand (8 cards) fanned at the bottom, overlapping and draggable. Trick play area centered. Floating pill actions for Belote announcements and contracts."
+      "layout": "Centered trick area. Player avatars on 4 edges (bottom, top, left, right). Hand of cards fanned out at the bottom. The bidding bottom sheet uses glass effect. Glowing active-player indicator ring."
     },
     {
       "name": "Leaderboard",
-      "purpose": "Ranking and ELO system overview.",
+      "purpose": "Show top 50 players and current user rank.",
       "states": {
-        "loading": "Loading rankings...",
-        "empty": "Play a game to appear on the leaderboard.",
-        "error": "Unable to fetch rankings."
+        "loading": "Skeleton rows",
+        "empty": "Aucun classement disponible",
+        "error": "Impossible de charger le classement"
       },
-      "layout": "Top section features the player's ELO and rank. Below is a scrollable list of top players, alternating soft list rows with thick left border accents. Uses the trophy image as a header graphic."
+      "layout": "Top 3 highlighted with copper/gold accents. Standard list for rank 4-50 with 1px border dividers. Sticky user rank pinned to bottom."
     },
     {
-      "name": "Profile & Statistics",
-      "purpose": "Avatar selection, language toggle, and game statistics.",
+      "name": "Private Room",
+      "purpose": "Lobby for waiting and organizing teams before a private match.",
       "states": {
-        "loading": "Loading profile...",
-        "empty": "No stats recorded yet.",
-        "error": "Profile fetch failed."
+        "loading": "Spinner",
+        "empty": "Waiting for players 1/4",
+        "error": "Room not found"
       },
-      "layout": "Large rounded square showing the selected funny avatar. Grid of chunky statistic blocks (win rate, total games played). A horizontal scroll shelf of available funny avatars for selection."
-    },
-    {
-      "name": "Friends",
-      "purpose": "Manage contacts and invite friends to private parties.",
-      "states": {
-        "loading": "Loading friends list...",
-        "empty": "A playful 3D avatar holding a sign: 'No friends yet, add some!'",
-        "error": "Error loading contacts."
-      },
-      "layout": "Simple vertical list of friends with their funny avatars. Large primary CTA 'Add Friend' sticky at the bottom over scrolling content."
+      "layout": "Large 4-slot team grid. Large Room Code in Space Grotesk. Bottom sheet for inviting friends."
     }
   ],
-  "haptics": {
-    "button_press": "light",
-    "card_play": "medium",
-    "match_found": "heavy",
-    "tab_change": "light"
-  },
   "images": {
-    "oriental_pattern_bg": {
-      "url": "https://images.unsplash.com/photo-1632399161628-cc285b33166f?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzNTl8MHwxfHNlYXJjaHwxfHxtb3JvY2NhbiUyMGdlb21ldHJpYyUyMHBhdHRlcm4lMjB0ZXh0dXJlJTIwc2FuZCUyMHRlcnJhY290dGF8ZW58MHx8fHwxNzgzMjYxNTU4fDA&ixlib=rb-4.1.0&q=85",
-      "alt": "Moroccan geometric pattern texture in sand and terracotta"
+    "splash_background": {
+      "url": "https://images.pexels.com/photos/30310074/pexels-photo-30310074.jpeg",
+      "alt": "Elegant mandala design with intricate patterns"
     },
-    "hero_cards_chips": {
-      "url": "https://images.unsplash.com/photo-1626775238053-4315516eedc9",
-      "alt": "Poker cards and game chips on table"
-    },
-    "funny_avatar_1": {
-      "url": "https://images.unsplash.com/photo-1740252117070-7aa2955b25f8?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NzF8MHwxfHNlYXJjaHwzfHxmdW5ueSUyMDNkJTIwYXZhdGFyJTIwY2hhcmFjdGVyfGVufDB8fHx8MTc4MjYxNzU1Nnww&ixlib=rb-4.1.0&q=85",
-      "alt": "Funny 3D avatar character"
-    },
-    "funny_avatar_2": {
-      "url": "https://images.unsplash.com/photo-1728577740843-5f29c7586afe?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NzF8MHwxfHNlYXJjaHwxfHxmdW5ueSUyMDNkJTIwYXZhdGFyJTIwY2hhcmFjdGVyfGVufDB8fHx8MTc4MjYxNzU1Nnww&ixlib=rb-4.1.0&q=85",
-      "alt": "Funny 3D avatar character with crazy hair"
-    },
-    "trophy_header": {
-      "url": "https://images.pexels.com/photos/35119581/pexels-photo-35119581.jpeg",
-      "alt": "Golden trophy winner illustration"
+    "table_felt_texture": {
+      "url": "https://images.pexels.com/photos/29261107/pexels-photo-29261107.jpeg",
+      "alt": "Dark green poker felt texture"
     }
   },
   "instructions_to_main_agent": [
-    "Ensure the Game Table strictly follows a first-person perspective layout, showing opponent avatars around the top/sides of the screen, with the player's 8-card hand anchored at the bottom.",
-    "Use Phosphor icons in filled style (24-28pt) throughout the app to match the Tactile / Playful personality.",
-    "Banned colors (indigo, purple, all blues, navy, violet) must not be used anywhere. The theme revolves around warm sand, terracotta, and emerald green tones.",
-    "Avatars must use the selected funny 3D characters fetched via unsplash, set inside round tactile borders.",
-    "Text laid over the oriental patterned backgrounds MUST use a gradient-to-dark scrim (top-to-bottom transparent to surfaceInverse at ≥70%) to ensure WCAG readability.",
-    "Implement the 'commercials/ads activation' toggle inside the profile or matchmaking lobby as an opt-in or premium switch.",
-    "Buttons should be chunky and tactile (pill shape), with 'Continue/Play' CTAs sticky at the bottom over a frosted glass or surface background.",
-    "Language toggle (FR/AR) must trigger layout mirroring (RTL for Arabic) across all screens."
+    "Design specifically for the 'Dark-First Utility DARK' personality but with flashy gaming elements and glowing accents. The vibe is a midnight Tunisian café mixed with an e-sports interface.",
+    "The colors are strictly deep espresso/obsidian (surface), electric mint (brandPrimary), and lantern copper (brandSecondary). Avoid blue/purple entirely.",
+    "Game Table: ensure an octagonal or stylized rounded layout for the players on the screen, optimizing elbow room and tap targets.",
+    "Animations: the 'deal animation' and 'trick-collection' should use react-native-reanimated. Bidding panel should slide up smoothly using bottom_sheet.",
+    "For the background in Auth or Home, overlay the splash_background image with a 3-stop vertical gradient scrim (transparent to solid surface) so text on top is 100% readable.",
+    "When updating the frontend files, overwrite the existing colors/fonts in '/app/frontend/src/theme.ts' with these new exact hex values.",
+    "Ensure RTL handling is possible for Tunisian Arabic option in the UI components, keeping layout responsive."
   ]
 }
