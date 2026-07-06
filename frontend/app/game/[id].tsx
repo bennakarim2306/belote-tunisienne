@@ -35,12 +35,14 @@ type TFunc = (key: TKey, vars?: Record<string, string | number>) => string;
 function PausedOverlay({
   until,
   requesterName,
+  reason,
   canResume,
   onResume,
   t,
 }: {
   until: number;
   requesterName: string;
+  reason: "request" | "disconnect";
   canResume: boolean;
   onResume: () => void;
   t: TFunc;
@@ -57,14 +59,26 @@ function PausedOverlay({
   }, [until]);
   const mm = Math.floor(remaining / 60);
   const ss = String(remaining % 60).padStart(2, "0");
+  const disconnect = reason === "disconnect";
   return (
     <View style={styles.pausedScrim} testID="paused-overlay">
-      <Ionicons name="pause-circle" size={64} color={C.gold} />
-      <Text style={styles.pausedTitle}>{t("pausedTitle")}</Text>
-      <Text style={styles.pausedBy}>{t("pausedBy", { name: requesterName })}</Text>
+      <Ionicons
+        name={disconnect ? "wifi" : "pause-circle"}
+        size={64}
+        color={disconnect ? C.warning : C.gold}
+      />
+      <Text style={styles.pausedTitle}>
+        {disconnect ? t("connLostTitle") : t("pausedTitle")}
+      </Text>
+      <Text style={styles.pausedBy} testID="paused-reason">
+        {disconnect
+          ? t("connLostBy", { name: requesterName })
+          : t("pausedBy", { name: requesterName })}
+      </Text>
       <Text style={styles.pausedTimer} testID="paused-countdown">
         {t("autoResumeIn", { t: `${mm}:${ss}` })}
       </Text>
+      {disconnect && <Text style={styles.pausedHint}>{t("connLostHint")}</Text>}
       {canResume && (
         <ChunkyButton
           testID="pause-resume-button"
@@ -458,7 +472,19 @@ export default function GameScreen() {
       )}
 
       {/* match end */}
-      {state.phase === "finished" && (
+      {state.phase === "finished" && state.cancelled && (
+        <View style={styles.pausedScrim} testID="cancelled-overlay">
+          <Ionicons name="close-circle" size={64} color={C.brand3} />
+          <Text style={styles.pausedTitle}>{t("hostEnded")}</Text>
+          <ChunkyButton
+            testID="cancelled-home-button"
+            label={t("backHome")}
+            onPress={quit}
+            style={{ marginTop: SP.lg, minWidth: 200 }}
+          />
+        </View>
+      )}
+      {state.phase === "finished" && !state.cancelled && (
         <MatchEndOverlay
           state={state}
           myUserId={user?.user_id ?? ""}
@@ -574,7 +600,10 @@ export default function GameScreen() {
           requesterName={
             state.players.find((p) => p.seat === state.paused?.seat)?.username ?? ""
           }
-          canResume={state.paused.seat === mySeat}
+          reason={state.paused.reason ?? "request"}
+          canResume={
+            state.paused.seat === mySeat && state.paused.reason !== "disconnect"
+          }
           onResume={() => send({ action: "resume" })}
           t={t}
         />
@@ -851,6 +880,13 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   pausedTimer: { fontFamily: F.extra, fontSize: 16, color: C.gold, marginTop: SP.md },
+  pausedHint: {
+    fontFamily: F.text,
+    fontSize: 12.5,
+    color: "rgba(255,255,255,0.6)",
+    textAlign: "center",
+    marginTop: SP.sm,
+  },
   historyTotal: {
     fontFamily: F.display,
     fontSize: 15,

@@ -80,6 +80,11 @@ class FriendRespondBody(BaseModel):
 
 class InviteBody(BaseModel):
     user_id: str
+    seat: Optional[int] = Field(default=None, ge=0, le=3)
+
+
+class SeatBody(BaseModel):
+    seat: int = Field(ge=0, le=3)
 
 
 # ---------------- auth helpers ----------------
@@ -365,6 +370,29 @@ async def friend_respond(body: FriendRespondBody, request: Request):
     return {"ok": True}
 
 
+@api.get("/notifications")
+async def notifications(request: Request):
+    """Aggregated pending notifications: friend requests + game invites."""
+    user = await get_current_user(request)
+    uid = user["user_id"]
+    fr_rows = await db.friendships.find(
+        {"recipient_id": uid, "status": "pending"}, {"_id": 0}).to_list(20)
+    friend_requests = []
+    for fr in fr_rows:
+        other = await user_brief(fr["requester_id"])
+        if other:
+            friend_requests.append({"friendship_id": fr["friendship_id"], **other})
+    inv_rows = await db.invites.find(
+        {"to_user_id": uid, "status": "pending"}, {"_id": 0}
+    ).sort("created_at", -1).to_list(10)
+    invites = []
+    for inv in inv_rows:
+        room = manager.get_room(inv["room_code"])
+        if room and not room["started"]:
+            invites.append(inv)
+    return {"friend_requests": friend_requests, "invites": invites}
+
+
 # ---------------- matchmaking ----------------
 
 @api.post("/matchmaking/join")
@@ -394,7 +422,8 @@ async def mm_leave(request: Request):
 async def create_solo(body: MatchTypeBody, request: Request):
     user = await get_current_user(request)
     game_id = manager.create_game([to_player(user)], body.match_type,
-                                  shuffle=False, ranked=False, turn_timeout=None)
+                                  shuffle=False, ranked=False, turn_timeout=None,
+                                  host_user_id=user["user_id"])
     return {"game_id": game_id}
 
 
@@ -423,9 +452,10 @@ def room_public(room):
             "match_type": room["match_type"], "started": room["started"],
             "turn_timer": room.get("turn_timer", False),
             "game_id": room["game_id"],
-            "players": [{"user_id": p["user_id"], "username": p["username"],
-                         "avatar_id": p["avatar_id"], "elo": p["elo"]}
-                        for p in room["players"]]}
+            "seats": [None if p is None else
+                      {"user_id": p["user_id"], "username": p["username"],
+                       "avatar_id": p["avatar_id"], "elo": p["elo"]}
+                      for p in room["seats"]]}
 
 
 @api.post("/rooms")
@@ -461,6 +491,16 @@ async def leave_room(code: str, request: Request):
     return {"ok": True}
 
 
+@api.post("/rooms/{code}/seat")
+async def change_seat(code: str, body: SeatBody, request: Request):
+    user = await get_current_user(request)
+    try:
+        room = manager.move_seat(code, user["user_id"], body.seat)
+    except ValueError as err:
+        raise HTTPException(status_code=400, detail=str(err))
+    return room_public(room)
+
+
 @api.post("/rooms/{code}/start")
 async def start_room(code: str, request: Request):
     user = await get_current_user(request)
@@ -477,8 +517,10 @@ async def invite_to_room(code: str, body: InviteBody, request: Request):
     room = manager.get_room(code)
     if not room or room["started"]:
         raise HTTPException(status_code=404, detail="room_not_found")
-    if not any(p["user_id"] == user["user_id"] for p in room["players"]):
+    if not any(p and p["user_id"] == user["user_id"] for p in room["seats"]):
         raise HTTPException(status_code=403, detail="not_in_room")
+    if body.seat is not None and room["host_id"] != user["user_id"]:
+        raise HTTPException(status_code=403, detail="not_host")
     await db.invites.update_one(
         {"room_code": room["code"], "to_user_id": body.user_id},
         {"$set": {"invite_id": f"i_{uuid.uuid4().hex[:12]}",
@@ -489,6 +531,7 @@ async def invite_to_room(code: str, body: InviteBody, request: Request):
                   "status": "pending",
                   "created_at": datetime.now(timezone.utc).isoformat()}},
         upsert=True)
+    manager.reserve_seat(room["code"], body.user_id, body.seat)
     return {"ok": True}
 
 

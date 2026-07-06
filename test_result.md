@@ -150,3 +150,33 @@ frontend:
 agent_communication:
   - agent: "main"
     message: "Improvement pack of 8 items implemented. MANDATORY: verify the user-reported bidding bug fix (raise over partner's bid). Test with tester1/tester2@belote.tn (Belote123!). Solo games are untimed (no seat timers); use a timed private room (turn_timer:true) or matchmaking game for seat timer checks. WS actions are documented in game_manager.handle_action."
+
+backend:
+  - task: "Pack 2: disconnect auto-pause (reason=disconnect, grace 4s, 120s then bot substitutes), robust rejoin (10min abandon window, auto-resume on reconnect), host leave cancels game for everyone (private+solo, no ELO), GET /api/notifications, room seats model (seats[4], move_seat, seat reservations via invite)"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/game_manager.py, /app/backend/game_logic.py, /app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Self-tested via aiohttp WS scripts: disconnect->paused(reason=disconnect) broadcast, actions rejected while paused, reconnect->auto resumed, host leave->game_cancelled broadcast+cancelled state (private & solo), /games/current null after cancel, notifications aggregation (friend_requests+invites), seats: create(host seat0), move_seat, seat_taken guard, invite with seat->reservation honored on join, non-host seat invite 403, start fills empty seats with bots preserving positions."
+
+frontend:
+  - task: "Pack 2 UI: disconnect pause overlay variant (wifi icon, 'X a perdu la connexion'), cancelled-overlay 'Le créateur a mis fin à la partie', host quit warning, notifications bell + panel (accept/decline friend requests, join/dismiss invites) + tab badges (Accueil=invites, Amis=friend requests), room seat UI (tap free seat: move or host action modal sit/invite-to-seat)"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/app/(tabs)/home.tsx, (tabs)/_layout.tsx, src/context/NotificationsContext.tsx, app/room/[code].tsx, app/game/[id].tsx, src/game/useGameSocket.ts, src/i18n.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Screenshots verified: bell badge count, notifications panel with both sections + quick actions, tab badges (Accueil 1 / Amis 1), room seat grid with 'S'asseoir ici' free seats, host seat-action-modal (sit here / invite here). NOTE: clicking a seat in the first ~1s after room render may act before isHost resolves - waited 2.5s in tests."
+
+agent_communication:
+  - agent: "main"
+    message: "Pack 2 (5 items) implemented on top of pack 1. USER-REPORTED BUG to verify: 'friend quit accidentally and could NOT reconnect' -> verify full rejoin flow E2E: player (non-host) leaves game via WS action leave (or abrupt socket close), /api/games/current returns game, WS reconnect clears left flag + auto-resumes disconnect pause. Also verify host cancel, notifications, seats. tester1/tester2@belote.tn Belote123!."

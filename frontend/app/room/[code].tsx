@@ -51,6 +51,8 @@ export default function RoomScreen() {
   const [room, setRoom] = useState<Room | null>(null);
   const [gone, setGone] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [inviteSeat, setInviteSeat] = useState<number | null>(null);
+  const [seatAction, setSeatAction] = useState<number | null>(null);
   const [friends, setFriends] = useState<Friend[]>([]);
   const [invited, setInvited] = useState<Set<string>>(new Set());
   const [starting, setStarting] = useState(false);
@@ -81,7 +83,8 @@ export default function RoomScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [code]);
 
-  const openInvite = useCallback(async () => {
+  const openInvite = useCallback(async (seat: number | null = null) => {
+    setInviteSeat(seat);
     setInviteOpen(true);
     try {
       const res = await api.get("/friends");
@@ -91,9 +94,28 @@ export default function RoomScreen() {
 
   const inviteFriend = async (friendId: string) => {
     try {
-      await api.post(`/rooms/${code}/invite`, { user_id: friendId });
+      await api.post(`/rooms/${code}/invite`, {
+        user_id: friendId,
+        ...(inviteSeat !== null ? { seat: inviteSeat } : {}),
+      });
       setInvited((prev) => new Set(prev).add(friendId));
     } catch {}
+  };
+
+  const moveSeat = async (seat: number) => {
+    try {
+      const r = await api.post(`/rooms/${code}/seat`, { seat });
+      setRoom(r);
+    } catch {}
+  };
+
+  const onSeatPress = (i: number, occupied: boolean) => {
+    if (occupied || room?.started) return;
+    if (isHost) {
+      setSeatAction(i); // host chooses: sit here, or invite a friend to this seat
+    } else {
+      moveSeat(i);
+    }
   };
 
   const start = async () => {
@@ -120,7 +142,7 @@ export default function RoomScreen() {
     Share.share({ message: `Belote Tunisienne — ${t("roomCode")}: ${code}` }).catch(() => {});
   };
 
-  const seats = [0, 1, 2, 3].map((i) => room?.players[i] ?? null);
+  const seats = room?.seats ?? [null, null, null, null];
 
   return (
     <View style={[styles.container, { paddingTop: insets.top + SP.md }]} testID="room-screen">
@@ -167,7 +189,13 @@ export default function RoomScreen() {
           <Text style={styles.sectionTitle}>{t("players")}</Text>
           <View style={styles.seatsGrid}>
             {seats.map((p, i) => (
-              <View key={i} style={styles.seat} testID={`room-seat-${i}`}>
+              <Pressable
+                key={i}
+                style={[styles.seat, !p && styles.seatFree]}
+                testID={`room-seat-${i}`}
+                onPress={() => onSeatPress(i, !!p)}
+                disabled={!!p}
+              >
                 {p ? (
                   <>
                     <Avatar avatarId={p.avatar_id} size={52} />
@@ -185,9 +213,9 @@ export default function RoomScreen() {
                 ) : (
                   <>
                     <View style={styles.emptySeatCircle}>
-                      <Ionicons name="hardware-chip" size={22} color={C.ink3} />
+                      <Ionicons name="hand-left" size={22} color={C.brand} />
                     </View>
-                    <Text style={styles.emptySeatText}>{t("emptySeat")}</Text>
+                    <Text style={styles.sitHereText}>{t("sitHere")}</Text>
                   </>
                 )}
                 <View
@@ -200,7 +228,7 @@ export default function RoomScreen() {
                     {t("team")} {i % 2 === 0 ? "1" : "2"}
                   </Text>
                 </View>
-              </View>
+              </Pressable>
             ))}
           </View>
           <Text style={styles.botHint}>{t("botSeatHint")}</Text>
@@ -209,7 +237,7 @@ export default function RoomScreen() {
             testID="invite-friends-button"
             label={t("inviteFriends")}
             variant="secondary"
-            onPress={openInvite}
+            onPress={() => openInvite(null)}
             icon={<Ionicons name="person-add" size={18} color={C.ink} />}
             style={{ marginTop: SP.lg }}
           />
@@ -228,11 +256,47 @@ export default function RoomScreen() {
         </ScrollView>
       )}
 
+      <Modal visible={seatAction !== null} transparent animationType="fade">
+        <Pressable style={styles.actionScrim} onPress={() => setSeatAction(null)}>
+          <Pressable style={styles.actionCard} onPress={() => {}} testID="seat-action-modal">
+            <Text style={styles.actionTitle}>
+              {t("team")} {(seatAction ?? 0) % 2 === 0 ? "1" : "2"}
+            </Text>
+            <ChunkyButton
+              testID="seat-sit-button"
+              label={t("sitHere")}
+              small
+              onPress={() => {
+                const s = seatAction;
+                setSeatAction(null);
+                if (s !== null) moveSeat(s);
+              }}
+            />
+            <ChunkyButton
+              testID="seat-invite-button"
+              label={t("inviteHere")}
+              variant="secondary"
+              small
+              onPress={() => {
+                const s = seatAction;
+                setSeatAction(null);
+                openInvite(s);
+              }}
+              style={{ marginTop: SP.sm }}
+            />
+          </Pressable>
+        </Pressable>
+      </Modal>
+
       <Modal visible={inviteOpen} transparent animationType="slide">
         <Pressable style={styles.modalScrim} onPress={() => setInviteOpen(false)}>
           <Pressable style={styles.modalSheet} onPress={() => {}}>
             <View style={styles.sheetHandle} />
-            <Text style={styles.modalTitle}>{t("inviteFriends")}</Text>
+            <Text style={styles.modalTitle}>
+              {inviteSeat !== null
+                ? t("inviteToSeat", { n: inviteSeat + 1 })
+                : t("inviteFriends")}
+            </Text>
             <ScrollView style={{ maxHeight: 340 }}>
               {friends.length === 0 && (
                 <Text style={styles.noFriends}>{t("noFriendsYet")}</Text>
@@ -340,6 +404,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: SP.lg,
   },
+  seatFree: {
+    borderStyle: "dashed",
+    borderColor: C.brand3,
+    backgroundColor: "#FDF7EE",
+  },
+  sitHereText: { fontFamily: F.bold, fontSize: 12.5, color: C.brand, marginTop: SP.sm },
   seatName: { fontFamily: F.bold, fontSize: 14, color: C.ink, marginTop: SP.sm },
   hostBadge: {
     flexDirection: "row",
@@ -358,7 +428,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  emptySeatText: { fontFamily: F.text, fontSize: 12, color: C.ink3, marginTop: SP.sm },
   teamTag: {
     borderRadius: R.pill,
     paddingHorizontal: SP.sm,
@@ -381,6 +450,27 @@ const styles = StyleSheet.create({
     marginTop: SP.xl,
   },
   modalScrim: { flex: 1, backgroundColor: C.scrim, justifyContent: "flex-end" },
+  actionScrim: {
+    flex: 1,
+    backgroundColor: C.scrim,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: SP.xl,
+  },
+  actionCard: {
+    width: "100%",
+    maxWidth: 340,
+    backgroundColor: C.bg,
+    borderRadius: R.lg,
+    padding: SP.xl,
+  },
+  actionTitle: {
+    fontFamily: F.display,
+    fontSize: 18,
+    color: C.ink,
+    textAlign: "center",
+    marginBottom: SP.lg,
+  },
   modalSheet: {
     backgroundColor: C.bg,
     borderTopLeftRadius: R.lg,

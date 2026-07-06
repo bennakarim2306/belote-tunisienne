@@ -3,15 +3,17 @@ import { Redirect, Tabs } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useAuth } from "@/src/context/AuthContext";
+import {
+  NotificationsProvider,
+  useNotifications,
+} from "@/src/context/NotificationsContext";
 import { useI18n } from "@/src/i18n";
 import { C, F } from "@/src/theme";
 
-export default function TabsLayout() {
-  const { user, loading } = useAuth();
+function TabsInner() {
   const { t } = useI18n();
   const insets = useSafeAreaInsets();
-
-  if (!loading && !user) return <Redirect href="/auth" />;
+  const { friendRequests, invites } = useNotifications();
 
   return (
     <Tabs
@@ -28,12 +30,19 @@ export default function TabsLayout() {
           paddingBottom: Math.max(insets.bottom, 8),
         },
         tabBarLabelStyle: { fontFamily: F.bold, fontSize: 11 },
+        tabBarBadgeStyle: {
+          backgroundColor: C.brand,
+          color: C.onBrand,
+          fontFamily: F.bold,
+          fontSize: 10,
+        },
       }}
     >
       <Tabs.Screen
         name="home"
         options={{
           title: t("tabHome"),
+          tabBarBadge: invites.length > 0 ? invites.length : undefined,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="home" size={size} color={color} />
           ),
@@ -52,6 +61,7 @@ export default function TabsLayout() {
         name="friends"
         options={{
           title: t("tabFriends"),
+          tabBarBadge: friendRequests.length > 0 ? friendRequests.length : undefined,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="people" size={size} color={color} />
           ),
@@ -67,5 +77,17 @@ export default function TabsLayout() {
         }}
       />
     </Tabs>
+  );
+}
+
+export default function TabsLayout() {
+  const { user, loading } = useAuth();
+
+  if (!loading && !user) return <Redirect href="/auth" />;
+
+  return (
+    <NotificationsProvider>
+      <TabsInner />
+    </NotificationsProvider>
   );
 }

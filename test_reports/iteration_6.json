@@ -1,0 +1,48 @@
+{
+  "summary": "Improvement Pack 2 (5 items) verified. Backend: 6/6 new pytest cases pass in test_pack2_rejoin_notifications_seats.py — (1) P0 non-host rejoin flow: tester2 sends {action:'leave'} + closes socket → tester1 receives 'left' event and GET /api/games/current returns the game_id for tester2; tester2 reconnects → 'rejoined' event broadcast to host, initial state delivered. (2) Disconnect auto-pause: tester2 socket dropped abruptly (no leave) → host receives 'paused' event within ~5s with state.paused={seat, until~+120s, reason:'disconnect'}; host action during pause returns error 'paused'; tester2 reconnects → 'resumed' event, paused cleared. (3) Host cancel private room: tester1 (host) {action:'leave'} → both sockets receive 'game_cancelled' with state.phase='finished', cancelled=true, winner_team=null, no ELO change for either player, games/current no longer returns this game_id. (4) Host cancel solo: same behaviour, no ELO/stats change. (5) GET /api/notifications: fresh user friend-requests + invites tester1 → both listed with friendship_id/username/avatar_id and room-code entries. (6) Private room seats: initial seats[0]=host with 1..3=null; move host to seat 3; moving host onto tester2's seat → 400 seat_taken; non-host invite with {seat:2} → 403; host invite {seat:1} reserves and invitee lands on seat 1 on join; start_room game.players match seat positions with bots filling seats 0+2. Frontend (Expo web, 390x844): logged in as tester1, notifications-bell renders with notifications-badge showing '3' (=2 friend requests + 1 invite); tapping opens notifications-panel with 'Invitations de partie' + 'Demandes d\\'amis' sections and Rejoindre/Accepter buttons; native tab badges visible on Accueil (=1 invite) and Amis (=2 friend requests) tabs (react-navigation renders these without our testID, verified visually). Room seats: Créer une partie → 'Partie courte' → salon privé renders with 4 seats, host at seat 0. After 3s wait, tapping room-seat-1 opens seat-action-modal titled 'Équipe 2' with seat-sit-button ('S'asseoir ici') and seat-invite-button ('Inviter un ami ici'); tapping seat-sit-button moves host — seat card shows 'Tester1 (Toi) · Hôte · Équipe 1'. Rejoin banner, quit-warning host copy, cancelled-overlay UI not driven end-to-end via UI within this session (backend fully covers) — testIDs (resume-game-banner, resume-game-button, cancelled-overlay, cancelled-home-button, quit-game-button, quit-confirm-button) all present in code.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_pack2_rejoin_notifications_seats.py",
+    "/app/test_reports/pytest/pytest_pack2.xml",
+    "/tmp/p2_panel.jpg",
+    "/tmp/p2_home_full.jpg",
+    "/tmp/p2_create_sheet.jpg",
+    "/tmp/p2_room.jpg",
+    "/tmp/p2_seat_modal.jpg",
+    "/tmp/p2_after_sit.jpg"
+  ],
+  "action_items": [
+    "Optional: expose testIDs on the react-navigation tab badges (tab-badge-home, tab-badge-friends) for automated assertions. Currently RN's built-in tabBarBadge in (tabs)/_layout.tsx renders the numeric bubble without a custom testID so playwright cannot query them by testID (they are visible to the user and verified visually).",
+    "Frontend end-to-end scenarios not driven by scripts this session (backend already covers): resume-game-banner poll after quitting a private-room game as non-host, cancelled-overlay + cancelled-home-button when the host cancels while the other player is still in the game screen, and quit-dialog host warning copy 'Tu es le créateur : quitter mettra fin à la partie pour tout le monde.' Recommend a multi-context playwright scenario for future coverage.",
+    "Regression smoke of pack-1 features (hand-continue-button, score-history-modal) not re-driven this iteration — last iteration (5) covered them and nothing in this pack touches their code paths."
+  ],
+  "critical_code_review_comments": [
+    "game_manager.connect() correctly clears players[seat].left AND auto-resumes when reason=='disconnect' and paused seat matches the reconnecting user (lines 92-101). Both 'rejoined' and 'resumed' events broadcast atomically.",
+    "game_manager.disconnect + _handle_disconnect implements DISCONNECT_GRACE=4s then pause with DISCONNECT_PAUSE_SECONDS=120s. Correctly checks user_id not back in sockets before firing (lines 129-145).",
+    "game_manager.handle_action leave branch: host_user_id check triggers game_cancelled with phase=finished, cancelled=True, paused=None, pause_req=None (lines 213-222). Non-host branch sets players[seat].left=True. Solo host is treated identically since create_game passes host_user_id=user['user_id']. Correct.",
+    "server.py /api/notifications aggregates pending friend_requests + pending invites, filters out invites whose room is no longer open (lines 373-393). Structure matches the spec: friend_requests contain friendship_id/username/avatar_id.",
+    "server.py invite endpoint: if body.seat is not None and host_id != user, returns 403 not_host (line 522-523). Correct.",
+    "GameManager.join_room honours the seat reservation and pops it after use (lines 571-573).",
+    "GameManager.move_seat rejects taken seats with ValueError('seat_taken') → mapped to 400 by the route (line 588). Correct.",
+    "start_room copies room['seats'] into game player list at the same indices, filling gaps with bots — order-preserving as required (lines 616-624).",
+    "(tabs)/_layout.tsx: NotificationsProvider wraps TabsInner, and tabBarBadge is derived from invites.length / friendRequests.length. Correct wiring; native tab badges render without custom testID however."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_pack2_rejoin_notifications_seats.py (created)"
+  ],
+  "success_rate": {
+    "backend": "100% (6/6 new tests pass; pack1 + earlier suites not re-run this iteration per instructions)",
+    "frontend": "100% for testable flows this session — notifications bell/badge/panel, tab badges visible, room-seat-1 modal + sit action all work; end-to-end rejoin banner + cancelled overlay flows rely on backend contracts (fully green)"
+  },
+  "seed_data_creation": "Tests create throwaway users pack2_<hex>@belote.tn / Belote123! for friend-request notification and non-host invite scenarios. Test also seeded a pending friend-request + game invite from a fresh user 'seed0aceb' to tester1 via manual REST calls for the frontend smoke test.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Backend WS URL: wss://card-table-orient.preview.emergentagent.com/api/ws/game/{id}?token=... (browser UA required at ingress). Note: session-scoped tester1/tester2 fixtures accumulate live games between tests — added _cancel_current_game() helper that loops up to 6 times cancelling every game where tester1 is currently seated before host-cancel tests, otherwise games/current returns a leftover game_id and fails the assertion. Assertions in host-cancel tests now check that the CANCELLED game_id specifically is no longer returned by /api/games/current (rather than expecting exactly None) to survive leaked state from prior tests. Frontend testIDs verified this iteration: notifications-bell, notifications-badge, notifications-panel, room-seat-{0..3}, seat-action-modal, seat-sit-button, seat-invite-button. Not verified via UI (but present in code): resume-game-banner, resume-game-button, cancelled-overlay, cancelled-home-button, quit-game-button, quit-confirm-button.",
+  "rca_of_issue": "Original user report — 'a friend accidentally quit a game and could not reconnect' — root cause was the WebSocket handler treating a disconnect as a permanent seat abandonment. Fix (verified): GameManager.connect() now (a) resets players[seat].left=False on any reconnect and (b) auto-resumes a disconnect-pause when the paused seat's owner reconnects, both under the live game's asyncio.Lock and both broadcast to peers. GET /api/games/current lets the client rehydrate the game_id after WS drop so the user can navigate back. Frontend home shows resume-game-banner from /api/games/current polling. Home banner + WS reclaim path together close the loop end-to-end. Backend contract now covered by test_rejoin_non_host_via_ws + test_disconnect_auto_pause_and_resume."
+}

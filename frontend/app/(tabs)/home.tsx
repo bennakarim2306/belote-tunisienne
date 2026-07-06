@@ -17,15 +17,12 @@ import { api, ApiError } from "@/src/api";
 import Avatar from "@/src/components/Avatar";
 import ChunkyButton from "@/src/components/ChunkyButton";
 import { useAuth } from "@/src/context/AuthContext";
+import {
+  InviteNotif,
+  useNotifications,
+} from "@/src/context/NotificationsContext";
 import { useI18n } from "@/src/i18n";
 import { C, F, R, SP, shadow } from "@/src/theme";
-
-interface Invite {
-  invite_id: string;
-  room_code: string;
-  match_type: string;
-  from_user: { username: string; avatar_id: string };
-}
 
 interface CurrentGame {
   game_id: string;
@@ -39,24 +36,22 @@ export default function HomeScreen() {
   const router = useRouter();
   const { user, refreshUser } = useAuth();
   const { t } = useI18n();
+  const { invites, friendRequests, refresh } = useNotifications();
 
   const [typeModal, setTypeModal] = useState<null | "online" | "create" | "solo">(null);
   const [timerOn, setTimerOn] = useState(false);
   const [joinCode, setJoinCode] = useState("");
   const [joinError, setJoinError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [invites, setInvites] = useState<Invite[]>([]);
+  const [notifOpen, setNotifOpen] = useState(false);
   const [currentGame, setCurrentGame] = useState<CurrentGame | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useFocusEffect(
     useCallback(() => {
       refreshUser();
+      refresh();
       const poll = async () => {
-        try {
-          const res = await api.get("/invites/pending");
-          setInvites(res.invites);
-        } catch {}
         try {
           const cur = await api.get("/games/current");
           setCurrentGame(cur.game_id ? cur : null);
@@ -124,21 +119,29 @@ export default function HomeScreen() {
     }
   };
 
-  const acceptInvite = async (inv: Invite) => {
+  const acceptInvite = async (inv: InviteNotif) => {
     try {
       await api.post(`/rooms/${inv.room_code}/join`);
       await api.post(`/invites/${inv.invite_id}/dismiss`);
+      refresh();
       router.push({ pathname: "/room/[code]", params: { code: inv.room_code } });
     } catch {
       await api.post(`/invites/${inv.invite_id}/dismiss`).catch(() => {});
-      setInvites((prev) => prev.filter((i) => i.invite_id !== inv.invite_id));
+      refresh();
     }
   };
 
-  const dismissInvite = async (inv: Invite) => {
-    setInvites((prev) => prev.filter((i) => i.invite_id !== inv.invite_id));
+  const dismissInvite = async (inv: InviteNotif) => {
     await api.post(`/invites/${inv.invite_id}/dismiss`).catch(() => {});
+    refresh();
   };
+
+  const respondFriend = async (friendshipId: string, accept: boolean) => {
+    await api.post("/friends/respond", { friendship_id: friendshipId, accept }).catch(() => {});
+    refresh();
+  };
+
+  const notifCount = invites.length + friendRequests.length;
 
   return (
     <View style={styles.container} testID="home-screen">
@@ -155,6 +158,19 @@ export default function HomeScreen() {
             <Ionicons name="flame" size={14} color={C.gold} />
             <Text style={styles.eloText}>{user?.elo ?? 1000}</Text>
           </View>
+          <Pressable
+            testID="notifications-bell"
+            onPress={() => setNotifOpen(true)}
+            hitSlop={8}
+            style={styles.bellBtn}
+          >
+            <Ionicons name="notifications" size={20} color={C.ink2} />
+            {notifCount > 0 && (
+              <View style={styles.bellBadge} testID="notifications-badge">
+                <Text style={styles.bellBadgeText}>{notifCount}</Text>
+              </View>
+            )}
+          </Pressable>
         </View>
       </View>
 
@@ -290,6 +306,79 @@ export default function HomeScreen() {
         </Animated.View>
       </ScrollView>
 
+      <Modal visible={notifOpen} transparent animationType="slide">
+        <Pressable style={styles.modalScrim} onPress={() => setNotifOpen(false)}>
+          <Pressable style={styles.modalSheet} onPress={() => {}} testID="notifications-panel">
+            <View style={styles.sheetHandle} />
+            <Text style={styles.modalTitle}>{t("notifications")}</Text>
+            <ScrollView style={{ maxHeight: 420 }}>
+              {notifCount === 0 && (
+                <Text style={styles.notifEmpty}>{t("noNotifications")}</Text>
+              )}
+              {invites.length > 0 && (
+                <Text style={styles.notifSection}>{t("invitesSection")}</Text>
+              )}
+              {invites.map((inv) => (
+                <View key={inv.invite_id} style={styles.notifRow} testID={`notif-invite-${inv.room_code}`}>
+                  <Avatar avatarId={inv.from_user.avatar_id} size={38} />
+                  <Text style={styles.notifText} numberOfLines={2}>
+                    {t("invitedYou", { name: inv.from_user.username })}
+                  </Text>
+                  <Pressable
+                    testID={`notif-invite-join-${inv.room_code}`}
+                    onPress={() => {
+                      setNotifOpen(false);
+                      acceptInvite(inv);
+                    }}
+                    style={styles.notifPrimary}
+                  >
+                    <Text style={styles.notifPrimaryText}>{t("join")}</Text>
+                  </Pressable>
+                  <Pressable
+                    testID={`notif-invite-dismiss-${inv.room_code}`}
+                    onPress={() => dismissInvite(inv)}
+                    hitSlop={8}
+                  >
+                    <Ionicons name="close" size={20} color={C.ink3} />
+                  </Pressable>
+                </View>
+              ))}
+              {friendRequests.length > 0 && (
+                <Text style={styles.notifSection}>{t("friendRequestsSection")}</Text>
+              )}
+              {friendRequests.map((fr) => (
+                <View key={fr.friendship_id} style={styles.notifRow} testID={`notif-friend-${fr.username}`}>
+                  <Avatar avatarId={fr.avatar_id} size={38} />
+                  <Text style={styles.notifText} numberOfLines={2}>
+                    {t("friendAsks", { name: fr.username })}
+                  </Text>
+                  <Pressable
+                    testID={`notif-friend-accept-${fr.username}`}
+                    onPress={() => respondFriend(fr.friendship_id, true)}
+                    style={styles.notifPrimary}
+                  >
+                    <Text style={styles.notifPrimaryText}>{t("accept")}</Text>
+                  </Pressable>
+                  <Pressable
+                    testID={`notif-friend-decline-${fr.username}`}
+                    onPress={() => respondFriend(fr.friendship_id, false)}
+                    hitSlop={8}
+                  >
+                    <Ionicons name="close" size={20} color={C.ink3} />
+                  </Pressable>
+                </View>
+              ))}
+            </ScrollView>
+            <ChunkyButton
+              label={t("close")}
+              variant="secondary"
+              onPress={() => setNotifOpen(false)}
+              style={{ marginTop: SP.md }}
+            />
+          </Pressable>
+        </Pressable>
+      </Modal>
+
       <Modal visible={typeModal !== null} transparent animationType="fade">
         <Pressable style={styles.modalScrim} onPress={() => setTypeModal(null)}>
           <Pressable style={styles.modalSheet} onPress={() => {}}>
@@ -370,6 +459,61 @@ const styles = StyleSheet.create({
     borderColor: C.border,
   },
   eloText: { fontFamily: F.extra, fontSize: 15, color: C.ink },
+  bellBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: C.bg2,
+    borderWidth: 1,
+    borderColor: C.border,
+    alignItems: "center",
+    justifyContent: "center",
+    marginLeft: SP.sm,
+  },
+  bellBadge: {
+    position: "absolute",
+    top: -4,
+    right: -4,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: C.brand,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 4,
+  },
+  bellBadgeText: { fontFamily: F.extra, fontSize: 10.5, color: C.onBrand },
+  notifSection: {
+    fontFamily: F.display,
+    fontSize: 14,
+    color: C.ink2,
+    marginTop: SP.md,
+    marginBottom: SP.xs,
+  },
+  notifEmpty: {
+    fontFamily: F.text,
+    fontSize: 13,
+    color: C.ink3,
+    textAlign: "center",
+    paddingVertical: SP.xl,
+  },
+  notifRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: SP.sm,
+    paddingVertical: SP.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: C.border,
+  },
+  notifText: { flex: 1, fontFamily: F.bold, fontSize: 13, color: C.ink },
+  notifPrimary: {
+    backgroundColor: C.brand,
+    borderRadius: R.pill,
+    paddingHorizontal: SP.md,
+    height: 34,
+    justifyContent: "center",
+  },
+  notifPrimaryText: { fontFamily: F.display, fontSize: 12.5, color: C.onBrand },
   inviteBanner: {
     flexDirection: "row",
     alignItems: "center",

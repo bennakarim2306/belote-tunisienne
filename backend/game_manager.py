@@ -17,6 +17,9 @@ BOT_NAMES = ["Ammar", "Salah", "Hédi", "Mabrouk", "Fatma", "Zohra",
 AVATAR_IDS = [f"av{i}" for i in range(1, 13)]
 QUEUE_STALE_SECONDS = 12
 ELO_K = 32
+DISCONNECT_GRACE = 4          # seconds before a lost socket triggers the auto-pause
+DISCONNECT_PAUSE_SECONDS = 120  # network pause: bot substitutes after 2 min
+ABANDONED_CLEANUP_SECONDS = 600  # rejoin window when nobody is connected
 
 
 def elo_window(waited_seconds):
@@ -62,7 +65,8 @@ class GameManager:
 
     # ================= games =================
 
-    def create_game(self, humans, match_type, shuffle=True, ranked=True, turn_timeout=30):
+    def create_game(self, humans, match_type, shuffle=True, ranked=True, turn_timeout=30,
+                    host_user_id=None):
         players = list(humans)
         bots = make_bots(4 - len(players), {p["username"] for p in players})
         players += bots
@@ -71,6 +75,7 @@ class GameManager:
         game_id = f"g_{uuid.uuid4().hex[:12]}"
         game = gl.BeloteGame(game_id, players, match_type, turn_timeout=turn_timeout)
         game.ranked = ranked
+        game.host_user_id = host_user_id
         live = LiveGame(game)
         self.games[game_id] = live
         self.schedule(live)
@@ -83,13 +88,21 @@ class GameManager:
         live.sockets.setdefault(user_id, set()).add(ws)
         seat = live.game.seat_of(user_id)
         rejoined = False
+        resumed = None
         async with live.lock:
-            if seat is not None and live.game.players[seat].get("left"):
-                live.game.players[seat]["left"] = False
+            g = live.game
+            if seat is not None and g.players[seat].get("left"):
+                g.players[seat]["left"] = False
                 rejoined = True
+            # the player whose network drop paused the game is back: resume now
+            if (seat is not None and g.paused
+                    and g.paused.get("reason") == "disconnect"
+                    and g.paused["seat"] == seat):
+                resumed = g.resume(None)
         await self._send(ws, live.game.state_for(seat), [])
-        if rejoined:
-            await self.broadcast(live, [{"e": "rejoined", "seat": seat}])
+        events = ([{"e": "rejoined", "seat": seat}] if rejoined else []) + (resumed or [])
+        if events:
+            await self.broadcast(live, events)
             self.schedule(live)
         return live
 
@@ -102,11 +115,37 @@ class GameManager:
             conns.discard(ws)
             if not conns:
                 live.sockets.pop(user_id, None)
-        if not live.sockets and live.game.phase != "finished":
+        g = live.game
+        if g.phase == "finished":
+            return
+        seat = g.seat_of(user_id)
+        if (seat is not None and user_id not in live.sockets
+                and not g.players[seat].get("left") and live.sockets):
+            # a seated human dropped while others are still connected
+            asyncio.create_task(self._handle_disconnect(game_id, user_id))
+        if not live.sockets:
             asyncio.create_task(self._cleanup_if_abandoned(game_id))
 
+    async def _handle_disconnect(self, game_id, user_id):
+        """After a short grace period, pause the game and tell the other players."""
+        await asyncio.sleep(DISCONNECT_GRACE)
+        live = self.games.get(game_id)
+        if not live or user_id in live.sockets or not live.sockets:
+            return
+        g = live.game
+        seat = g.seat_of(user_id)
+        if seat is None or g.players[seat].get("left"):
+            return
+        async with live.lock:
+            if (user_id in live.sockets or g.paused
+                    or g.phase not in ("bidding", "playing", "surcontre")):
+                return
+            events = g.pause_disconnect(seat, DISCONNECT_PAUSE_SECONDS)
+            await self.broadcast(live, events)
+        self.schedule(live)
+
     async def _cleanup_if_abandoned(self, game_id):
-        await asyncio.sleep(180)
+        await asyncio.sleep(ABANDONED_CLEANUP_SECONDS)
         live = self.games.get(game_id)
         if live and not live.sockets:
             if live.pending_task and not live.pending_task.done():
@@ -171,14 +210,28 @@ class GameManager:
                 elif action == "resume":
                     events = g.resume(seat)
                 elif action == "leave":
-                    g.players[seat]["left"] = True
-                    events = [{"e": "left", "seat": seat}]
+                    if g.host_user_id == user_id and g.phase != "finished":
+                        # the creator ends the game for everyone (no ELO impact)
+                        g.phase = "finished"
+                        g.match_over = True
+                        g.cancelled = True
+                        g.paused = None
+                        g.pause_req = None
+                        g.version += 1
+                        events = [{"e": "game_cancelled", "seat": seat}]
+                        asyncio.create_task(self._delayed_remove(g.game_id, 60))
+                    else:
+                        g.players[seat]["left"] = True
+                        events = [{"e": "left", "seat": seat}]
                 else:
                     return
                 await self.broadcast(live, events)
                 if action == "ready" and g.phase == "hand_end":
+                    # only connected humans are required (a dropped player
+                    # must not block the table for 2 minutes)
                     required = [p["seat"] for p in g.players
-                                if not p["is_bot"] and not p.get("left")]
+                                if not p["is_bot"] and not p.get("left")
+                                and p["user_id"] in live.sockets]
                     if required and all(s in g.ready_seats for s in required):
                         await self._advance_hand_end(live)
             self.schedule(live)
@@ -219,7 +272,15 @@ class GameManager:
                 async with live.lock:
                     if g.version != version or not g.paused:
                         return
+                    expired = dict(g.paused)
                     events = g.resume(None)
+                    if expired.get("reason") == "disconnect":
+                        s = expired["seat"]
+                        uid = g.players[s]["user_id"]
+                        if uid not in live.sockets and not g.players[s].get("left"):
+                            # still offline after the pause: a bot takes over
+                            g.players[s]["left"] = True
+                            events.append({"e": "left", "seat": s})
                     await self.broadcast(live, events)
                 self.schedule(live)
                 return
@@ -487,7 +548,8 @@ class GameManager:
         while code in self.rooms:
             code = room_code()
         self.rooms[code] = {"code": code, "host_id": host_player["user_id"],
-                            "players": [host_player], "match_type": match_type,
+                            "seats": [host_player, None, None, None],
+                            "reservations": {}, "match_type": match_type,
                             "turn_timer": bool(turn_timer),
                             "started": False, "game_id": None, "created": time.time()}
         return self.rooms[code]
@@ -501,19 +563,46 @@ class GameManager:
             raise ValueError("room_not_found")
         if room["started"]:
             raise ValueError("room_started")
-        if any(p["user_id"] == player["user_id"] for p in room["players"]):
+        if any(p and p["user_id"] == player["user_id"] for p in room["seats"]):
             return room
-        if len(room["players"]) >= 4:
+        free = [i for i, p in enumerate(room["seats"]) if p is None]
+        if not free:
             raise ValueError("room_full")
-        room["players"].append(player)
+        wanted = room["reservations"].pop(player["user_id"], None)
+        seat = wanted if wanted in free else free[0]
+        room["seats"][seat] = player
         return room
+
+    def move_seat(self, code, user_id, seat):
+        room = self.get_room(code)
+        if not room:
+            raise ValueError("room_not_found")
+        if room["started"]:
+            raise ValueError("room_started")
+        cur = next((i for i, p in enumerate(room["seats"])
+                    if p and p["user_id"] == user_id), None)
+        if cur is None:
+            raise ValueError("not_in_room")
+        if seat == cur:
+            return room
+        if room["seats"][seat] is not None:
+            raise ValueError("seat_taken")
+        room["seats"][seat] = room["seats"][cur]
+        room["seats"][cur] = None
+        return room
+
+    def reserve_seat(self, code, user_id, seat):
+        room = self.get_room(code)
+        if room is not None and seat is not None:
+            room["reservations"][user_id] = seat
 
     def leave_room(self, code, user_id):
         room = self.get_room(code)
         if not room:
             return
-        room["players"] = [p for p in room["players"] if p["user_id"] != user_id]
-        if not room["players"] or (room["host_id"] == user_id and not room["started"]):
+        room["seats"] = [None if (p and p["user_id"] == user_id) else p
+                         for p in room["seats"]]
+        if not any(room["seats"]) or (room["host_id"] == user_id and not room["started"]):
             self.rooms.pop(room["code"], None)
 
     def start_room(self, code, user_id):
@@ -524,8 +613,17 @@ class GameManager:
             raise ValueError("not_host")
         if room["started"]:
             return room["game_id"]
-        game_id = self.create_game(room["players"], room["match_type"], shuffle=False,
-                                   turn_timeout=30 if room.get("turn_timer") else None)
+        humans = [p for p in room["seats"] if p]
+        bots = make_bots(4 - len(humans), {p["username"] for p in humans})
+        seats = list(room["seats"])
+        bi = 0
+        for i in range(4):
+            if seats[i] is None:
+                seats[i] = bots[bi]
+                bi += 1
+        game_id = self.create_game(seats, room["match_type"], shuffle=False,
+                                   turn_timeout=30 if room.get("turn_timer") else None,
+                                   host_user_id=room["host_id"])
         room["started"] = True
         room["game_id"] = game_id
         asyncio.create_task(self._delayed_remove_room(room["code"], 300))

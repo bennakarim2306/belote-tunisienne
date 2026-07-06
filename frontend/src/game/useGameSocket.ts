@@ -82,9 +82,11 @@ export interface GameState {
   ready_seats: number[];
   hand_history: HandHistoryEntry[];
   pause_req: { seat: number; required: number[]; accepts: number[] } | null;
-  paused: { seat: number; until: number } | null;
+  paused: { seat: number; until: number; reason?: "request" | "disconnect" } | null;
   match_over: boolean;
   winner_team: number | null;
+  cancelled: boolean;
+  host_user_id: string | null;
   turn_deadline: number;
   turn_timeout: number | null;
   elo_changes: Record<string, number> | null;

@@ -112,6 +112,8 @@ class BeloteGame:
         self.phase = "bidding"
         self.match_over = False
         self.winner_team = None
+        self.cancelled = False
+        self.host_user_id = None  # set for private/solo games: their creator
         self.elo_changes = None
         self.seat_stats = {s: {"contracts_taken": 0, "contracts_made": 0,
                                "belotes": 0, "capots": 0} for s in range(4)}
@@ -465,10 +467,23 @@ class BeloteGame:
         if self.turn_timeout and self.turn_deadline:
             remaining = max(3.0, self.turn_deadline - time.time())
         self.paused = {"seat": seat, "until": time.time() + PAUSE_MAX_SECONDS,
-                       "remaining": remaining}
+                       "remaining": remaining, "reason": "request"}
         self.pause_req = None
         self.version += 1
-        return [{"e": "paused", "seat": seat}]
+        return [{"e": "paused", "seat": seat, "reason": "request"}]
+
+    def pause_disconnect(self, seat, duration):
+        """Auto-pause because a player lost their network connection."""
+        if self.paused:
+            raise ValueError("already_paused")
+        remaining = None
+        if self.turn_timeout and self.turn_deadline:
+            remaining = max(3.0, self.turn_deadline - time.time())
+        self.pause_req = None
+        self.paused = {"seat": seat, "until": time.time() + duration,
+                       "remaining": remaining, "reason": "disconnect"}
+        self.version += 1
+        return [{"e": "paused", "seat": seat, "reason": "disconnect"}]
 
     def resume(self, seat=None):
         """seat=None → auto-resume by the server; otherwise requester only."""
@@ -531,10 +546,13 @@ class BeloteGame:
             "ready_seats": self.ready_seats,
             "hand_history": self.hand_history,
             "pause_req": self.pause_req,
-            "paused": ({"seat": self.paused["seat"], "until": self.paused["until"]}
+            "paused": ({"seat": self.paused["seat"], "until": self.paused["until"],
+                        "reason": self.paused.get("reason", "request")}
                        if self.paused else None),
             "match_over": self.match_over,
             "winner_team": self.winner_team,
+            "cancelled": self.cancelled,
+            "host_user_id": self.host_user_id,
             "turn_deadline": self.turn_deadline,
             "turn_timeout": self.turn_timeout,
             "elo_changes": self.elo_changes,
