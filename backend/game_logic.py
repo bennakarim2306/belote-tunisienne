@@ -96,11 +96,12 @@ def legal_moves(hand, trick, trump):
 class BeloteGame:
     """Authoritative state machine for one match (multiple hands to target score)."""
 
-    def __init__(self, game_id, players, match_type):
+    def __init__(self, game_id, players, match_type, turn_timeout=30):
         # players: list of 4 dicts {user_id, username, avatar_id, is_bot, elo}, index == seat
         self.game_id = game_id
         self.players = [dict(p, seat=i, left=False) for i, p in enumerate(players)]
         self.match_type = match_type
+        self.turn_timeout = turn_timeout  # seconds per move, None = unlimited
         self.target = 1000 if match_type == "short" else 2000
         self.match_scores = [0, 0]
         self.hand_number = 0
@@ -117,6 +118,12 @@ class BeloteGame:
         self._deal(rotate=False)
 
     # ---------- setup ----------
+
+    def _turn_deadline_ts(self, extra=0.0):
+        if not self.turn_timeout:
+            return 0.0
+        return time.time() + extra + self.turn_timeout
+
 
     def _deal(self, rotate=True):
         if rotate:
@@ -142,7 +149,7 @@ class BeloteGame:
         self.belote_played = 0
         self.hand_result = None
         self.pause_until = 0.0
-        self.turn_deadline = time.time() + TURN_SECONDS
+        self.turn_deadline = self._turn_deadline_ts()
         self.version += 1
 
     def seat_of(self, user_id):
@@ -166,7 +173,7 @@ class BeloteGame:
         self.bids.append({"seat": seat, "type": "bid", "value": value, "suit": suit})
         self.pass_count = 0
         self.turn = (seat + 1) % 4
-        self.turn_deadline = time.time() + TURN_SECONDS
+        self.turn_deadline = self._turn_deadline_ts()
         self.version += 1
         return [{"e": "bid", "seat": seat, "value": value, "suit": suit}]
 
@@ -188,7 +195,7 @@ class BeloteGame:
             events += self._start_playing()
             return events
         self.turn = (seat + 1) % 4
-        self.turn_deadline = time.time() + TURN_SECONDS
+        self.turn_deadline = self._turn_deadline_ts()
         return events
 
     def apply_capot(self, seat, suit):
@@ -220,7 +227,7 @@ class BeloteGame:
         self.bids.append({"seat": seat, "type": "contre"})
         self.phase = "surcontre"
         self.turn = None
-        self.turn_deadline = time.time() + SURCONTRE_SECONDS
+        self.turn_deadline = (time.time() + SURCONTRE_SECONDS) if self.turn_timeout else 0.0
         self.version += 1
         return [{"e": "contre", "seat": seat}]
 
@@ -248,7 +255,7 @@ class BeloteGame:
         self.phase = "playing"
         self.trump = self.current_bid["suit"]
         self.turn = (self.dealer + 1) % 4
-        self.turn_deadline = time.time() + TURN_SECONDS
+        self.turn_deadline = self._turn_deadline_ts()
         # detect Belote-Rebelote holder (K + Q of trump in one hand)
         for s in range(4):
             if ("K" + self.trump) in self.hands[s] and ("Q" + self.trump) in self.hands[s]:
@@ -295,10 +302,10 @@ class BeloteGame:
             else:
                 self.turn = winner
                 self.pause_until = time.time() + TRICK_PAUSE
-                self.turn_deadline = self.pause_until + TURN_SECONDS
+                self.turn_deadline = self._turn_deadline_ts(extra=TRICK_PAUSE)
         else:
             self.turn = (seat + 1) % 4
-            self.turn_deadline = time.time() + TURN_SECONDS
+            self.turn_deadline = self._turn_deadline_ts()
         return events
 
     # ---------- scoring ----------
@@ -433,5 +440,6 @@ class BeloteGame:
             "match_over": self.match_over,
             "winner_team": self.winner_team,
             "turn_deadline": self.turn_deadline,
+            "turn_timeout": self.turn_timeout,
             "elo_changes": self.elo_changes,
         }

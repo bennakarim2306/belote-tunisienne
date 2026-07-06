@@ -17,6 +17,14 @@ export const SUIT_COLOR: Record<string, string> = {
   D: "#C0392B",
 };
 
+// Brighter variants for dark surfaces (felt table, dark chips) so ♥/♦ stay visible
+export const SUIT_COLOR_ON_DARK: Record<string, string> = {
+  S: "#FFFFFF",
+  C: "#FFFFFF",
+  H: "#FF7A66",
+  D: "#FF7A66",
+};
+
 const RANK_LABEL: Record<string, string> = {
   J: "V",
   Q: "D",

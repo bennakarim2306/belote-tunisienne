@@ -7,14 +7,15 @@ import { TrickCard } from "@/src/game/useGameSocket";
 
 const CARD_W = 56;
 
-// rel position offsets: 0 = me (bottom), 1 = right, 2 = top (partner), 3 = left
+// rel position offsets — CLOCKWISE play direction on screen:
+// 0 = me (bottom), 1 = next player (LEFT), 2 = partner (top), 3 = previous (RIGHT)
 const OFFSETS = [
   { x: 0, y: 42 },
-  { x: 58, y: 0 },
-  { x: 0, y: -42 },
   { x: -58, y: 0 },
+  { x: 0, y: -42 },
+  { x: 58, y: 0 },
 ];
-const ROTATIONS = ["-2deg", "7deg", "3deg", "-7deg"];
+const ROTATIONS = ["-2deg", "-7deg", "3deg", "7deg"];
 
 const makeEnter = (dx: number, dy: number) => {
   return (values: {
@@ -58,16 +59,16 @@ const makeExit = (dx: number, dy: number) => {
 // entering from each rel direction (card flies in from the player's seat)
 const ENTER_FROM = [
   makeEnter(0, 190),
-  makeEnter(210, 0),
-  makeEnter(0, -190),
   makeEnter(-210, 0),
+  makeEnter(0, -190),
+  makeEnter(210, 0),
 ];
 // exiting toward winner's seat
 const EXIT_TO = [
   makeExit(0, 260),
-  makeExit(300, 0),
-  makeExit(0, -260),
   makeExit(-300, 0),
+  makeExit(0, -260),
+  makeExit(300, 0),
 ];
 
 interface Props {

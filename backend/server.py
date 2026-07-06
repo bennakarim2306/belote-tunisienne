@@ -66,6 +66,7 @@ class UpdateProfileBody(BaseModel):
 
 class MatchTypeBody(BaseModel):
     match_type: str = Field(pattern="^(short|long)$")
+    turn_timer: bool = False
 
 
 class FriendRequestBody(BaseModel):
@@ -393,7 +394,7 @@ async def mm_leave(request: Request):
 async def create_solo(body: MatchTypeBody, request: Request):
     user = await get_current_user(request)
     game_id = manager.create_game([to_player(user)], body.match_type,
-                                  shuffle=False, ranked=False)
+                                  shuffle=False, ranked=False, turn_timeout=None)
     return {"game_id": game_id}
 
 
@@ -402,6 +403,7 @@ async def create_solo(body: MatchTypeBody, request: Request):
 def room_public(room):
     return {"code": room["code"], "host_id": room["host_id"],
             "match_type": room["match_type"], "started": room["started"],
+            "turn_timer": room.get("turn_timer", False),
             "game_id": room["game_id"],
             "players": [{"user_id": p["user_id"], "username": p["username"],
                          "avatar_id": p["avatar_id"], "elo": p["elo"]}
@@ -411,7 +413,7 @@ def room_public(room):
 @api.post("/rooms")
 async def create_room(body: MatchTypeBody, request: Request):
     user = await get_current_user(request)
-    room = manager.create_room(to_player(user), body.match_type)
+    room = manager.create_room(to_player(user), body.match_type, body.turn_timer)
     return room_public(room)
 
 

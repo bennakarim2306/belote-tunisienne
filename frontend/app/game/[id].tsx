@@ -22,7 +22,7 @@ import { HandEndModal, MatchEndOverlay } from "@/src/components/game/HandEndModa
 import HandFan from "@/src/components/game/HandFan";
 import PlayerSeat from "@/src/components/game/PlayerSeat";
 import TrickArea from "@/src/components/game/TrickArea";
-import { SUIT_SYMBOL } from "@/src/components/PlayingCard";
+import PlayingCard, { SUIT_COLOR_ON_DARK, SUIT_SYMBOL } from "@/src/components/PlayingCard";
 import { useAuth } from "@/src/context/AuthContext";
 import { useGameSocket } from "@/src/game/useGameSocket";
 import { useI18n } from "@/src/i18n";
@@ -39,6 +39,7 @@ export default function GameScreen() {
   const [banner, setBanner] = useState<{ text: string; key: number } | null>(null);
   const [showLast, setShowLast] = useState(false);
   const [quitOpen, setQuitOpen] = useState(false);
+  const [lastTrickOpen, setLastTrickOpen] = useState(false);
   const [remaining, setRemaining] = useState<number | null>(null);
   const lastEventId = useRef(0);
 
@@ -78,9 +79,9 @@ export default function GameScreen() {
     return () => clearTimeout(tm);
   }, [banner]);
 
-  // my-turn countdown
+  // my-turn countdown (only for timed games)
   useEffect(() => {
-    if (!state || state.turn !== state.my_seat ||
+    if (!state || !state.turn_timeout || state.turn !== state.my_seat ||
         (state.phase !== "bidding" && state.phase !== "playing")) {
       setRemaining(null);
       return;
@@ -127,28 +128,24 @@ export default function GameScreen() {
   const seatAt = (rel: number) =>
     state.players.find((p) => p.seat === (mySeat + rel) % 4)!;
   const partner = seatAt(2);
-  const rightP = seatAt(1);
-  const leftP = seatAt(3);
+  // clockwise play direction on screen: me (bottom) -> left -> top -> right
+  const leftP = seatAt(1);
+  const rightP = seatAt(3);
   const me = seatAt(0);
 
   // latest bid label per seat (during announcements)
-  const bidLabels: Record<number, string> = {};
+  const bidLabels: Record<number, { text: string; suit?: string }> = {};
   if (state.phase === "bidding" || state.phase === "surcontre") {
     for (const b of state.bids) {
-      if (b.type === "pass") bidLabels[b.seat] = t("pass");
-      else if (b.type === "bid") bidLabels[b.seat] = `${b.value}${SUIT_SYMBOL[b.suit!]}`;
-      else if (b.type === "capot") bidLabels[b.seat] = `${t("capot")} ${SUIT_SYMBOL[b.suit!]}`;
-      else if (b.type === "contre") bidLabels[b.seat] = t("contreBang");
-      else if (b.type === "surcontre") bidLabels[b.seat] = t("surcontreBang");
+      if (b.type === "pass") bidLabels[b.seat] = { text: t("pass") };
+      else if (b.type === "bid") bidLabels[b.seat] = { text: `${b.value}`, suit: b.suit };
+      else if (b.type === "capot") bidLabels[b.seat] = { text: t("capot"), suit: b.suit };
+      else if (b.type === "contre") bidLabels[b.seat] = { text: t("contreBang") };
+      else if (b.type === "surcontre") bidLabels[b.seat] = { text: t("surcontreBang") };
     }
   }
 
   const contract = state.contract;
-  const contractChip = contract
-    ? `${contract.capot ? t("capot") : contract.value}${SUIT_SYMBOL[contract.suit]}${
-        contract.surcontre ? " ×4" : contract.contre ? " ×2" : ""
-      }`
-    : null;
 
   const myTurn = state.turn === mySeat;
 
@@ -183,7 +180,7 @@ export default function GameScreen() {
           </Text>
         </View>
 
-        {contractChip ? (
+        {contract ? (
           <View
             style={[
               styles.contractChip,
@@ -191,9 +188,20 @@ export default function GameScreen() {
             ]}
             testID="contract-chip"
           >
-            <Text style={styles.contractText}>{contractChip}</Text>
+            <Text style={styles.contractText}>
+              {contract!.capot ? t("capot") : contract!.value}
+              <Text style={{ color: SUIT_COLOR_ON_DARK[contract!.suit] }}>
+                {" "}
+                {SUIT_SYMBOL[contract!.suit]}
+              </Text>
+            </Text>
             <Text style={styles.contractTeam}>
               {contract!.team === myTeam ? t("us") : t("them")}
+              {contract!.surcontre
+                ? ` · ${t("surcontred")}`
+                : contract!.contre
+                  ? ` · ${t("contred")}`
+                  : ""}
             </Text>
           </View>
         ) : (
@@ -208,7 +216,8 @@ export default function GameScreen() {
             player={partner}
             isTurn={state.turn === partner.seat}
             isDealer={state.dealer === partner.seat}
-            bidLabel={bidLabels[partner.seat]}
+            bidLabel={bidLabels[partner.seat]?.text}
+            bidSuit={bidLabels[partner.seat]?.suit}
           />
         </View>
 
@@ -217,7 +226,8 @@ export default function GameScreen() {
             player={leftP}
             isTurn={state.turn === leftP.seat}
             isDealer={state.dealer === leftP.seat}
-            bidLabel={bidLabels[leftP.seat]}
+            bidLabel={bidLabels[leftP.seat]?.text}
+            bidSuit={bidLabels[leftP.seat]?.suit}
           />
           <TrickArea
             trick={state.trick}
@@ -230,7 +240,8 @@ export default function GameScreen() {
             player={rightP}
             isTurn={state.turn === rightP.seat}
             isDealer={state.dealer === rightP.seat}
-            bidLabel={bidLabels[rightP.seat]}
+            bidLabel={bidLabels[rightP.seat]?.text}
+            bidSuit={bidLabels[rightP.seat]?.suit}
           />
         </View>
 
@@ -240,7 +251,8 @@ export default function GameScreen() {
             player={me}
             isTurn={myTurn}
             isDealer={state.dealer === mySeat}
-            bidLabel={bidLabels[mySeat]}
+            bidLabel={bidLabels[mySeat]?.text}
+            bidSuit={bidLabels[mySeat]?.suit}
             isMe
             size={40}
           />
@@ -313,6 +325,61 @@ export default function GameScreen() {
           onHome={quit}
         />
       )}
+
+      {/* last trick viewer (available anytime once a trick was played) */}
+      {state.last_trick && state.phase === "playing" && (
+        <Pressable
+          testID="last-trick-button"
+          onPress={() => setLastTrickOpen(true)}
+          style={[styles.lastTrickBtn, { bottom: insets.bottom + 148 }]}
+        >
+          <Ionicons name="albums" size={20} color={C.cream} />
+        </Pressable>
+      )}
+
+      <Modal visible={lastTrickOpen} transparent animationType="fade">
+        <Pressable style={styles.quitScrim} onPress={() => setLastTrickOpen(false)}>
+          <Pressable style={styles.quitCard} onPress={() => {}} testID="last-trick-modal">
+            <Text style={styles.quitTitle}>{t("lastTrick")}</Text>
+            <View style={styles.lastTrickRow}>
+              {state.last_trick?.cards.map((tc) => {
+                const p = state.players.find((pl) => pl.seat === tc.seat)!;
+                const isWinner = state.last_trick?.winner_seat === tc.seat;
+                return (
+                  <View key={tc.seat} style={styles.lastTrickCol}>
+                    <Text
+                      style={[styles.lastTrickName, isWinner && { color: C.brand }]}
+                      numberOfLines={1}
+                    >
+                      {p.username}
+                    </Text>
+                    <View style={isWinner ? styles.lastTrickWinner : styles.lastTrickNeutral}>
+                      <PlayingCard card={tc.card} width={54} trumpSuit={state.trump} />
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+            <Text style={styles.lastTrickWonBy} testID="last-trick-won-by">
+              {t("wonBy", {
+                name:
+                  state.players.find((pl) => pl.seat === state.last_trick?.winner_seat)
+                    ?.username ?? "",
+              })}
+              {" · +"}
+              {state.last_trick?.points} {t("points")}
+            </Text>
+            <ChunkyButton
+              testID="last-trick-close-button"
+              label={t("close")}
+              variant="secondary"
+              small
+              onPress={() => setLastTrickOpen(false)}
+              style={{ marginTop: SP.md }}
+            />
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       {/* quit confirm */}
       <Modal visible={quitOpen} transparent animationType="fade">
@@ -454,4 +521,44 @@ const styles = StyleSheet.create({
     marginTop: SP.sm,
   },
   quitRow: { flexDirection: "row", gap: SP.md, marginTop: SP.lg },
+  lastTrickBtn: {
+    position: "absolute",
+    left: SP.lg,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.3)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  lastTrickRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: SP.sm,
+    marginTop: SP.lg,
+  },
+  lastTrickCol: { alignItems: "center", gap: 6 },
+  lastTrickName: {
+    fontFamily: F.bold,
+    fontSize: 11,
+    color: C.ink2,
+    maxWidth: 68,
+    textAlign: "center",
+  },
+  lastTrickNeutral: { padding: 3 },
+  lastTrickWinner: {
+    padding: 1,
+    borderWidth: 2,
+    borderColor: C.gold,
+    borderRadius: 10,
+  },
+  lastTrickWonBy: {
+    fontFamily: F.bold,
+    fontSize: 13,
+    color: C.ink,
+    textAlign: "center",
+    marginTop: SP.md,
+  },
 });

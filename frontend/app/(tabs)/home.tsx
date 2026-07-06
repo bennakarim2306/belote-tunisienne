@@ -34,6 +34,7 @@ export default function HomeScreen() {
   const { t } = useI18n();
 
   const [typeModal, setTypeModal] = useState<null | "online" | "create" | "solo">(null);
+  const [timerOn, setTimerOn] = useState(false);
   const [joinCode, setJoinCode] = useState("");
   const [joinError, setJoinError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -81,7 +82,7 @@ export default function HomeScreen() {
     } else if (mode === "create") {
       setBusy(true);
       try {
-        const room = await api.post("/rooms", { match_type: matchType });
+        const room = await api.post("/rooms", { match_type: matchType, turn_timer: timerOn });
         setTimeout(() => {
           router.push({ pathname: "/room/[code]", params: { code: room.code } });
         }, 150);
@@ -259,6 +260,26 @@ export default function HomeScreen() {
           <Pressable style={styles.modalSheet} onPress={() => {}}>
             <View style={styles.sheetHandle} />
             <Text style={styles.modalTitle}>{t("chooseMatchType")}</Text>
+            {typeModal === "create" && (
+              <Pressable
+                testID="room-timer-toggle"
+                onPress={() => setTimerOn((v) => !v)}
+                style={styles.timerToggle}
+              >
+                <Ionicons
+                  name={timerOn ? "checkbox" : "square-outline"}
+                  size={22}
+                  color={timerOn ? C.brand : C.ink3}
+                />
+                <View style={{ flex: 1, marginLeft: SP.md }}>
+                  <Text style={styles.timerToggleLabel}>{t("timerSetting")}</Text>
+                  <Text style={styles.timerToggleValue}>
+                    {timerOn ? t("timerOn") : t("timerOff")}
+                  </Text>
+                </View>
+                <Ionicons name="timer" size={20} color={timerOn ? C.brand : C.ink3} />
+              </Pressable>
+            )}
             <Pressable
               testID="match-type-short"
               onPress={() => chooseType("short")}
@@ -441,4 +462,16 @@ const styles = StyleSheet.create({
   },
   typeTitle: { fontFamily: F.display, fontSize: 17, color: C.ink },
   typeDesc: { fontFamily: F.text, fontSize: 13, color: C.ink3, marginTop: 2 },
+  timerToggle: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: C.cream,
+    borderRadius: R.md,
+    borderWidth: 1,
+    borderColor: C.border,
+    padding: SP.md,
+    marginBottom: SP.md,
+  },
+  timerToggleLabel: { fontFamily: F.bold, fontSize: 14, color: C.ink },
+  timerToggleValue: { fontFamily: F.text, fontSize: 12, color: C.ink3, marginTop: 1 },
 });

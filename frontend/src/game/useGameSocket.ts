@@ -74,6 +74,7 @@ export interface GameState {
   match_over: boolean;
   winner_team: number | null;
   turn_deadline: number;
+  turn_timeout: number | null;
   elo_changes: Record<string, number> | null;
 }
 

@@ -30,6 +30,7 @@ interface Room {
   code: string;
   host_id: string;
   match_type: string;
+  turn_timer?: boolean;
   started: boolean;
   game_id: string | null;
   players: RoomPlayer[];
@@ -158,6 +159,8 @@ export default function RoomScreen() {
             <Text style={styles.matchTypeText}>
               {room?.match_type === "long" ? t("longMatch") : t("shortMatch")} ·{" "}
               {t("pointsTarget", { n: room?.match_type === "long" ? 2000 : 1000 })}
+              {" · "}
+              {room?.turn_timer ? t("timerOn") : `${t("timerSetting")}: ${t("timerOff")}`}
             </Text>
           </View>
 

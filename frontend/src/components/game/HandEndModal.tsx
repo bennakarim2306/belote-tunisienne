@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import Animated, { FadeIn, ZoomIn } from "react-native-reanimated";
 
-import { SUIT_SYMBOL } from "@/src/components/PlayingCard";
+import { SUIT_COLOR, SUIT_SYMBOL } from "@/src/components/PlayingCard";
 import ChunkyButton from "@/src/components/ChunkyButton";
 import { GameState, HandResult } from "@/src/game/useGameSocket";
 import { TKey } from "@/src/i18n";
@@ -39,9 +39,6 @@ export function HandEndModal({
   const myTeam = mySeat % 2;
   const otherTeam = 1 - myTeam;
   const c = result.contract;
-  const contractLabel = `${c.capot ? t("capot") : c.value} ${SUIT_SYMBOL[c.suit]}${
-    c.surcontre ? " ×4" : c.contre ? " ×2" : ""
-  } — ${c.team === myTeam ? t("us") : t("them")}`;
 
   const teamLabel = (team: number) => (team === myTeam ? t("us") : t("them"));
 
@@ -49,7 +46,11 @@ export function HandEndModal({
     <View style={styles.scrim} testID="hand-end-modal">
       <Animated.View entering={ZoomIn.springify().damping(16)} style={styles.card}>
         <Text style={styles.contractLine}>
-          {t("contract")} : {contractLabel}
+          {t("contract")} : {c.capot ? t("capot") : c.value}
+          <Text style={{ color: SUIT_COLOR[c.suit] }}> {SUIT_SYMBOL[c.suit]}</Text>
+          {c.surcontre ? ` · ${t("surcontred")}` : c.contre ? ` · ${t("contred")}` : ""}
+          {" — "}
+          {teamLabel(c.team)}
         </Text>
         <View
           style={[

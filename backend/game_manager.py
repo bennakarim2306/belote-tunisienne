@@ -62,14 +62,14 @@ class GameManager:
 
     # ================= games =================
 
-    def create_game(self, humans, match_type, shuffle=True, ranked=True):
+    def create_game(self, humans, match_type, shuffle=True, ranked=True, turn_timeout=30):
         players = list(humans)
         bots = make_bots(4 - len(players), {p["username"] for p in players})
         players += bots
         if shuffle:
             random.shuffle(players)
         game_id = f"g_{uuid.uuid4().hex[:12]}"
-        game = gl.BeloteGame(game_id, players, match_type)
+        game = gl.BeloteGame(game_id, players, match_type, turn_timeout=turn_timeout)
         game.ranked = ranked
         live = LiveGame(game)
         self.games[game_id] = live
@@ -197,6 +197,8 @@ class GameManager:
                 if bot_seat is not None:
                     await asyncio.sleep(random.uniform(1.5, 2.5))
                 else:
+                    if not g.turn_timeout:
+                        return  # untimed game: wait for a human decision
                     await asyncio.sleep(max(0.5, g.turn_deadline - now))
                     bot_seat = seats[0]
                 async with live.lock:
@@ -222,6 +224,8 @@ class GameManager:
             if player["is_bot"] or player.get("left"):
                 delay = pause + random.uniform(1.0, 2.0)
             else:
+                if not g.turn_timeout:
+                    return  # untimed game: no auto-play for connected humans
                 delay = max(0.5, g.turn_deadline - now)
             await asyncio.sleep(delay)
             async with live.lock:
@@ -433,12 +437,13 @@ class GameManager:
 
     # ================= private rooms =================
 
-    def create_room(self, host_player, match_type):
+    def create_room(self, host_player, match_type, turn_timer=False):
         code = room_code()
         while code in self.rooms:
             code = room_code()
         self.rooms[code] = {"code": code, "host_id": host_player["user_id"],
                             "players": [host_player], "match_type": match_type,
+                            "turn_timer": bool(turn_timer),
                             "started": False, "game_id": None, "created": time.time()}
         return self.rooms[code]
 
@@ -474,7 +479,8 @@ class GameManager:
             raise ValueError("not_host")
         if room["started"]:
             return room["game_id"]
-        game_id = self.create_game(room["players"], room["match_type"], shuffle=False)
+        game_id = self.create_game(room["players"], room["match_type"], shuffle=False,
+                                   turn_timeout=30 if room.get("turn_timer") else None)
         room["started"] = True
         room["game_id"] = game_id
         asyncio.create_task(self._delayed_remove_room(room["code"], 300))

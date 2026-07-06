@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import React, { useEffect, useState } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 
 import { SUIT_COLOR, SUIT_SYMBOL } from "@/src/components/PlayingCard";
@@ -19,9 +19,15 @@ interface Props {
 export default function BiddingPanel({ state, t, onAction }: Props) {
   const [suit, setSuit] = useState<string | null>(null);
   const [value, setValue] = useState<number | null>(null);
+  const [capotOpen, setCapotOpen] = useState(false);
 
   const myTurn = state.phase === "bidding" && state.turn === state.my_seat;
   const minValue = state.contract?.value ? state.contract.value + 10 : 90;
+
+  // close the out-of-turn capot picker whenever the auction context changes
+  useEffect(() => {
+    setCapotOpen(false);
+  }, [state.phase, state.turn, state.hand_number]);
 
   if (state.phase === "surcontre") {
     if (state.can_surcontre) {
@@ -34,7 +40,7 @@ export default function BiddingPanel({ state, t, onAction }: Props) {
               onPress={() => onAction({ action: "surcontre" })}
               style={[styles.bigAction, { backgroundColor: C.error }]}
             >
-              <Text style={styles.bigActionText}>{t("surcontre")} ×4</Text>
+              <Text style={styles.bigActionText}>{t("surcontre")}</Text>
             </Pressable>
             <Pressable
               testID="decline-surcontre-button"
@@ -57,20 +63,48 @@ export default function BiddingPanel({ state, t, onAction }: Props) {
   if (state.phase !== "bidding") return null;
 
   if (!myTurn) {
-    if (state.can_contre) {
-      return (
-        <Animated.View entering={FadeInDown} style={styles.contreFloat}>
+    // out-of-turn actions: contre (defending team) + capot (anyone, any time)
+    return (
+      <Animated.View entering={FadeInDown} style={styles.floatCol} pointerEvents="box-none">
+        {capotOpen && (
+          <Animated.View entering={FadeInDown} style={styles.capotSuitRow}>
+            {SUITS.map((s) => (
+              <Pressable
+                key={s}
+                testID={`capot-suit-${s}`}
+                onPress={() => {
+                  setCapotOpen(false);
+                  onAction({ action: "capot", suit: s });
+                }}
+                style={styles.capotSuitBtn}
+              >
+                <Text style={[styles.capotSuitText, { color: SUIT_COLOR[s] }]}>
+                  {SUIT_SYMBOL[s]}
+                </Text>
+              </Pressable>
+            ))}
+          </Animated.View>
+        )}
+        <View style={styles.floatRow}>
           <Pressable
-            testID="contre-button"
-            onPress={() => onAction({ action: "contre" })}
-            style={styles.contreBtn}
+            testID="capot-float-button"
+            onPress={() => setCapotOpen((v) => !v)}
+            style={[styles.contreBtn, { backgroundColor: C.gold }]}
           >
-            <Text style={styles.contreBtnText}>{t("contre")} ×2</Text>
+            <Text style={[styles.contreBtnText, { color: C.ink }]}>{t("capot")}</Text>
           </Pressable>
-        </Animated.View>
-      );
-    }
-    return null;
+          {state.can_contre && (
+            <Pressable
+              testID="contre-button"
+              onPress={() => onAction({ action: "contre" })}
+              style={styles.contreBtn}
+            >
+              <Text style={styles.contreBtnText}>{t("contre")}</Text>
+            </Pressable>
+          )}
+        </View>
+      </Animated.View>
+    );
   }
 
   const canAnnounce = suit !== null && value !== null && value >= minValue;
@@ -94,12 +128,7 @@ export default function BiddingPanel({ state, t, onAction }: Props) {
         ))}
       </View>
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.valueRow}
-        style={{ maxHeight: 56 }}
-      >
+      <View style={styles.valueGrid}>
         {BID_VALUES.map((v) => {
           const disabled = v < minValue;
           return (
@@ -120,7 +149,7 @@ export default function BiddingPanel({ state, t, onAction }: Props) {
             </Pressable>
           );
         })}
-      </ScrollView>
+      </View>
 
       <View style={styles.actionRow}>
         <Pressable
@@ -161,7 +190,7 @@ export default function BiddingPanel({ state, t, onAction }: Props) {
           onPress={() => onAction({ action: "contre" })}
           style={[styles.contreBtn, { alignSelf: "center", marginTop: SP.sm }]}
         >
-          <Text style={styles.contreBtnText}>{t("contre")} ×2</Text>
+          <Text style={styles.contreBtnText}>{t("contre")}</Text>
         </Pressable>
       )}
     </Animated.View>
@@ -205,9 +234,15 @@ const styles = StyleSheet.create({
   },
   suitBtnActive: { borderColor: C.brand, backgroundColor: "#FBEFE9" },
   suitText: { fontSize: 28 },
-  valueRow: { gap: SP.sm, paddingHorizontal: SP.xs },
+  valueGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+    gap: SP.sm,
+  },
   valueChip: {
     height: 40,
+    width: "22%",
     minWidth: 56,
     borderRadius: R.pill,
     backgroundColor: C.cream,
@@ -215,7 +250,6 @@ const styles = StyleSheet.create({
     borderColor: C.borderStrong,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: SP.md,
     flexShrink: 0,
   },
   valueChipActive: { backgroundColor: C.brand, borderColor: C.brand },
@@ -239,6 +273,38 @@ const styles = StyleSheet.create({
     bottom: 8,
     right: SP.lg,
   },
+  floatCol: {
+    alignItems: "flex-end",
+    paddingRight: SP.lg,
+    gap: SP.sm,
+  },
+  floatRow: {
+    flexDirection: "row",
+    gap: SP.sm,
+  },
+  capotSuitRow: {
+    flexDirection: "row",
+    gap: SP.sm,
+    backgroundColor: "rgba(250,248,245,0.97)",
+    borderRadius: R.pill,
+    padding: SP.sm,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 6,
+  },
+  capotSuitBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: C.cream,
+    borderWidth: 1.5,
+    borderColor: C.borderStrong,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  capotSuitText: { fontSize: 24 },
   contreBtn: {
     backgroundColor: C.error,
     borderRadius: R.pill,

@@ -9,6 +9,7 @@ import Animated, {
 } from "react-native-reanimated";
 
 import Avatar from "@/src/components/Avatar";
+import { SUIT_COLOR, SUIT_SYMBOL } from "@/src/components/PlayingCard";
 import { GamePlayer } from "@/src/game/useGameSocket";
 import { C, F, R } from "@/src/theme";
 
@@ -17,6 +18,7 @@ interface Props {
   isTurn: boolean;
   isDealer: boolean;
   bidLabel?: string | null;
+  bidSuit?: string | null;
   isMe?: boolean;
   size?: number;
 }
@@ -26,6 +28,7 @@ export default function PlayerSeat({
   isTurn,
   isDealer,
   bidLabel,
+  bidSuit,
   isMe,
   size = 46,
 }: Props) {
@@ -85,7 +88,12 @@ export default function PlayerSeat({
       )}
       {bidLabel ? (
         <Animated.View style={styles.bubble} entering={undefined}>
-          <Text style={styles.bubbleText}>{bidLabel}</Text>
+          <Text style={styles.bubbleText}>
+            {bidLabel}
+            {bidSuit ? (
+              <Text style={{ color: SUIT_COLOR[bidSuit] }}> {SUIT_SYMBOL[bidSuit]}</Text>
+            ) : null}
+          </Text>
         </Animated.View>
       ) : null}
     </View>

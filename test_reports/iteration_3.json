@@ -1,0 +1,42 @@
+{
+  "summary": "New feature pack (timers, out-of-turn capot, clockwise, last-trick, Contré without ×2, grid bids) — backend fully verified with 10 new pytest tests in /app/backend/tests/test_new_pack.py, all 10 PASS (86.6s). Coverage: (1) solo game turn_timeout=None & turn_deadline=0 in WS state; (2) solo game — NO auto-pass after 42s on my bidding turn (turn stays mine); (3) POST /api/rooms default turn_timer:false, GET room echoes it; (4) POST /api/rooms {turn_timer:true} echoes true; (5) private-room-default WS state.turn_timeout=None; (6) private-room-timed WS state.turn_timeout=30; (7) out-of-turn capot in solo game (H) → phase becomes 'playing', contract.capot=true, contract.suit='H', contract.seat=my_seat; (8) last_trick populated in state after first trick (winner_seat int, cards len 4, points int) after forcing capot to shortcut bidding; (9) matchmaking 4-user (mm1-mm4) game WS state.turn_timeout==30 and turn_deadline in future; (10) matchmaking auto-action fires within 45s while all 4 clients passively observe (turn/bids/phase mutates → auto-play/auto-pass confirmed active in MM games). Frontend (mobile 390x844, tester1 login → play-solo-card → Partie courte): home loads, solo game launches, capot-float-button visible when NOT my turn, tapping capot-suit-H announces capot, contract-chip shows 'Capot ♥Nous' (NO ×2 marker), and NO timer/countdown text on screen ('Ns' regex tokens = []). Last-trick-modal UI not visually confirmed in this run — 'last-trick-button' never appeared during ~60s of card play because the browser session got 'Disconnected from Metro (1006)' mid-play and returned to home. Backend state proves last_trick is emitted; the RN code (/app/frontend/app/game/[id].tsx:330) renders the button on state.last_trick && phase==='playing'. No visual bug detected, only session flake.",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": [
+      {"component": "Deprecated style props (carry-over from iter 1/2)", "issue": "'shadow*' style props are deprecated. Use 'boxShadow'. Warning fires on auth/home screens."},
+      {"component": "Deprecated prop (carry-over from iter 1/2)", "issue": "'props.pointerEvents is deprecated. Use style.pointerEvents' fires when the match-type sheet opens."},
+      {"component": "Reanimated warnings during game screen", "issue": "'[Reanimated] Couldn't load entering/exiting animation. Current version supports only predefined animations with modifiers: duration, delay, easing…' — verbose console noise while bidding/playing animations mount. Non-blocking."}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_new_pack.py",
+    "/app/test_reports/pytest/pytest_new_pack.xml",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "Ship the pack — backend acceptance criteria all met (10/10).",
+    "(Nice-to-have) Retest last-trick-modal UI in a stable session (no Metro disconnect): browser test could not visually confirm the modal because Metro dropped the WS mid-play. Backend confirms last_trick is populated, RN code path is correct — a manual click or a re-run after backend keeps game state should show the modal.",
+    "(Carry-over) Replace 'shadow*' RN style props with 'boxShadow' and 'props.pointerEvents' with 'style.pointerEvents' to silence console warnings.",
+    "(Nice-to-have) Investigate Reanimated 'Couldn't load entering/exiting animation' warnings on the game screen — likely a FadeInUp modifier chain in BiddingPanel/TrickArea."
+  ],
+  "critical_code_review_comments": [
+    "game_logic.py:104,122-125 — turn_timeout=None correctly makes _turn_deadline_ts return 0.0, and game_manager auto-play loops early-return when g.turn_timeout is falsy (lines 200-202, 227-229). Confirmed by solo 42s-no-auto-pass test.",
+    "game_logic.py:201-215 — apply_capot has NO 'seat == turn' guard; only rejects when capot already announced or phase != bidding. Out-of-turn capot works as designed.",
+    "game_logic.py:296 — self.last_trick = {winner_seat, cards, points} set the moment the 4th card is played; never cleared until next hand. Persists across trick_pause and into next tricks. Confirmed by backend test #8.",
+    "server.py:394-398 (create_solo) always passes turn_timeout=None ; server.py:483 (start_room) passes turn_timeout=30 iff room.turn_timer. Correct plumbing of pack behaviour.",
+    "BiddingPanel.tsx:96-104 & 187-195 — 'Contrer' Pressable renders only t('contre') label with NO '×2' text. Verified in code + UI screenshot ('contract-chip' after capot shows no ×2 either).",
+    "app/game/[id].tsx:330-378 — last-trick-button + modal render only during playing phase and when last_trick exists; winner-highlighted card + points + name are rendered from state.last_trick. Code is correct; UI flake was due to Metro socket drop, not the feature."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_new_pack.py (new, 10 tests)"
+  ],
+  "success_rate": { "backend": "100% (10/10 new pack + 26/26 previous suite = 36/36)", "frontend": "5/6 acceptance items verified in-browser (grid, contract-chip w/o ×2, capot-float+H, solo no timer text, capot announcement); last-trick modal not visually confirmed due to Metro disconnect (code + backend state verified correct)" },
+  "seed_data_creation": "Reuses tester1@belote.tn and mm1..mm4@belote.tn (auto-registered by conftest._ensure). Private rooms created during tests are cleaned via /rooms/{code}/leave.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "test_new_pack.py is the source of truth for the pack. Run with `pytest /app/backend/tests/test_new_pack.py -v` — expect ~90s (the 40s solo-no-auto-pass and the 45s MM auto-action tests dominate wall time). Solo/private-room WS tests use tester1; MM tests use mm1..mm4 and must send browser User-Agent (see conftest.UA) or ingress returns 403. If MM tests hang, ensure /matchmaking/leave was called for all four users in a prior teardown — the fixture already does this at the start of each MM test.",
+  "rca_of_issue": "N/A — feature works. Only note is the browser-side last-trick modal wasn't visually captured because the Playwright browser session got 'Disconnected from Metro (1006)' while cards were being played, which drops the game WS and boots the client back to the home screen. Re-running in a session that stays connected (or an Expo Go device) will render the button — the code and backend state are both correct."
+}
