@@ -27,6 +27,13 @@ interface Invite {
   from_user: { username: string; avatar_id: string };
 }
 
+interface CurrentGame {
+  game_id: string;
+  match_scores: [number, number];
+  my_team: number;
+  target: number;
+}
+
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -39,6 +46,7 @@ export default function HomeScreen() {
   const [joinError, setJoinError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [invites, setInvites] = useState<Invite[]>([]);
+  const [currentGame, setCurrentGame] = useState<CurrentGame | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useFocusEffect(
@@ -48,6 +56,10 @@ export default function HomeScreen() {
         try {
           const res = await api.get("/invites/pending");
           setInvites(res.invites);
+        } catch {}
+        try {
+          const cur = await api.get("/games/current");
+          setCurrentGame(cur.game_id ? cur : null);
         } catch {}
       };
       poll();
@@ -150,6 +162,29 @@ export default function HomeScreen() {
         contentContainerStyle={{ padding: SP.lg, paddingBottom: SP.xl }}
         showsVerticalScrollIndicator={false}
       >
+        {currentGame && (
+          <Animated.View entering={FadeInDown} style={styles.resumeBanner} testID="resume-game-banner">
+            <Ionicons name="play-circle" size={32} color={C.brand} />
+            <View style={{ flex: 1, minWidth: 0, marginLeft: SP.md }}>
+              <Text style={styles.resumeTitle}>{t("resumeGame")}</Text>
+              <Text style={styles.resumeDesc} numberOfLines={1}>
+                {t("us")} {currentGame.match_scores[currentGame.my_team]}
+                {" · "}
+                {currentGame.match_scores[1 - currentGame.my_team]} {t("them")} — {currentGame.target} pts
+              </Text>
+            </View>
+            <Pressable
+              testID="resume-game-button"
+              onPress={() =>
+                router.push({ pathname: "/game/[id]", params: { id: currentGame.game_id } })
+              }
+              style={styles.resumeBtn}
+            >
+              <Text style={styles.resumeBtnText}>{t("resumeGameBtn")}</Text>
+            </Pressable>
+          </Animated.View>
+        )}
+
         {invites.map((inv) => (
           <Animated.View key={inv.invite_id} entering={FadeInDown} style={styles.inviteBanner}>
             <Avatar avatarId={inv.from_user.avatar_id} size={36} />
@@ -346,6 +381,28 @@ const styles = StyleSheet.create({
     padding: SP.md,
     marginBottom: SP.md,
   },
+  resumeBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: C.cream,
+    borderRadius: R.md,
+    borderWidth: 1.5,
+    borderColor: C.brand,
+    padding: SP.md,
+    marginBottom: SP.md,
+  },
+  resumeTitle: { fontFamily: F.display, fontSize: 15, color: C.ink },
+  resumeDesc: { fontFamily: F.text, fontSize: 12, color: C.ink3, marginTop: 1 },
+  resumeBtn: {
+    backgroundColor: C.brand,
+    borderRadius: R.pill,
+    paddingHorizontal: SP.lg,
+    height: 40,
+    alignItems: "center",
+    justifyContent: "center",
+    marginLeft: SP.sm,
+  },
+  resumeBtnText: { fontFamily: F.display, fontSize: 13, color: C.onBrand },
   inviteText: { flex: 1, fontFamily: F.bold, fontSize: 13, color: C.ink },
   inviteJoin: {
     backgroundColor: C.brand,

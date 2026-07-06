@@ -9,6 +9,7 @@ import {
   Modal,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -23,11 +24,58 @@ import { HandEndModal, MatchEndOverlay } from "@/src/components/game/HandEndModa
 import HandFan from "@/src/components/game/HandFan";
 import PlayerSeat from "@/src/components/game/PlayerSeat";
 import TrickArea from "@/src/components/game/TrickArea";
-import PlayingCard, { SUIT_COLOR_ON_DARK, SUIT_SYMBOL } from "@/src/components/PlayingCard";
+import PlayingCard, { SUIT_COLOR, SUIT_COLOR_ON_DARK, SUIT_SYMBOL } from "@/src/components/PlayingCard";
 import { useAuth } from "@/src/context/AuthContext";
 import { useGameSocket } from "@/src/game/useGameSocket";
-import { useI18n } from "@/src/i18n";
+import { TKey, useI18n } from "@/src/i18n";
 import { C, F, PATTERN_BG, R, SP } from "@/src/theme";
+
+type TFunc = (key: TKey, vars?: Record<string, string | number>) => string;
+
+function PausedOverlay({
+  until,
+  requesterName,
+  canResume,
+  onResume,
+  t,
+}: {
+  until: number;
+  requesterName: string;
+  canResume: boolean;
+  onResume: () => void;
+  t: TFunc;
+}) {
+  const [remaining, setRemaining] = useState(() =>
+    Math.max(0, Math.round(until - Date.now() / 1000)),
+  );
+  useEffect(() => {
+    const iv = setInterval(
+      () => setRemaining(Math.max(0, Math.round(until - Date.now() / 1000))),
+      1000,
+    );
+    return () => clearInterval(iv);
+  }, [until]);
+  const mm = Math.floor(remaining / 60);
+  const ss = String(remaining % 60).padStart(2, "0");
+  return (
+    <View style={styles.pausedScrim} testID="paused-overlay">
+      <Ionicons name="pause-circle" size={64} color={C.gold} />
+      <Text style={styles.pausedTitle}>{t("pausedTitle")}</Text>
+      <Text style={styles.pausedBy}>{t("pausedBy", { name: requesterName })}</Text>
+      <Text style={styles.pausedTimer} testID="paused-countdown">
+        {t("autoResumeIn", { t: `${mm}:${ss}` })}
+      </Text>
+      {canResume && (
+        <ChunkyButton
+          testID="pause-resume-button"
+          label={t("resume")}
+          onPress={onResume}
+          style={{ marginTop: SP.lg, minWidth: 200 }}
+        />
+      )}
+    </View>
+  );
+}
 
 export default function GameScreen() {
   const insets = useSafeAreaInsets();
@@ -41,6 +89,7 @@ export default function GameScreen() {
   const [showLast, setShowLast] = useState(false);
   const [quitOpen, setQuitOpen] = useState(false);
   const [lastTrickOpen, setLastTrickOpen] = useState(false);
+  const [scoresOpen, setScoresOpen] = useState(false);
   const [remaining, setRemaining] = useState<number | null>(null);
   const [dealing, setDealing] = useState(false);
   const lastEventId = useRef(0);
@@ -79,6 +128,8 @@ export default function GameScreen() {
         setBanner({ text: t("capotBang"), key: Date.now() });
       } else if (ev.e === "redeal") {
         setBanner({ text: t("allPassed"), key: Date.now() });
+      } else if (ev.e === "pause_declined") {
+        setBanner({ text: t("pauseDeclined"), key: Date.now() });
       } else if (ev.e === "trick_end") {
         setShowLast(true);
         setTimeout(() => setShowLast(false), 1150);
@@ -170,6 +221,30 @@ export default function GameScreen() {
 
   const myTurn = state.turn === mySeat;
 
+  // announced contract holder badge (visible while the hand is being played)
+  const contractLabelFor = (seat: number) =>
+    contract &&
+    contract.seat === seat &&
+    (state.phase === "playing" || state.phase === "hand_end")
+      ? { text: contract.capot ? t("capot") : String(contract.value), suit: contract.suit }
+      : null;
+
+  // countdown visible on the active player's seat for everyone (timed games)
+  const seatTimerOn =
+    !!state.turn_timeout &&
+    !state.paused &&
+    (state.phase === "bidding" || state.phase === "playing");
+
+  const canPause =
+    !state.paused &&
+    !state.pause_req &&
+    (state.phase === "bidding" || state.phase === "playing");
+  const pauseAskMe =
+    !!state.pause_req &&
+    state.pause_req.seat !== mySeat &&
+    state.pause_req.required.includes(mySeat) &&
+    !state.pause_req.accepts.includes(mySeat);
+
   return (
     <View style={styles.container} testID="game-screen">
       <LinearGradient colors={[C.feltDark, C.felt, C.feltDark]} style={StyleSheet.absoluteFill} />
@@ -181,25 +256,42 @@ export default function GameScreen() {
 
       {/* header */}
       <View style={[styles.header, { paddingTop: insets.top + SP.sm }]}>
-        <Pressable
-          testID="quit-game-button"
-          onPress={() => setQuitOpen(true)}
-          hitSlop={10}
-          style={styles.quitBtn}
-        >
-          <Ionicons name="close" size={22} color={C.cream} />
-        </Pressable>
+        <View style={styles.headerLeft}>
+          <Pressable
+            testID="quit-game-button"
+            onPress={() => setQuitOpen(true)}
+            hitSlop={10}
+            style={styles.quitBtn}
+          >
+            <Ionicons name="close" size={22} color={C.cream} />
+          </Pressable>
+          {canPause && (
+            <Pressable
+              testID="pause-request-button"
+              onPress={() => send({ action: "pause_request" })}
+              hitSlop={10}
+              style={styles.quitBtn}
+            >
+              <Ionicons name="pause" size={20} color={C.cream} />
+            </Pressable>
+          )}
+        </View>
 
-        <View style={styles.scoreBox} testID="match-score-header">
+        <Pressable
+          style={styles.scoreBox}
+          testID="match-score-header"
+          onPress={() => setScoresOpen(true)}
+        >
           <Text style={styles.scoreText}>
             {t("us")} <Text style={styles.scoreNum}>{state.match_scores[myTeam]}</Text>
             {"  ·  "}
             <Text style={styles.scoreNum}>{state.match_scores[1 - myTeam]}</Text> {t("them")}
           </Text>
           <Text style={styles.targetText}>
-            {t("hand", { n: state.hand_number })} · {state.target} pts
+            {t("hand", { n: state.hand_number })} · {state.target} pts{"  "}
+            <Ionicons name="list" size={10} color="rgba(255,255,255,0.55)" />
           </Text>
-        </View>
+        </Pressable>
 
         {contract ? (
           <View
@@ -216,7 +308,9 @@ export default function GameScreen() {
                 {SUIT_SYMBOL[contract!.suit]}
               </Text>
             </Text>
-            <Text style={styles.contractTeam}>
+            <Text style={styles.contractTeam} numberOfLines={1}>
+              {state.players.find((p) => p.seat === contract!.seat)?.username}
+              {" · "}
               {contract!.team === myTeam ? t("us") : t("them")}
               {contract!.surcontre
                 ? ` · ${t("surcontred")}`
@@ -239,6 +333,9 @@ export default function GameScreen() {
             isDealer={state.dealer === partner.seat}
             bidLabel={bidLabels[partner.seat]?.text}
             bidSuit={bidLabels[partner.seat]?.suit}
+            contractLabel={contractLabelFor(partner.seat)}
+            deadline={state.turn_deadline}
+            showTimer={seatTimerOn}
           />
         </View>
 
@@ -249,6 +346,9 @@ export default function GameScreen() {
             isDealer={state.dealer === leftP.seat}
             bidLabel={bidLabels[leftP.seat]?.text}
             bidSuit={bidLabels[leftP.seat]?.suit}
+            contractLabel={contractLabelFor(leftP.seat)}
+            deadline={state.turn_deadline}
+            showTimer={seatTimerOn}
           />
           <TrickArea
             trick={state.trick}
@@ -263,6 +363,9 @@ export default function GameScreen() {
             isDealer={state.dealer === rightP.seat}
             bidLabel={bidLabels[rightP.seat]?.text}
             bidSuit={bidLabels[rightP.seat]?.suit}
+            contractLabel={contractLabelFor(rightP.seat)}
+            deadline={state.turn_deadline}
+            showTimer={seatTimerOn}
           />
         </View>
 
@@ -274,6 +377,9 @@ export default function GameScreen() {
             isDealer={state.dealer === mySeat}
             bidLabel={bidLabels[mySeat]?.text}
             bidSuit={bidLabels[mySeat]?.suit}
+            contractLabel={contractLabelFor(mySeat)}
+            deadline={state.turn_deadline}
+            showTimer={seatTimerOn}
             isMe
             size={40}
           />
@@ -344,6 +450,9 @@ export default function GameScreen() {
           result={state.hand_result}
           mySeat={mySeat}
           deadline={state.turn_deadline}
+          readySeats={state.ready_seats ?? []}
+          humanSeats={state.players.filter((p) => !p.is_bot).map((p) => p.seat)}
+          onReady={() => send({ action: "ready" })}
           t={t}
         />
       )}
@@ -413,6 +522,127 @@ export default function GameScreen() {
         </Pressable>
       </Modal>
 
+      {/* pause: requester waiting pill */}
+      {state.pause_req?.seat === mySeat && (
+        <View style={styles.pauseSentPill} pointerEvents="none" testID="pause-sent-pill">
+          <Text style={styles.pauseSentText}>{t("pauseSent")}</Text>
+        </View>
+      )}
+
+      {/* pause: accept/decline for the other players */}
+      <Modal visible={pauseAskMe} transparent animationType="fade">
+        <View style={styles.quitScrim}>
+          <View style={styles.quitCard} testID="pause-request-modal">
+            <Ionicons
+              name="pause-circle"
+              size={40}
+              color={C.brand}
+              style={{ alignSelf: "center" }}
+            />
+            <Text style={[styles.quitTitle, { marginTop: SP.sm }]}>
+              {t("pauseAsks", {
+                name:
+                  state.players.find((p) => p.seat === state.pause_req?.seat)?.username ??
+                  "",
+              })}
+            </Text>
+            <View style={styles.quitRow}>
+              <ChunkyButton
+                testID="pause-decline-button"
+                label={t("decline")}
+                variant="secondary"
+                small
+                onPress={() => send({ action: "pause_decline" })}
+                style={{ flex: 1 }}
+              />
+              <ChunkyButton
+                testID="pause-accept-button"
+                label={t("accept")}
+                small
+                onPress={() => send({ action: "pause_accept" })}
+                style={{ flex: 1 }}
+              />
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* active pause overlay */}
+      {state.paused && state.phase !== "finished" && (
+        <PausedOverlay
+          until={state.paused.until}
+          requesterName={
+            state.players.find((p) => p.seat === state.paused?.seat)?.username ?? ""
+          }
+          canResume={state.paused.seat === mySeat}
+          onResume={() => send({ action: "resume" })}
+          t={t}
+        />
+      )}
+
+      {/* score history (tap on the header score) */}
+      <Modal visible={scoresOpen} transparent animationType="fade">
+        <Pressable style={styles.quitScrim} onPress={() => setScoresOpen(false)}>
+          <Pressable
+            style={[styles.quitCard, { maxHeight: "75%" }]}
+            onPress={() => {}}
+            testID="score-history-modal"
+          >
+            <Text style={styles.quitTitle}>{t("scoreHistory")}</Text>
+            <Text style={styles.historyTotal} testID="score-history-total">
+              {t("us")} {state.match_scores[myTeam]} — {state.match_scores[1 - myTeam]}{" "}
+              {t("them")} · {state.target} pts
+            </Text>
+            <ScrollView style={{ marginTop: SP.sm }}>
+              {state.hand_history?.length ? (
+                state.hand_history.map((h) => (
+                  <View key={h.hand_number} style={styles.historyRow}>
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text style={styles.historyHand}>
+                        {t("hand", { n: h.hand_number })} ·{" "}
+                        {h.contract.capot ? t("capot") : h.contract.value}
+                        <Text style={{ color: SUIT_COLOR[h.contract.suit] }}>
+                          {" "}
+                          {SUIT_SYMBOL[h.contract.suit]}
+                        </Text>
+                        {h.contract.surcontre
+                          ? ` · ${t("surcontred")}`
+                          : h.contract.contre
+                            ? ` · ${t("contred")}`
+                            : ""}
+                      </Text>
+                      <Text style={styles.historyTaker} numberOfLines={1}>
+                        {state.players.find((p) => p.seat === h.contract.seat)?.username}
+                        {" · "}
+                        {h.contract.team === myTeam ? t("us") : t("them")}
+                      </Text>
+                    </View>
+                    <Ionicons
+                      name={h.success ? "checkmark-circle" : "close-circle"}
+                      size={18}
+                      color={h.success ? C.green : C.error}
+                    />
+                    <Text style={styles.historyScores}>
+                      {h.hand_scores[myTeam]} / {h.hand_scores[1 - myTeam]}
+                    </Text>
+                  </View>
+                ))
+              ) : (
+                <Text style={styles.historyEmpty}>{t("noHandsYet")}</Text>
+              )}
+            </ScrollView>
+            <ChunkyButton
+              testID="score-history-close"
+              label={t("close")}
+              variant="secondary"
+              small
+              onPress={() => setScoresOpen(false)}
+              style={{ marginTop: SP.md }}
+            />
+          </Pressable>
+        </Pressable>
+      </Modal>
+
       {/* quit confirm */}
       <Modal visible={quitOpen} transparent animationType="fade">
         <View style={styles.quitScrim}>
@@ -462,6 +692,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: SP.md,
     paddingBottom: SP.sm,
   },
+  headerLeft: { flexDirection: "row", gap: SP.sm },
   quitBtn: {
     width: 38,
     height: 38,
@@ -592,5 +823,63 @@ const styles = StyleSheet.create({
     color: C.ink,
     textAlign: "center",
     marginTop: SP.md,
+  },
+  pauseSentPill: {
+    position: "absolute",
+    top: "16%",
+    alignSelf: "center",
+    backgroundColor: "rgba(0,0,0,0.55)",
+    borderRadius: R.pill,
+    paddingHorizontal: SP.lg,
+    paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.3)",
+  },
+  pauseSentText: { fontFamily: F.bold, fontSize: 13, color: C.cream },
+  pausedScrim: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(12,24,18,0.85)",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: SP.xl,
+  },
+  pausedTitle: { fontFamily: F.display, fontSize: 26, color: C.cream, marginTop: SP.md },
+  pausedBy: {
+    fontFamily: F.text,
+    fontSize: 14,
+    color: "rgba(255,255,255,0.75)",
+    marginTop: 4,
+  },
+  pausedTimer: { fontFamily: F.extra, fontSize: 16, color: C.gold, marginTop: SP.md },
+  historyTotal: {
+    fontFamily: F.display,
+    fontSize: 15,
+    color: C.brand,
+    textAlign: "center",
+    marginTop: SP.xs,
+  },
+  historyRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: SP.sm,
+    paddingVertical: 8,
+    borderTopWidth: 1,
+    borderTopColor: C.border,
+  },
+  historyHand: { fontFamily: F.bold, fontSize: 13.5, color: C.ink },
+  historyTaker: { fontFamily: F.text, fontSize: 11.5, color: C.ink3, marginTop: 1 },
+  historyScores: {
+    fontFamily: F.extra,
+    fontSize: 14,
+    color: C.ink,
+    minWidth: 64,
+    textAlign: "right",
+  },
+  historyEmpty: {
+    fontFamily: F.text,
+    fontSize: 13,
+    color: C.ink3,
+    textAlign: "center",
+    paddingVertical: SP.lg,
   },
 });

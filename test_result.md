@@ -120,3 +120,33 @@ frontend:
 agent_communication:
   - agent: "main"
     message: "Bug fix to verify: on Accueil (home tab), the 'Code du salon' input + arrow button row inside the 'Partie privée' card must fit fully within the card at mobile widths (320/360/390). Login tester1@belote.tn / Belote123!. Check the join flow still works (enter a code, button pressable)."
+
+backend:
+  - task: "Improvement pack: ready/continue at hand_end (120s max), pause request/accept/decline/resume (3min, requester-only resume), capot broken ends hand instantly, rejoin after quit (left flag reset on WS reconnect), GET /api/games/current, hand_history in state"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/game_logic.py, /app/backend/game_manager.py, /app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "New WS actions: ready, pause_request, pause_accept, pause_decline, resume. hand_end deadline now 120s (10s when match_over); advances early when ALL humans sent 'ready'. Pause: humans-only accept list (bots/disconnected auto-excluded), active pause freezes timers (remaining restored on resume), auto-resume after 180s by _auto driver, game actions rejected with 'paused'. Capot contract + defender wins a trick -> _score_hand immediately (0/500). connect() resets left=True on reconnect + broadcasts 'rejoined'. GET /api/games/current returns ongoing game for rejoin banner. state_for adds ready_seats, hand_history, pause_req, paused. Unit sim passed + full pytest 36/36."
+
+frontend:
+  - task: "Improvement pack UI: contract holder badge + name in header chip, hand-end Continuer button, pause UI (button/accept modal/overlay/resume), seat countdown timers for all players, score history modal, home resume banner, bidding stale-value bug fix (Anas bug)"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/app/game/[id].tsx, src/components/game/{PlayerSeat,HandEndModal,BiddingPanel}.tsx, app/(tabs)/home.tsx, src/game/useGameSocket.ts, src/i18n.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "USER-REPORTED BUG (must verify): 'Anas could not raise a bid after his partner bid' — root cause: previously selected bid value stayed selected below new minimum, disabling Annoncer. Fixed with useEffect clearing stale value when minValue rises + reset at new hand (BiddingPanel.tsx). Other UI: pause button in game header (testID pause-request-button), paused-overlay + pause-resume-button (requester only), pause-request-modal with pause-accept/decline-button, seat-timer pills on active player's seat (timed games only), contract-holder-{seat} gold bubble during playing, score header tap -> score-history-modal, HandEndModal hand-continue-button + waiting state, home resume-game-banner/-button via /api/games/current. Verified manually: solo pause->resume->history modal all work."
+
+agent_communication:
+  - agent: "main"
+    message: "Improvement pack of 8 items implemented. MANDATORY: verify the user-reported bidding bug fix (raise over partner's bid). Test with tester1/tester2@belote.tn (Belote123!). Solo games are untimed (no seat timers); use a timed private room (turn_timer:true) or matchmaking game for seat timer checks. WS actions are documented in game_manager.handle_action."

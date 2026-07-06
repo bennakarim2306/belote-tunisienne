@@ -47,6 +47,14 @@ export interface BidEntry {
   suit?: string;
 }
 
+export interface HandHistoryEntry {
+  hand_number: number;
+  contract: Contract;
+  success: boolean;
+  hand_scores: [number, number];
+  match_scores: [number, number];
+}
+
 export interface GameState {
   game_id: string;
   phase: "bidding" | "surcontre" | "playing" | "hand_end" | "finished";
@@ -71,6 +79,10 @@ export interface GameState {
   can_surcontre: boolean;
   belote: { seat: number; played: number } | null;
   hand_result: HandResult | null;
+  ready_seats: number[];
+  hand_history: HandHistoryEntry[];
+  pause_req: { seat: number; required: number[]; accepts: number[] } | null;
+  paused: { seat: number; until: number } | null;
   match_over: boolean;
   winner_team: number | null;
   turn_deadline: number;
@@ -88,6 +100,7 @@ export interface GameEvent {
   winner_seat?: number;
   winner_team?: number;
   trump?: string;
+  requester?: number;
 }
 
 interface EventBatch {

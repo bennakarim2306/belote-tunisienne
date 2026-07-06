@@ -12,7 +12,9 @@ BID_VALUES = [90, 100, 110, 120, 130, 140, 150, 160]
 
 TURN_SECONDS = 30
 SURCONTRE_SECONDS = 15
-HAND_END_SECONDS = 9
+HAND_END_SECONDS = 120       # players confirm with a "ready" button, 2 min max
+MATCH_END_SECONDS = 10       # shorter wait before revealing the match result
+PAUSE_MAX_SECONDS = 180      # accepted pause auto-resumes after 3 min
 TRICK_PAUSE = 1.8
 
 
@@ -115,6 +117,7 @@ class BeloteGame:
                                "belotes": 0, "capots": 0} for s in range(4)}
         self.pause_until = 0.0
         self.turn_deadline = 0.0
+        self.hand_history = []
         self._deal(rotate=False)
 
     # ---------- setup ----------
@@ -149,6 +152,9 @@ class BeloteGame:
         self.belote_played = 0
         self.hand_result = None
         self.pause_until = 0.0
+        self.ready_seats = []
+        self.pause_req = None
+        self.paused = None
         self.turn_deadline = self._turn_deadline_ts()
         self.version += 1
 
@@ -299,6 +305,9 @@ class BeloteGame:
             if self.tricks_played == 8:
                 self.team_points[team] += 10  # dix de der
                 events += self._score_hand()
+            elif self.current_bid["capot"] and team != self.current_bid["seat"] % 2:
+                # announced capot destroyed by a defender's trick: end the hand now
+                events += self._score_hand()
             else:
                 self.turn = winner
                 self.pause_until = time.time() + TRICK_PAUSE
@@ -382,15 +391,97 @@ class BeloteGame:
             "match_over": self.match_over,
             "winner_team": self.winner_team,
         }
+        self.hand_history.append({
+            "hand_number": self.hand_number,
+            "contract": dict(self.hand_result["contract"]),
+            "success": success,
+            "hand_scores": list(scores),
+            "match_scores": list(self.match_scores),
+        })
         self.phase = "hand_end"
         self.turn = None
-        self.turn_deadline = time.time() + HAND_END_SECONDS
+        self.ready_seats = []
+        self.pause_req = None
+        self.paused = None
+        self.turn_deadline = time.time() + (
+            MATCH_END_SECONDS if self.match_over else HAND_END_SECONDS)
         self.version += 1
         return [{"e": "hand_end"}]
 
     def next_hand(self):
         self._deal(rotate=True)
         return [{"e": "next_hand"}]
+
+    def apply_ready(self, seat):
+        """A player confirms they finished reading the hand result."""
+        if self.phase != "hand_end":
+            raise ValueError("not_hand_end")
+        if seat not in self.ready_seats:
+            self.ready_seats.append(seat)
+            self.version += 1
+        return [{"e": "ready", "seat": seat}]
+
+    # ---------- pause ----------
+
+    def request_pause(self, seat, required_seats):
+        """Ask for a break; every human in required_seats must accept."""
+        if self.phase not in ("bidding", "playing"):
+            raise ValueError("cannot_pause")
+        if self.pause_req or self.paused:
+            raise ValueError("pause_pending")
+        self.pause_req = {"seat": seat, "required": list(required_seats), "accepts": []}
+        self.version += 1
+        events = [{"e": "pause_request", "seat": seat}]
+        if not self.pause_req["required"]:
+            events += self._activate_pause()
+        return events
+
+    def accept_pause(self, seat):
+        if not self.pause_req:
+            raise ValueError("no_pause_request")
+        if seat not in self.pause_req["required"]:
+            raise ValueError("not_required")
+        if seat not in self.pause_req["accepts"]:
+            self.pause_req["accepts"].append(seat)
+        self.version += 1
+        events = [{"e": "pause_accept", "seat": seat}]
+        if set(self.pause_req["required"]) <= set(self.pause_req["accepts"]):
+            events += self._activate_pause()
+        return events
+
+    def decline_pause(self, seat):
+        if not self.pause_req:
+            raise ValueError("no_pause_request")
+        if seat not in self.pause_req["required"]:
+            raise ValueError("not_required")
+        requester = self.pause_req["seat"]
+        self.pause_req = None
+        self.version += 1
+        return [{"e": "pause_declined", "seat": seat, "requester": requester}]
+
+    def _activate_pause(self):
+        seat = self.pause_req["seat"]
+        remaining = None
+        if self.turn_timeout and self.turn_deadline:
+            remaining = max(3.0, self.turn_deadline - time.time())
+        self.paused = {"seat": seat, "until": time.time() + PAUSE_MAX_SECONDS,
+                       "remaining": remaining}
+        self.pause_req = None
+        self.version += 1
+        return [{"e": "paused", "seat": seat}]
+
+    def resume(self, seat=None):
+        """seat=None → auto-resume by the server; otherwise requester only."""
+        if not self.paused:
+            raise ValueError("not_paused")
+        if seat is not None and seat != self.paused["seat"]:
+            raise ValueError("not_requester")
+        remaining = self.paused.get("remaining")
+        if remaining and self.turn_timeout:
+            self.turn_deadline = time.time() + remaining
+        self.paused = None
+        self.version += 1
+        return [{"e": "resumed"}]
 
     # ---------- serialization ----------
 
@@ -437,6 +528,11 @@ class BeloteGame:
             "belote": ({"seat": self.belote_seat, "played": self.belote_played}
                        if self.belote_played > 0 else None),
             "hand_result": self.hand_result,
+            "ready_seats": self.ready_seats,
+            "hand_history": self.hand_history,
+            "pause_req": self.pause_req,
+            "paused": ({"seat": self.paused["seat"], "until": self.paused["until"]}
+                       if self.paused else None),
             "match_over": self.match_over,
             "winner_team": self.winner_team,
             "turn_deadline": self.turn_deadline,

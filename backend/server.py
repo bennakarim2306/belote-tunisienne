@@ -398,6 +398,24 @@ async def create_solo(body: MatchTypeBody, request: Request):
     return {"game_id": game_id}
 
 
+@api.get("/games/current")
+async def current_game(request: Request):
+    """Ongoing (non-finished) live game the user is seated in — for rejoining."""
+    user = await get_current_user(request)
+    for game_id, live in manager.games.items():
+        g = live.game
+        if g.phase == "finished":
+            continue
+        me = next((p for p in g.players
+                   if p["user_id"] == user["user_id"] and not p["is_bot"]), None)
+        if me:
+            return {"game_id": game_id, "match_type": g.match_type,
+                    "phase": g.phase, "hand_number": g.hand_number,
+                    "match_scores": g.match_scores, "target": g.target,
+                    "my_team": me["seat"] % 2}
+    return {"game_id": None}
+
+
 # ---------------- private rooms ----------------
 
 def room_public(room):

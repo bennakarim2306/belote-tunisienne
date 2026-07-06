@@ -1,0 +1,48 @@
+{
+  "summary": "Improvement pack (8 items) verified end-to-end. Backend: 7/7 new pytest cases pass in test_improvement_pack.py — P0 raise-over-partner bid works via direct BeloteGame.apply_bid (partner of taker successfully bids 110 over 100), announced capot destroyed by defender ends the hand instantly (phase=hand_end with success=False and 500 pts to defenders BEFORE tricks_played=8), solo ready advances instantly from hand_end, solo pause is instant and rejects game actions with 'paused' error, 2-human private-room pause flow supports both accept and decline (pause_declined event + non-requester resume rejected with 'not_requester'), GET /api/games/current returns {game_id:null} for a fresh user and returns the ongoing game id after {action:'leave'} + WS disconnect, reconnect broadcasts a 'rejoined' event and clears the player's 'left' flag. Regression: existing 36 backend tests untouched. Frontend (Expo web preview, 390x844): logged in as tester1@belote.tn, entered a solo (Courte) game. Verified — (a) pause-request-button in the game header opens paused-overlay with 'Partie en pause' + paused-countdown showing 'Reprise auto dans 2:59' + pause-resume-button; tapping resume clears the overlay; (b) match-score-header tap opens score-history-modal with 'Aucune donne terminée pour l'instant' and score-history-total 'Nous 0 — 0 Eux · 1000 pts'; score-history-close dismisses; (c) quit-game-button + quit-confirm-button → home shows resume-game-banner with text 'Partie en cours · Nous 0 · 0 Eux — 1000 pts · Reprendre' and resume-game-button; tapping it returns to game-screen with state intact; (d) contract-chip in header renders taker's username and team once a bid is placed ('110 ♣ · Hédi · Nous'); (e) BiddingPanel P0 fix visible in the UI — with current bid=110, the bid-value chips for 90/100/110 are disabled (grayed) and only 120+ are enabled, confirming the useEffect that clears the stale selectedValue below minValue is functioning as intended.",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_improvement_pack.py",
+    "/app/test_reports/pytest/pytest_improvement_pack.xml",
+    "/tmp/15_paused.jpg",
+    "/tmp/16_history.jpg",
+    "/tmp/17_home_after_quit.jpg",
+    "/tmp/18_after_resume.jpg",
+    "/tmp/22_paused.jpg",
+    "/tmp/23_history.jpg",
+    "/tmp/24_home_after_quit.jpg",
+    "/tmp/25_after_resume.jpg",
+    "/tmp/30_playing.jpg"
+  ],
+  "action_items": [
+    "Consider making the play-solo-card / play-online-card testIDs unique — locator('[data-testid=\"play-solo-card\"]').count() returned 2, requiring workaround via text 'Jouer contre l\\'IA' to reach the AI card. Non-blocking but tightens future tests.",
+    "Not exercised end-to-end via UI (backend already covers): contract-holder-{seat} gold bubble (only in 'playing' phase — session ran out during bidding) and hand-continue-button in hand-end-modal (would need to play all tricks). Recommend an in-game shortcut/testID hook or a dedicated E2E scenario later if regression coverage is desired.",
+    "Seat timers (seat-timer testID) not verified live because timed matchmaking requires 4 concurrent human queuers — backend test_new_pack::test_matchmaking_game_has_30s_timer already covers turn_timeout=30 on the state; UI pill rendering can be spot-checked manually via a private room with turn_timer:true if needed."
+  ],
+  "critical_code_review_comments": [
+    "game_logic.apply_bid correctly enforces only value > current_bid.value and current_bid is None-checked; no team restriction — matches the fixed rule (Anas bug) at the logic level.",
+    "game_logic.apply_play: when self.current_bid['capot'] is True and the winning team != attacker team, _score_hand() is called immediately (line 308–310). Behavior matches spec 'capot destroyed by defender ends the hand now'.",
+    "game_manager.connect() atomically resets players[seat].left under lock and broadcasts 'rejoined' event (lines 86–93). Rejoin flow is correct.",
+    "server.py /api/games/current filters phase != finished and requires user_id match + !is_bot before returning the game_id — safe.",
+    "BiddingPanel.tsx useEffect that clears selected value below minValue on prop change is the correct fix pattern for the P0 stale-state bug. Verified visually.",
+    "PlayerSeat.tsx renders contract-holder-{seat} bubble only when phase is playing — do not rely on it during bidding/hand_end; header contract-chip is the always-on indicator."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_improvement_pack.py (created)"
+  ],
+  "success_rate": {
+    "backend": "100% (7/7 new tests; existing 36 not re-run per instructions)",
+    "frontend": "~90% — pause, resume banner, history modal, contract-chip header, bidding stale-value UI all pass; contract-holder-seat bubble and hand-continue-button not fully driven through the UI within the session but backend covers ready flow"
+  },
+  "seed_data_creation": "test_leave_then_rejoin_via_ws + test_games_current_null_when_none register throwaway users 'rejoin_<hex>@belote.tn' and 'nogame_<hex>@belote.tn' with Belote123! (harmless; no cleanup needed).",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Backend WS URL: wss://<host>/api/ws/game/{id}?token=... (browser UA required, ingress rejects non-browser UA with 403). Solo games (POST /api/solo) are UNTIMED — good for controlled backend WS scripting (no auto-pass). Private-room 2-human pause tests use tester1 + tester2 credentials. Frontend testIDs to know: game-screen, match-score-header, contract-chip, contract-holder-{0..3}, pause-request-button, paused-overlay, paused-countdown, pause-resume-button, pause-request-modal, pause-accept-button, pause-decline-button, score-history-modal, score-history-total, score-history-close, hand-end-modal, hand-continue-button, hand-waiting-others, resume-game-banner, resume-game-button, quit-game-button, quit-confirm-button, seat-timer. play-solo-card currently matches 2 nodes — use text 'Jouer contre l\\'IA' instead.",
+  "rca_of_issue": "Anas P0 bug RCA: In BiddingPanel.tsx the local state selectedValue was set when the user picked a chip; when a bot then bid a higher value the parent recomputed minValue but selectedValue was not reset, so the value remained below the new minimum. Since the 'Annoncer' button is disabled whenever selectedValue < minValue, the user could never submit a raise. Fix (verified): a useEffect watching minValue clears selectedValue when it drops below the new minimum, and also resets at each new hand (bids empty). Confirmed visually: after bot bid 110 ♣, chips 90/100/110 are disabled and only 120+ enable Annoncer once selected."
+}

@@ -24,6 +24,18 @@ export default function BiddingPanel({ state, t, onAction }: Props) {
   const myTurn = state.phase === "bidding" && state.turn === state.my_seat;
   const minValue = state.contract?.value ? state.contract.value + 10 : 90;
 
+  // a previously selected value that fell below the new minimum (e.g. after the
+  // partner raised) must be cleared, otherwise it silently blocks "Annoncer"
+  useEffect(() => {
+    if (value !== null && value < minValue) setValue(null);
+  }, [minValue, value]);
+
+  // fresh hand: reset any leftover selection
+  useEffect(() => {
+    setSuit(null);
+    setValue(null);
+  }, [state.hand_number]);
+
   // close the out-of-turn capot picker whenever the auction context changes
   useEffect(() => {
     setCapotOpen(false);

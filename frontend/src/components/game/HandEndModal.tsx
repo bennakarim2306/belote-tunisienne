@@ -28,17 +28,26 @@ export function HandEndModal({
   result,
   mySeat,
   deadline,
+  readySeats,
+  humanSeats,
+  onReady,
   t,
 }: {
   result: HandResult;
   mySeat: number;
   deadline: number;
+  readySeats: number[];
+  humanSeats: number[];
+  onReady: () => void;
   t: TFunc;
 }) {
   const remaining = useCountdown(deadline);
   const myTeam = mySeat % 2;
   const otherTeam = 1 - myTeam;
   const c = result.contract;
+  const iAmReady = readySeats.includes(mySeat);
+  const readyCount = humanSeats.filter((s) => readySeats.includes(s)).length;
+  const total = humanSeats.length;
 
   const teamLabel = (team: number) => (team === myTeam ? t("us") : t("them"));
 
@@ -116,6 +125,19 @@ export function HandEndModal({
             </Text>
           </View>
         </View>
+
+        {!iAmReady ? (
+          <ChunkyButton
+            testID="hand-continue-button"
+            label={total > 1 ? `${t("continueBtn")} (${readyCount}/${total})` : t("continueBtn")}
+            onPress={onReady}
+            style={{ marginTop: SP.lg }}
+          />
+        ) : total > 1 ? (
+          <Text style={styles.waitingReady} testID="hand-waiting-others">
+            {t("waitingOthers")} ({readyCount}/{total})
+          </Text>
+        ) : null}
 
         {!result.match_over && (
           <Text style={styles.countdown}>{t("nextHandIn", { n: remaining })}</Text>
@@ -257,6 +279,13 @@ const styles = StyleSheet.create({
     fontFamily: F.bold,
     fontSize: 13,
     color: C.ink3,
+    textAlign: "center",
+    marginTop: SP.lg,
+  },
+  waitingReady: {
+    fontFamily: F.display,
+    fontSize: 14,
+    color: C.brand,
     textAlign: "center",
     marginTop: SP.lg,
   },

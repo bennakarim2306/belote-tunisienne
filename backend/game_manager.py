@@ -82,7 +82,15 @@ class GameManager:
             return None
         live.sockets.setdefault(user_id, set()).add(ws)
         seat = live.game.seat_of(user_id)
+        rejoined = False
+        async with live.lock:
+            if seat is not None and live.game.players[seat].get("left"):
+                live.game.players[seat]["left"] = False
+                rejoined = True
         await self._send(ws, live.game.state_for(seat), [])
+        if rejoined:
+            await self.broadcast(live, [{"e": "rejoined", "seat": seat}])
+            self.schedule(live)
         return live
 
     def disconnect(self, game_id, user_id, ws):
@@ -132,6 +140,9 @@ class GameManager:
         action = msg.get("action")
         try:
             async with live.lock:
+                if g.paused and action in ("bid", "pass", "capot", "contre",
+                                           "surcontre", "decline_surcontre", "play"):
+                    raise ValueError("paused")
                 if action == "bid":
                     events = g.apply_bid(seat, int(msg.get("value", 0)), msg.get("suit"))
                 elif action == "pass":
@@ -146,12 +157,30 @@ class GameManager:
                     events = g.apply_decline_surcontre(seat)
                 elif action == "play":
                     events = g.apply_play(seat, msg.get("card"))
+                elif action == "ready":
+                    events = g.apply_ready(seat)
+                elif action == "pause_request":
+                    required = [p["seat"] for p in g.players
+                                if not p["is_bot"] and not p.get("left")
+                                and p["seat"] != seat and p["user_id"] in live.sockets]
+                    events = g.request_pause(seat, required)
+                elif action == "pause_accept":
+                    events = g.accept_pause(seat)
+                elif action == "pause_decline":
+                    events = g.decline_pause(seat)
+                elif action == "resume":
+                    events = g.resume(seat)
                 elif action == "leave":
                     g.players[seat]["left"] = True
                     events = [{"e": "left", "seat": seat}]
                 else:
                     return
                 await self.broadcast(live, events)
+                if action == "ready" and g.phase == "hand_end":
+                    required = [p["seat"] for p in g.players
+                                if not p["is_bot"] and not p.get("left")]
+                    if required and all(s in g.ready_seats for s in required):
+                        await self._advance_hand_end(live)
             self.schedule(live)
         except ValueError as err:
             await ws.send_json({"type": "error", "message": str(err)})
@@ -163,6 +192,20 @@ class GameManager:
             live.pending_task.cancel()
         live.pending_task = asyncio.create_task(self._auto(live, live.game.version))
 
+    async def _advance_hand_end(self, live):
+        """Move on from hand_end (all players ready or deadline). Lock must be held."""
+        g = live.game
+        if g.match_over:
+            g.phase = "finished"
+            g.version += 1
+            await self._finalize(live)
+            await self.broadcast(live, [{"e": "match_end",
+                                         "winner_team": g.winner_team}])
+            asyncio.create_task(self._delayed_remove(g.game_id, 600))
+            return
+        events = g.next_hand()
+        await self.broadcast(live, events)
+
     async def _auto(self, live, version):
         try:
             g = live.game
@@ -171,22 +214,24 @@ class GameManager:
             if g.phase == "finished":
                 return
 
+            if g.paused:
+                await asyncio.sleep(max(0.5, g.paused["until"] - now))
+                async with live.lock:
+                    if g.version != version or not g.paused:
+                        return
+                    events = g.resume(None)
+                    await self.broadcast(live, events)
+                self.schedule(live)
+                return
+
             if g.phase == "hand_end":
                 await asyncio.sleep(max(0.5, g.turn_deadline - now))
                 async with live.lock:
                     if g.version != version or g.phase != "hand_end":
                         return
-                    if g.match_over:
-                        g.phase = "finished"
-                        g.version += 1
-                        await self._finalize(live)
-                        await self.broadcast(live, [{"e": "match_end",
-                                                     "winner_team": g.winner_team}])
-                        asyncio.create_task(self._delayed_remove(g.game_id, 600))
-                        return
-                    events = g.next_hand()
-                    await self.broadcast(live, events)
-                self.schedule(live)
+                    await self._advance_hand_end(live)
+                if g.phase != "finished":
+                    self.schedule(live)
                 return
 
             if g.phase == "surcontre":

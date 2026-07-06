@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import Animated, {
   useAnimatedStyle,
@@ -13,12 +13,36 @@ import { SUIT_COLOR, SUIT_SYMBOL } from "@/src/components/PlayingCard";
 import { GamePlayer } from "@/src/game/useGameSocket";
 import { C, F, R } from "@/src/theme";
 
+function SeatTimer({ deadline }: { deadline: number }) {
+  const [remaining, setRemaining] = useState(() =>
+    Math.max(0, Math.round(deadline - Date.now() / 1000)),
+  );
+  useEffect(() => {
+    const update = () =>
+      setRemaining(Math.max(0, Math.round(deadline - Date.now() / 1000)));
+    update();
+    const iv = setInterval(update, 1000);
+    return () => clearInterval(iv);
+  }, [deadline]);
+  return (
+    <View
+      style={[styles.timerPill, remaining <= 10 && styles.timerPillUrgent]}
+      testID="seat-timer"
+    >
+      <Text style={styles.timerText}>{remaining}s</Text>
+    </View>
+  );
+}
+
 interface Props {
   player: GamePlayer;
   isTurn: boolean;
   isDealer: boolean;
   bidLabel?: string | null;
   bidSuit?: string | null;
+  contractLabel?: { text: string; suit: string } | null;
+  deadline?: number;
+  showTimer?: boolean;
   isMe?: boolean;
   size?: number;
 }
@@ -29,6 +53,9 @@ export default function PlayerSeat({
   isDealer,
   bidLabel,
   bidSuit,
+  contractLabel,
+  deadline,
+  showTimer,
   isMe,
   size = 46,
 }: Props) {
@@ -75,6 +102,7 @@ export default function PlayerSeat({
             <Ionicons name="hardware-chip" size={9} color={C.cream} />
           </View>
         )}
+        {isTurn && showTimer && deadline ? <SeatTimer deadline={deadline} /> : null}
       </View>
       <View style={styles.nameRow}>
         <Text style={styles.name} numberOfLines={1}>
@@ -86,7 +114,19 @@ export default function PlayerSeat({
           <Text style={styles.cardCountText}>🂠 {player.card_count}</Text>
         </View>
       )}
-      {bidLabel ? (
+      {contractLabel ? (
+        <View style={[styles.bubble, styles.contractBubble]} testID={`contract-holder-${player.seat}`}>
+          <Ionicons name="ribbon" size={11} color={C.ink} />
+          <Text style={styles.bubbleText}>
+            {" "}
+            {contractLabel.text}
+            <Text style={{ color: SUIT_COLOR[contractLabel.suit] }}>
+              {" "}
+              {SUIT_SYMBOL[contractLabel.suit]}
+            </Text>
+          </Text>
+        </View>
+      ) : bidLabel ? (
         <Animated.View style={styles.bubble} entering={undefined}>
           <Text style={styles.bubbleText}>
             {bidLabel}
@@ -160,4 +200,25 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   bubbleText: { fontFamily: F.extra, fontSize: 12, color: C.ink },
+  contractBubble: {
+    backgroundColor: C.gold,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  timerPill: {
+    position: "absolute",
+    bottom: -8,
+    backgroundColor: "rgba(0,0,0,0.65)",
+    borderRadius: R.pill,
+    paddingHorizontal: 8,
+    paddingVertical: 1,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.35)",
+    zIndex: 5,
+  },
+  timerPillUrgent: {
+    backgroundColor: C.error,
+    borderColor: C.cream,
+  },
+  timerText: { fontFamily: F.extra, fontSize: 11, color: C.cream },
 });
