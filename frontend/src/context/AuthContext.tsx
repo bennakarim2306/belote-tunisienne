@@ -21,6 +21,7 @@ export interface User {
   name?: string;
   avatar_id: string;
   elo: number;
+  elo_duo?: number;
   games_played: number;
   wins: number;
   losses: number;

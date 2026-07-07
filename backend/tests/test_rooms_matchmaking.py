@@ -13,7 +13,8 @@ def test_room_create_get(http, tester1):
     assert not room["started"]
     assert len(room["code"]) == 6
     assert room["host_id"] == tester1["user"]["user_id"]
-    assert len(room["players"]) == 1
+    assert len(room["seats"]) == 4
+    assert sum(1 for s in room["seats"] if s) == 1
 
     r2 = http.get(f"{API}/rooms/{room['code']}", headers=auth_headers(tester1["token"]))
     assert r2.status_code == 200
@@ -29,7 +30,7 @@ def test_room_join_invite_start(http, tester1, tester2):
     r = http.post(f"{API}/rooms/{room['code']}/join",
                   headers=auth_headers(tester2["token"]))
     assert r.status_code == 200
-    assert len(r.json()["players"]) == 2
+    assert sum(1 for s in r.json()["seats"] if s) == 2
 
     # tester1 invites tester2 (already in but exercises route)
     r = http.post(f"{API}/rooms/{room['code']}/invite",

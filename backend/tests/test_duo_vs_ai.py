@@ -10,6 +10,9 @@ from test_duo_matchmaking import _ensure_friends
 async def test_duo_vs_ai_flow(http, tester1, tester2):
     _ensure_friends(http, tester1, tester2)
     h1, h2 = auth_headers(tester1["token"]), auth_headers(tester2["token"])
+    # clear any matchmaking residue from previous tests (matched lives 120s)
+    for h in (h1, h2):
+        http.delete(f"{API}/matchmaking/leave", headers=h)
 
     r = http.post(f"{API}/matchmaking/duo/invite",
                   json={"to_user_id": tester2["user"]["user_id"],

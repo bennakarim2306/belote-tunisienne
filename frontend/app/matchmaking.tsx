@@ -30,8 +30,6 @@ interface FoundPlayer {
 
 interface DuoStatusInfo {
   partner: FoundPlayer;
-  mode: "wait" | "duo_only" | "fill";
-  duo_wait_remaining: number | null;
 }
 
 function ShufflingCard({ delay }: { delay: number }) {
@@ -196,7 +194,9 @@ export default function MatchmakingScreen() {
             <Text style={styles.slotName} numberOfLines={1}>
               {t("you")}
             </Text>
-            <Text style={styles.slotElo}>{user?.elo ?? 1000}</Text>
+            <Text style={styles.slotElo}>
+              {isDuo ? (user?.elo_duo ?? 1000) : (user?.elo ?? 1000)}
+            </Text>
           </View>
           {partnerSlot && (
             <View style={styles.slot} testID="matchmaking-duo-partner">
@@ -246,17 +246,12 @@ export default function MatchmakingScreen() {
         </View>
 
         {duoInfo && (
-          <View style={[styles.rangeChip, { marginTop: SP.sm, borderColor: C.brand, borderWidth: 1 }]} testID="duo-mode-chip">
+          <View
+            style={[styles.rangeChip, { marginTop: SP.sm, borderColor: C.brand, borderWidth: 1 }]}
+            testID="duo-mode-chip"
+          >
             <Ionicons name="people" size={13} color={C.brand} />
-            <Text style={styles.rangeText}>
-              {duoInfo.mode === "wait"
-                ? duoInfo.duo_wait_remaining && duoInfo.duo_wait_remaining > 0
-                  ? t("duoSearchingDuo", { s: duoInfo.duo_wait_remaining })
-                  : t("duoFallbackNow")
-                : duoInfo.mode === "duo_only"
-                  ? t("duoModeOnly")
-                  : t("duoModeFill")}
-            </Text>
+            <Text style={styles.rangeText}>{t("duoVsDuoOnly")}</Text>
           </View>
         )}
 

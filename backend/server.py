@@ -76,7 +76,7 @@ class FriendRequestBody(BaseModel):
 class DuoInviteBody(BaseModel):
     to_user_id: str
     match_type: str = "short"
-    mode: str = "wait"  # wait | duo_only | fill
+    mode: str = "online"  # online (duo vs duo) | vs_ai
 
 
 class FriendRespondBody(BaseModel):
@@ -107,12 +107,14 @@ def new_user_doc(email, username, name=None, provider="email", password_hash=Non
         "auth_provider": provider,
         "password_hash": password_hash,
         "elo": 1000,
+        "elo_duo": 1000,
         "games_played": 0,
         "wins": 0,
         "losses": 0,
         "stats": {"contracts_taken": 0, "contracts_made": 0, "belotes": 0,
                   "capots": 0, "points_scored": 0, "best_streak": 0, "current_streak": 0},
         "elo_history": [{"elo": 1000, "ts": now}],
+        "elo_duo_history": [{"elo": 1000, "ts": now}],
         "created_at": now,
     }
 
@@ -164,7 +166,8 @@ async def get_current_user(request: Request):
 def to_player(user):
     return {"user_id": user["user_id"], "username": user["username"],
             "avatar_id": user.get("avatar_id", "av1"), "is_bot": False,
-            "elo": user.get("elo", 1000)}
+            "elo": user.get("elo", 1000),
+            "elo_duo": user.get("elo_duo", 1000)}
 
 
 async def unique_username(base: str) -> str:
@@ -276,11 +279,13 @@ async def my_stats(request: Request):
 
 
 @api.get("/leaderboard")
-async def leaderboard(request: Request):
+async def leaderboard(request: Request, mode: str = "solo"):
     user = await get_current_user(request)
+    field = "elo_duo" if mode == "duo" else "elo"
     top = await db.users.find({}, USER_PUBLIC).sort(
-        [("elo", -1), ("wins", -1)]).to_list(50)
-    my_rank = await db.users.count_documents({"elo": {"$gt": user.get("elo", 1000)}}) + 1
+        [(field, -1), ("wins", -1)]).to_list(50)
+    my_rank = await db.users.count_documents(
+        {field: {"$gt": user.get(field, 1000)}}) + 1
     return {"players": top, "my_rank": my_rank, "me": user}
 
 
@@ -316,7 +321,8 @@ async def search_users(q: str, request: Request):
 async def user_brief(user_id):
     return await db.users.find_one(
         {"user_id": user_id},
-        {"_id": 0, "user_id": 1, "username": 1, "avatar_id": 1, "elo": 1})
+        {"_id": 0, "user_id": 1, "username": 1, "avatar_id": 1, "elo": 1,
+         "elo_duo": 1})
 
 
 @api.get("/friends")
@@ -485,7 +491,7 @@ async def duo_candidates(request: Request):
 async def duo_invite(body: DuoInviteBody, request: Request):
     user = await get_current_user(request)
     uid = user["user_id"]
-    if body.mode not in ("wait", "duo_only", "fill", "vs_ai"):
+    if body.mode not in ("online", "vs_ai"):
         raise HTTPException(status_code=400, detail="bad_mode")
     if body.match_type not in ("short", "long"):
         raise HTTPException(status_code=400, detail="bad_match_type")
@@ -533,9 +539,10 @@ async def create_solo(body: MatchTypeBody, request: Request):
 
 @api.get("/games/current")
 async def current_game(request: Request):
-    """Ongoing (non-finished) live game the user is seated in — for rejoining."""
+    """Ongoing (non-finished) live game the user is seated in — for rejoining.
+    Newest first: a freshly started game takes precedence over older left-over ones."""
     user = await get_current_user(request)
-    for game_id, live in manager.games.items():
+    for game_id, live in reversed(list(manager.games.items())):
         g = live.game
         if g.phase == "finished":
             continue

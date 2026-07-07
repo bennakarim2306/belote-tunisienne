@@ -353,7 +353,9 @@ def test_games_current_null_when_none(http):
 
 @pytest.mark.asyncio
 async def test_leave_then_rejoin_via_ws(http):
-    """Solo game: leave, GET /api/games/current returns id, reconnect → left cleared."""
+    """Solo game: the creator is host, so 'leave' cancels the game for everyone
+    (game_cancelled event) and /api/games/current no longer lists it.
+    Non-host rejoin is covered by test_pack2 test_rejoin_non_host_via_ws."""
     creds = {"email": f"rejoin_{uuid.uuid4().hex[:6]}@belote.tn",
              "password": "Belote123!",
              "username": f"Rej{uuid.uuid4().hex[:4]}"}
@@ -363,48 +365,25 @@ async def test_leave_then_rejoin_via_ws(http):
     assert r.status_code == 200
     game_id = r.json()["game_id"]
 
-    # First connection: send leave then disconnect
     async with websockets.connect(_ws_url(game_id, tok),
                                   additional_headers=[("User-Agent", UA)],
                                   open_timeout=15, max_size=2**22) as ws:
         await _first_update(ws)
         await ws.send(json.dumps({"action": "leave"}))
-        # give server time to persist left flag
-        try:
-            await asyncio.wait_for(ws.recv(), timeout=3)
-        except asyncio.TimeoutError:
-            pass
-
-    # /api/games/current should still list the game
-    r = http.get(f"{API}/games/current", headers=auth_headers(tok))
-    assert r.status_code == 200
-    body = r.json()
-    assert body["game_id"] == game_id, body
-
-    # Reconnect via WS → left flag cleared + 'rejoined' event broadcast
-    async with websockets.connect(_ws_url(game_id, tok),
-                                  additional_headers=[("User-Agent", UA)],
-                                  open_timeout=15, max_size=2**22) as ws:
-        # Look for either an update with left=false for my_seat OR events includes rejoined
         end = time.time() + 8
-        saw_left_cleared = False
-        saw_rejoined_event = False
-        while time.time() < end:
+        saw_cancelled = False
+        while time.time() < end and not saw_cancelled:
             try:
                 raw = await asyncio.wait_for(ws.recv(), timeout=end - time.time())
             except asyncio.TimeoutError:
                 break
             msg = json.loads(raw)
             if msg.get("type") == "update":
-                s = msg["state"]
-                my_seat = s.get("my_seat")
-                p = next((pl for pl in s["players"] if pl["seat"] == my_seat), None)
-                if p and not p.get("left"):
-                    saw_left_cleared = True
-                if any(e.get("e") == "rejoined" for e in msg.get("events", [])):
-                    saw_rejoined_event = True
-            if saw_left_cleared and saw_rejoined_event:
-                break
-        assert saw_left_cleared, "player 'left' flag not cleared after reconnect"
-        # rejoined event should have broadcast at least once
-        assert saw_rejoined_event, "'rejoined' event not observed after reconnect"
+                if any(e.get("e") == "game_cancelled" for e in msg.get("events", [])):
+                    saw_cancelled = True
+        assert saw_cancelled, "'game_cancelled' event not observed after host leave"
+
+    # the cancelled game must not be offered for rejoin
+    r = http.get(f"{API}/games/current", headers=auth_headers(tok))
+    assert r.status_code == 200
+    assert r.json()["game_id"] is None, r.json()

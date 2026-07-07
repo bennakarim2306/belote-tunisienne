@@ -19,28 +19,20 @@ export interface DuoCandidate {
   username: string;
   avatar_id: string;
   elo: number;
+  elo_duo?: number;
   friend_status?: "friends" | "pending" | "none";
 }
-
-export type DuoMode = "wait" | "duo_only" | "fill";
-
-const MODES: { id: DuoMode; icon: string; label: string; desc: string }[] = [
-  { id: "wait", icon: "time", label: "duoModeWait", desc: "duoModeWaitDesc" },
-  { id: "duo_only", icon: "shield-checkmark", label: "duoModeOnly", desc: "duoModeOnlyDesc" },
-  { id: "fill", icon: "flash", label: "duoModeFill", desc: "duoModeFillDesc" },
-];
 
 interface Props {
   partner: DuoCandidate | null;
   onPartner: (c: DuoCandidate | null) => void;
-  mode: DuoMode;
-  onMode: (m: DuoMode) => void;
-  showModes?: boolean;
+  showDuoElo?: boolean;
 }
 
-// Partner picker (friends + recent co-players) and opponents-wait mode selector
-// shown inside the "Jouer en ligne" modal when "En duo" is active.
-export default function DuoSetup({ partner, onPartner, mode, onMode, showModes = true }: Props) {
+// Partner picker (friends + recent co-players) shown inside the play modals
+// when "En duo" is active. Online duo is strictly duo-vs-duo, rated on the
+// separate duo ELO — hence showDuoElo for the online variant.
+export default function DuoSetup({ partner, onPartner, showDuoElo = false }: Props) {
   const { t } = useI18n();
   const [loading, setLoading] = useState(true);
   const [friends, setFriends] = useState<DuoCandidate[]>([]);
@@ -76,7 +68,9 @@ export default function DuoSetup({ partner, onPartner, mode, onMode, showModes =
         <Text style={[styles.chipName, selected && { color: C.brand }]} numberOfLines={1}>
           {c.username}
         </Text>
-        <Text style={styles.chipElo}>{c.elo}</Text>
+        <Text style={styles.chipElo}>
+          {showDuoElo ? (c.elo_duo ?? 1000) : c.elo}
+        </Text>
         {showAdd && c.friend_status === "none" && !requested[c.user_id] && (
           <Pressable
             testID={`duo-add-friend-${c.username}`}
@@ -119,38 +113,11 @@ export default function DuoSetup({ partner, onPartner, mode, onMode, showModes =
         </ScrollView>
       )}
 
-      {showModes && (
-        <>
-          <Text style={styles.label}>{t("duoOpponents")}</Text>
-          {MODES.map((m) => {
-            const active = mode === m.id;
-            return (
-              <Pressable
-                key={m.id}
-                testID={`duo-mode-${m.id}`}
-                onPress={() => onMode(m.id)}
-                style={[styles.modeRow, active && styles.modeRowActive]}
-              >
-                <Ionicons
-                  name={m.icon as never}
-                  size={18}
-                  color={active ? C.brand : C.ink3}
-                />
-                <View style={{ flex: 1, marginLeft: SP.md }}>
-                  <Text style={[styles.modeLabel, active && { color: C.brand }]}>
-                    {t(m.label as never)}
-                  </Text>
-                  <Text style={styles.modeDesc}>{t(m.desc as never)}</Text>
-                </View>
-                <Ionicons
-                  name={active ? "radio-button-on" : "radio-button-off"}
-                  size={19}
-                  color={active ? C.brand : C.ink3}
-                />
-              </Pressable>
-            );
-          })}
-        </>
+      {showDuoElo && (
+        <View style={styles.duoOnlyHint} testID="duo-vs-duo-hint">
+          <Ionicons name="shield-checkmark" size={15} color={C.brand} />
+          <Text style={styles.duoOnlyText}>{t("duoVsDuoOnly")}</Text>
+        </View>
       )}
     </View>
   );
@@ -208,18 +175,17 @@ const styles = StyleSheet.create({
     width: 70,
     textAlign: "center",
   },
-  modeRow: {
+  duoOnlyHint: {
     flexDirection: "row",
     alignItems: "center",
+    gap: 6,
+    marginTop: SP.md,
+    backgroundColor: C.bg3,
+    borderWidth: 1,
+    borderColor: C.brand3,
     borderRadius: R.md,
-    borderWidth: 1.5,
-    borderColor: C.border,
-    backgroundColor: C.bg2,
     paddingHorizontal: SP.md,
     paddingVertical: SP.sm,
-    marginTop: SP.xs,
   },
-  modeRowActive: { borderColor: C.brand, backgroundColor: C.bg3 },
-  modeLabel: { fontFamily: F.bold, fontSize: 13.5, color: C.ink },
-  modeDesc: { fontFamily: F.text, fontSize: 11.5, color: C.ink3, marginTop: 1 },
+  duoOnlyText: { fontFamily: F.bold, fontSize: 12.5, color: C.brand, flex: 1 },
 });

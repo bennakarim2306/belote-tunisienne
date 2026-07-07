@@ -28,7 +28,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { api, ApiError } from "@/src/api";
 import Avatar from "@/src/components/Avatar";
 import ChunkyButton from "@/src/components/ChunkyButton";
-import DuoSetup, { DuoCandidate, DuoMode } from "@/src/components/DuoSetup";
+import DuoSetup, { DuoCandidate } from "@/src/components/DuoSetup";
 import { useAuth } from "@/src/context/AuthContext";
 import {
   DuoInviteNotif,
@@ -69,7 +69,6 @@ export default function HomeScreen() {
   const [typeModal, setTypeModal] = useState<null | "online" | "create" | "solo">(null);
   const [onlineMode, setOnlineMode] = useState<"solo" | "duo">("solo");
   const [duoPartner, setDuoPartner] = useState<DuoCandidate | null>(null);
-  const [duoModeSel, setDuoModeSel] = useState<DuoMode>("wait");
   const [timerOn, setTimerOn] = useState(false);
   const [joinCode, setJoinCode] = useState("");
   const [joinError, setJoinError] = useState<string | null>(null);
@@ -84,7 +83,6 @@ export default function HomeScreen() {
     if (typeModal === null) {
       setOnlineMode("solo");
       setDuoPartner(null);
-      setDuoModeSel("wait");
     }
   }, [typeModal]);
 
@@ -124,7 +122,7 @@ export default function HomeScreen() {
         await api.post("/matchmaking/duo/invite", {
           to_user_id: duoPartner.user_id,
           match_type: matchType,
-          mode: mode === "solo" ? "vs_ai" : duoModeSel,
+          mode: mode === "solo" ? "vs_ai" : "online",
         });
         setTypeModal(null);
         setTimeout(() => {
@@ -600,9 +598,7 @@ export default function HomeScreen() {
               <DuoSetup
                 partner={duoPartner}
                 onPartner={setDuoPartner}
-                mode={duoModeSel}
-                onMode={setDuoModeSel}
-                showModes={typeModal === "online"}
+                showDuoElo={typeModal === "online"}
               />
             )}
             {typeModal === "create" && (

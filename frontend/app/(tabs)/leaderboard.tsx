@@ -5,6 +5,7 @@ import {
   FlatList,
   NativeScrollEvent,
   NativeSyntheticEvent,
+  Pressable,
   RefreshControl,
   StyleSheet,
   Text,
@@ -28,9 +29,12 @@ interface LeaderRow {
   username: string;
   avatar_id: string;
   elo: number;
+  elo_duo?: number;
   games_played: number;
   wins: number;
 }
+
+type LbMode = "solo" | "duo";
 
 const MEDAL_COLORS = [C.gold, "#C9C2B6", "#C86A2E"];
 
@@ -41,6 +45,7 @@ export default function LeaderboardScreen() {
   const [players, setPlayers] = useState<LeaderRow[]>([]);
   const [myRank, setMyRank] = useState<number | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [mode, setMode] = useState<LbMode>("solo");
 
   // custom slim scroll indicator: visible only while scrolling, fades out after
   const scrollY = useSharedValue(0);
@@ -73,11 +78,11 @@ export default function LeaderboardScreen() {
 
   const load = useCallback(async () => {
     try {
-      const res = await api.get("/leaderboard");
+      const res = await api.get(`/leaderboard?mode=${mode}`);
       setPlayers(res.players);
       setMyRank(res.my_rank);
     } catch {}
-  }, []);
+  }, [mode]);
 
   useFocusEffect(
     useCallback(() => {
@@ -94,13 +99,47 @@ export default function LeaderboardScreen() {
   return (
     <View style={styles.container} testID="leaderboard-screen">
       <View style={[styles.header, { paddingTop: insets.top + SP.md }]}>
-        <Text style={styles.title}>{t("ranking")}</Text>
+        <View style={styles.titleRow}>
+          <Text style={styles.title}>{t("ranking")}</Text>
+          <View style={styles.modeToggle} testID="leaderboard-mode-toggle">
+            <Pressable
+              testID="lb-mode-solo"
+              onPress={() => setMode("solo")}
+              style={[styles.modeBtn, mode === "solo" && styles.modeBtnActive]}
+            >
+              <Ionicons
+                name="person"
+                size={13}
+                color={mode === "solo" ? C.onBrand : C.ink3}
+              />
+              <Text style={[styles.modeText, mode === "solo" && styles.modeTextActive]}>
+                {t("lbSolo")}
+              </Text>
+            </Pressable>
+            <Pressable
+              testID="lb-mode-duo"
+              onPress={() => setMode("duo")}
+              style={[styles.modeBtn, mode === "duo" && styles.modeBtnActive]}
+            >
+              <Ionicons
+                name="people"
+                size={13}
+                color={mode === "duo" ? C.onBrand : C.ink3}
+              />
+              <Text style={[styles.modeText, mode === "duo" && styles.modeTextActive]}>
+                {t("lbDuo")}
+              </Text>
+            </Pressable>
+          </View>
+        </View>
         <View style={styles.myRankCard} testID="my-rank-card">
           <Avatar avatarId={user?.avatar_id} size={44} ringColor={C.gold} />
           <View style={{ flex: 1, marginHorizontal: SP.md }}>
             <Text style={styles.myRankLabel}>{t("yourRank")}</Text>
             <Text style={styles.myRankValue}>
-              #{myRank ?? "—"} · {user?.elo ?? 1000} {t("elo")}
+              #{myRank ?? "—"} ·{" "}
+              {(mode === "duo" ? user?.elo_duo : user?.elo) ?? 1000}{" "}
+              {mode === "duo" ? t("eloDuo") : t("eloSolo")}
             </Text>
           </View>
           <Ionicons name="trophy" size={28} color={C.gold} />
@@ -154,7 +193,9 @@ export default function LeaderboardScreen() {
                     {t("gamesShort", { n: item.games_played })}
                   </Text>
                 </View>
-                <Text style={styles.elo}>{item.elo}</Text>
+                <Text style={styles.elo}>
+                  {mode === "duo" ? (item.elo_duo ?? 1000) : item.elo}
+                </Text>
               </View>
             );
           }}
@@ -178,7 +219,32 @@ const styles = StyleSheet.create({
     paddingHorizontal: SP.lg,
     paddingBottom: SP.lg,
   },
-  title: { fontFamily: F.display, fontSize: 26, color: C.ink, marginBottom: SP.md },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: SP.md,
+  },
+  title: { fontFamily: F.display, fontSize: 26, color: C.ink },
+  modeToggle: {
+    flexDirection: "row",
+    backgroundColor: C.bg2,
+    borderRadius: R.pill,
+    borderWidth: 1,
+    borderColor: C.border,
+    padding: 3,
+  },
+  modeBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: SP.md,
+    height: 32,
+    borderRadius: R.pill,
+  },
+  modeBtnActive: { backgroundColor: C.brand },
+  modeText: { fontFamily: F.bold, fontSize: 13, color: C.ink3 },
+  modeTextActive: { color: C.onBrand },
   myRankCard: {
     flexDirection: "row",
     alignItems: "center",

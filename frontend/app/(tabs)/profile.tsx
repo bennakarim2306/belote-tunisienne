@@ -101,10 +101,15 @@ export default function ProfileScreen() {
             <View style={styles.eloBadge} testID="profile-elo-badge">
               <Ionicons name="flame" size={16} color={C.gold} />
               <Text style={styles.eloValue}>{user?.elo ?? 1000}</Text>
-              <Text style={styles.eloLabel}>{t("elo")}</Text>
+              <Text style={styles.eloLabel}>{t("eloSolo")}</Text>
+            </View>
+            <View style={styles.eloBadge} testID="profile-elo-duo-badge">
+              <Ionicons name="people" size={16} color={C.brand} />
+              <Text style={styles.eloValue}>{user?.elo_duo ?? 1000}</Text>
+              <Text style={styles.eloLabel}>{t("eloDuo")}</Text>
             </View>
             <View style={styles.eloBadge}>
-              <Ionicons name="podium" size={16} color={C.brand} />
+              <Ionicons name="podium" size={16} color={C.brand2} />
               <Text style={styles.eloValue}>#{rank ?? "—"}</Text>
               <Text style={styles.eloLabel}>{t("rank")}</Text>
             </View>

@@ -1,0 +1,41 @@
+{
+  "summary": "Frontend-only smoke of dual-ELO UI, Solo/Duo leaderboard toggle, strict duo-vs-duo online modal, and post-refactor solo-game regression. All 6 requested checks PASS with no console errors and no red screens. Backend endpoints (login, GET /users/me — served through /leaderboard payload, GET /leaderboard?mode=solo|duo, GET /matchmaking/duo/candidates) verified reachable via public EXPO_PUBLIC_BACKEND_URL. Tester1 & Tester2 accounts pre-existing and already friends.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/auth/login", "issue": "User payload returns elo_duo: null instead of 1000 for accounts created before the dual-ELO migration. UI compensates with (?? 1000) fallback so it renders correctly, but backfilling elo_duo=1000 (and initial elo_duo_history entry) on legacy users would be cleaner and would keep the /users/me and /leaderboard shapes symmetric."},
+      {"endpoint": "GET /api/matchmaking/duo/candidates", "issue": "Friend candidates only include 'elo' (no 'elo_duo'). DuoSetup falls back to 1000 via (c.elo_duo ?? 1000) when showDuoElo=true, so the online duo chip currently shows a hard-coded 1000 even if the friend has a different duo ELO. Recommend returning elo_duo in each candidate so the chip shows the real Duo ELO."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "/tmp/03_profile.png",
+    "/tmp/04_lb_solo.png",
+    "/tmp/05_lb_duo.png",
+    "/tmp/06_duo_setup.png",
+    "/tmp/08_solo_modal.png",
+    "/tmp/09_game.png"
+  ],
+  "action_items": [
+    "(Optional) Backfill elo_duo=1000 & elo_duo_history for existing users in Mongo so the login/user payload no longer returns null for legacy accounts.",
+    "(Optional) Include elo_duo on each entry returned by GET /api/matchmaking/duo/candidates so DuoSetup chips show the friend's real Duo ELO (currently defaults to 1000 via the frontend ?? fallback).",
+    "No blocking work needed — feature set is functionally correct and matches the spec."
+  ],
+  "critical_code_review_comments": [
+    "home.tsx (Reprendre banner + play-solo-card + play-online-card + type modal + DuoSetup + notifications) is ~930 lines. Not blocking, but splitting the type/notification modals into their own components would help long-term readability.",
+    "profile.tsx correctly renders three badges with proper testIDs (profile-elo-badge, profile-elo-duo-badge, and the rank badge). Layout on 390x844 viewport is fine — badges fit on one row without truncation.",
+    "leaderboard.tsx passes ?mode=${mode} correctly; my-rank card label switches label + value based on mode; rows render item.elo_duo ?? 1000 for the duo mode."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "seed_data_creation": "No seed data created. Reused pre-existing tester1@belote.tn and tester2@belote.tn (already friends).",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Belote Tunisienne — dual-ELO (elo + elo_duo) shipped. Testable on mobile-emulated viewport (390x844) via https://card-table-orient.preview.emergentagent.com. Credentials in /app/memory/test_credentials.md. tester1 and tester2 are already friends so tester2 shows up as a Duo candidate chip in DuoSetup. Legacy online-duo mode options ('Attendre un duo', 'Duos uniquement', 'Sans attente') are confirmed removed from the online play modal. Solo game starts normally after the backend GameManager refactor (game_manager facade + game_runtime/elo_stats/matchmaking/rooms/live_utils modules).",
+  "rca_of_issue": "N/A — no bugs to root-cause. First solo-game click attempt in the combined script failed because the previous 'online' Modal had not fully dismissed on Escape (React Native web Modal lingers); the retry with an explicit Accueil tap + fresh play-solo-card click worked. This is a test-script timing quirk, not a product bug."
+}
