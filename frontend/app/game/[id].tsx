@@ -314,6 +314,8 @@ export default function GameScreen() {
         : t(`coach_${h.reason}` as TKey, {
             value: String(h.value ?? ""),
             suit: h.suit ? SUIT_SYMBOL[h.suit] : "",
+            n: String(h.n ?? ""),
+            prev: String(h.prev ?? ""),
           });
   }
   const coachDisplay = state.coach_mode ? (coachHintText ?? coachMsg?.text ?? null) : null;

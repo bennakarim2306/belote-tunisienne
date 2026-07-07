@@ -19,20 +19,89 @@ def hint_for(g, seat):
 
 
 def _bidding_hint(g, seat):
+    """Orientation guidance for bidding (not fixed rules — the learner stays free):
+    looks at trump strength/count, outside aces, number of suits (cut potential)
+    and the partner's bid, then recommends a level per the classic benchmarks:
+    90 / 100 / 110 (trump master) / 120 (3 suits) / 130 (2 suits), partner
+    support +10/+20, and the prudence rule (never raise just to talk)."""
     hand = g.hands[seat]
-    act = bot_ai.bot_bidding_action(hand, g.current_bid, seat)
-    if act["type"] == "bid":
-        suit = act["suit"]
-        has_j = ("J" + suit) in hand
-        has_9 = ("9" + suit) in hand
-        reason = "bid_j9" if (has_j and has_9) else ("bid_jack" if has_j else "bid_long")
-        return {"kind": "bid", "action": "bid", "value": act["value"],
-                "suit": suit, "reason": reason}
-    if act["type"] == "contre":
-        return {"kind": "bid", "action": "contre",
-                "suit": g.current_bid["suit"], "reason": "bid_contre"}
-    return {"kind": "bid", "action": "pass",
-            "reason": "bid_pass_high" if g.current_bid else "bid_pass_weak"}
+    cb = g.current_bid
+    partner = (seat + 2) % 4
+
+    # --- partner holds the current bid: support logic (+10 / +20 / pass) ---
+    if cb and cb["seat"] == partner and not cb.get("capot"):
+        n_trump, big_trump, aces_out, has_void = _support_features(hand, cb["suit"])
+        score = min(n_trump, 3) + (2 if big_trump else 0) + aces_out + (1 if has_void else 0)
+        raise_by = 20 if score >= 5 else (10 if score >= 2 else 0)
+        value = cb["value"] + raise_by
+        if raise_by and value <= 160:
+            return {"kind": "bid", "action": "bid", "value": value, "suit": cb["suit"],
+                    "n": n_trump, "prev": cb["value"],
+                    "reason": "bid_support20" if raise_by == 20 else "bid_support10"}
+        return {"kind": "bid", "action": "pass", "reason": "bid_pass_prudence"}
+
+    # --- own-hand evaluation against the 90..130 benchmarks ---
+    best = _evaluate_hand_bid(hand)
+    if cb:
+        if not cb.get("capot") and best and best[0] > cb["value"]:
+            level, suit, reason, n_trump = best
+            return {"kind": "bid", "action": "bid", "value": level, "suit": suit,
+                    "n": n_trump, "reason": reason}
+        act = bot_ai.bot_bidding_action(hand, cb, seat)
+        if act["type"] == "contre":
+            return {"kind": "bid", "action": "contre",
+                    "suit": cb["suit"], "reason": "bid_contre"}
+        return {"kind": "bid", "action": "pass", "reason": "bid_pass_high"}
+    if best:
+        level, suit, reason, n_trump = best
+        return {"kind": "bid", "action": "bid", "value": level, "suit": suit,
+                "n": n_trump, "reason": reason}
+    return {"kind": "bid", "action": "pass", "reason": "bid_pass_weak"}
+
+
+def _support_features(hand, trump):
+    """Features used to judge how much help we bring to the partner's contract."""
+    n_trump = sum(1 for c in hand if gl.suit_of(c) == trump)
+    big_trump = any(r + trump in hand for r in ("J", "9", "A"))
+    aces_out = sum(1 for c in hand
+                   if gl.rank_of(c) == "A" and gl.suit_of(c) != trump)
+    non_trump_suits = [s for s in gl.SUITS if s != trump]
+    has_void = any(all(gl.suit_of(c) != s for c in hand) for s in non_trump_suits)
+    return n_trump, big_trump, aces_out, has_void
+
+
+def _evaluate_hand_bid(hand):
+    """Best (level, suit, reason, trump_count) per the orientation benchmarks,
+    or None when the hand doesn't reach the 90 benchmark."""
+    n_suits = sum(1 for s in gl.SUITS if any(gl.suit_of(c) == s for c in hand))
+    best = None
+    for s in gl.SUITS:
+        n = sum(1 for c in hand if gl.suit_of(c) == s)
+        if n == 0:
+            continue
+        has_j = ("J" + s) in hand
+        has_9 = ("9" + s) in hand
+        has_a = ("A" + s) in hand
+        aces_out = sum(1 for c in hand
+                       if gl.rank_of(c) == "A" and gl.suit_of(c) != s)
+        # "trump master": J + 9 + one extra force (A of trump or real length)
+        master = has_j and has_9 and (has_a or n >= 4)
+        level = reason = None
+        if master and n >= 4 and n_suits <= 2:
+            level, reason = 130, "bid_130"
+        elif master and n >= 4 and n_suits <= 3:
+            level, reason = 120, "bid_120"
+        elif master:
+            level, reason = 110, "bid_110"
+        elif has_j and has_9 and n >= 4:
+            level, reason = 100, "bid_100"
+        elif (has_j or has_9) and n >= 4:
+            level, reason = 100, "bid_100"
+        elif (has_j or has_9) and n >= 3 and aces_out >= 1:
+            level, reason = 90, "bid_90"
+        if level and (best is None or level > best[0]):
+            best = (level, s, reason, n)
+    return best
 
 
 def _play_hint(g, seat):

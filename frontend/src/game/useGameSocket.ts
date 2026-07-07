@@ -102,6 +102,8 @@ export interface CoachHint {
   value?: number;
   suit?: string;
   card?: string;
+  n?: number;
+  prev?: number;
 }
 
 export interface GameEvent {

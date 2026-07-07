@@ -1,0 +1,66 @@
+{
+  "summary": "Frontend-only validation of the rewritten pedagogical bidding guidance in the tutorial teaching game. PASS on all 6 requested items. Two distinct new-benchmark messages were rendered on-screen (bid_pass_high and bid_contre), with zero unresolved placeholders ({n}/{value}/{suit}/{prev}/{card}/{name}). Learner freedom preserved — all bid controls that are legal in the game state remained enabled. After clicking Passer, the game advanced into the playing phase and the play-phase coach hint continued to work (pulsing gold card + bubble 'Le pli est perdu : fournis au plus bas (9♣).'). Regression confirmed: normal solo game (play-solo-card + match-type-short) shows NO coach-bubble.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "evidence": {
+    "auth": "Fresh POST /api/auth/login returned a valid JWT; UI login as tester1@belote.tn also succeeded (→ /home).",
+    "tutorial_game_create": "POST /api/tutorial/game (Bearer token) returned {game_id: g_12048d28c96f} in session A and {game_id: g_94470206bf80} in session B. Navigating to /game/{game_id} loaded the coach-enabled bidding table.",
+    "bidding_hint_messages_observed": [
+      "bid_pass_high (FR): \"L'enchère dépasse ce que ta main promet. Ne surenchéris pas sans vraie force : passe.\" (i18n.tsx L135)",
+      "bid_contre (FR): \"Tu es fort dans leur atout : Contre !\" (i18n.tsx L133)"
+    ],
+    "placeholder_leak_check": "Scanned every bubble text for {n}, {value}, {suit}, {prev}, {card}, {name} — 0 occurrences.",
+    "freedom_check_session_A": {
+      "current_bid_context": "Bot opened at 90♦",
+      "controls": {
+        "bid-value-90": "disabled (legit: same-value re-bid not allowed)",
+        "bid-value-100..160": "ALL enabled",
+        "bid-suit-S/H/C/D": "ALL enabled",
+        "pass-button": "enabled",
+        "annoncer-button": "enabled",
+        "capot-button": "disabled (legit: Capot rules)"
+      },
+      "conclusion": "Coach advice recommends passer but every legal action remains freely selectable."
+    },
+    "freedom_check_session_B": {
+      "current_bid_context": "Bot bid 110♦, coach recommends Contre",
+      "controls": {
+        "bid-value-90/100/110": "disabled (legit: cannot bid ≤ current)",
+        "bid-value-120..160": "ALL enabled",
+        "bid-suit-S/H/C/D": "ALL enabled",
+        "pass-button": "enabled",
+        "annoncer-button": "enabled",
+        "contre-button": "enabled",
+        "capot-button": "disabled (legit)"
+      }
+    },
+    "follow_hint_flow": "Clicked pass-button → bidding loop continued → game reached playing phase within ~4s → coach-bubble updated to play-phase text 'Le pli est perdu : fournis au plus bas (9♣).' with 9♣ visibly highlighted (pulsing gold card).",
+    "regression_solo_game": "play-solo-card → match-type-short → /game/g_a5a9b87386ec loaded normally; polled coach-bubble every 1s for 8s → NEVER appeared. state.coach_mode=false path confirmed.",
+    "phrases_verified": "'passe' (pass_high), 'Contre' (contre), 'atouts', 'À toi de jouer !' (turn label). All in French and grammatically clean.",
+    "console_health": "No pageerror aside from the harmless HTMLAudioElement autoplay warning ('play() failed because the user didn\\'t interact with the document first.') — unrelated to coach logic. The 8x '[Reanimated] Selected easing is not currently supported on web' are the expected HandFan easing web-fallback (documented in iteration_14).",
+    "screenshots": ["/tmp/tut_bubble.png (bubble on bidding, session A)", "/tmp/tut_final.png (bidding controls & bubble, session B)", "/tmp/solo_regression.png (solo game, no bubble)"]
+  },
+  "test_report_links": ["/app/test_reports/iteration_15.json"],
+  "action_items": [
+    "None. Feature is production-ready per this iteration.",
+    "Optional polish (unrelated to this rewrite): deprecation warnings 'shadow* props deprecated. Use boxShadow' and 'props.pointerEvents deprecated. Use style.pointerEvents' are emitted by React Native Web; not blocking."
+  ],
+  "critical_code_review_comments": [
+    "coach.py _bidding_hint (43 LOC) is well-factored — clear branches for partner-support / own-hand / prudence. Reason codes match i18n keys exactly (bid_90/100/110/120/130/support10/support20/pass_prudence/pass_weak/pass_high/contre).",
+    "CoachBubble.tsx unchanged & correct (pointerEvents='none' → does not block taps; testID='coach-bubble' present).",
+    "Frontend passes n/prev/value/suit placeholders explicitly in game/[id].tsx lines 314-318 — matches every new i18n string.",
+    "i18n FR/EN/AR all include the 11 new coach_bid_* keys with matching placeholder tokens; no missing translations. AR strings correctly interpolate {n}/{value}/{suit}/{prev} inside RTL text."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (frontend-only per request; backend already 13/13 pytest per main agent)", "frontend": "6/6 test items (100%)"},
+  "seed_data_creation": "None. Two ephemeral tutorial games created via POST /api/tutorial/game (game_ids logged above); Belote games auto-expire and are non-persistent for tests.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Reliable path to test the tutorial coach without going through lesson 1..14: (1) login tester1@belote.tn via UI or /api/auth/login for a JWT; (2) POST /api/tutorial/game with Bearer to create a coach_mode=true game; (3) navigate the browser directly to /game/{game_id}. On session A the human seat may open with pass_high (own hand weak vs bot's 90 open); on session B it may open with Contre (fort dans leur atout). To observe more benchmark messages (bid_90..130, support10/20, pass_prudence, pass_weak) repeat the create-game call — dealing is randomised so different reason codes will surface. All FR strings live in /app/frontend/src/i18n.tsx L125-135 (mirrors in AR L386-396, EN L646-656).",
+  "rca_of_issue": "N/A — no defects."
+}
