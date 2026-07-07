@@ -4,6 +4,7 @@ import { StyleSheet, Text, View } from "react-native";
 import Animated, {
   Easing,
   FadeIn,
+  FadeInDown,
   ZoomIn,
   useAnimatedStyle,
   useSharedValue,
@@ -63,7 +64,10 @@ export function HandEndModal({
 
   return (
     <View style={styles.scrim} testID="hand-end-modal">
-      <Animated.View entering={ZoomIn.springify().damping(16)} style={styles.card}>
+      <Animated.View
+        entering={FadeInDown.duration(320).easing(Easing.out(Easing.cubic))}
+        style={styles.card}
+      >
         <Text style={styles.contractLine}>
           {t("contract")} : {c.capot ? t("capot") : c.value}
           <Text style={{ color: SUIT_COLOR_ON_DARK[c.suit] }}> {SUIT_SYMBOL[c.suit]}</Text>

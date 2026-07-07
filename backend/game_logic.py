@@ -12,7 +12,7 @@ BID_VALUES = [90, 100, 110, 120, 130, 140, 150, 160]
 
 TURN_SECONDS = 30
 SURCONTRE_SECONDS = 15
-HAND_END_SECONDS = 120       # players confirm with a "ready" button, 2 min max
+HAND_END_SECONDS = 30        # players confirm with a "ready" button, auto-validated after 30s
 MATCH_END_SECONDS = 10       # shorter wait before revealing the match result
 PAUSE_MAX_SECONDS = 180      # accepted pause auto-resumes after 3 min
 TRICK_PAUSE = 1.8

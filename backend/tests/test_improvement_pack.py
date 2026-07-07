@@ -163,12 +163,12 @@ async def test_solo_ready_advances_hand_immediately(http, tester1):
                     and s.get("legal")):
                 await ws.send(json.dumps({"action": "play", "card": s["legal"][0]}))
         assert hand_end_state is not None
-        # deadline should be about 120s in future (or 10s if match_over)
+        # deadline should be about 30s in future (or 10s if match_over)
         remaining = hand_end_state["turn_deadline"] - time.time()
         if hand_end_state.get("hand_result", {}).get("match_over"):
             assert 0 < remaining <= 15, f"match_over deadline expected <=15s got {remaining}"
         else:
-            assert 60 < remaining <= 121, f"hand_end deadline expected ~120s got {remaining}"
+            assert 15 < remaining <= 31, f"hand_end deadline expected ~30s got {remaining}"
 
         # ready_seats should be present (initially empty)
         assert hand_end_state.get("ready_seats") == []
