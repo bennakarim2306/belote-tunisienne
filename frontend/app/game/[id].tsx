@@ -29,7 +29,7 @@ import { HandEndModal, MatchEndOverlay } from "@/src/components/game/HandEndModa
 import HandFan from "@/src/components/game/HandFan";
 import PlayerSeat from "@/src/components/game/PlayerSeat";
 import TrickArea from "@/src/components/game/TrickArea";
-import PlayingCard, { SUIT_COLOR_ON_DARK, SUIT_SYMBOL } from "@/src/components/PlayingCard";
+import PlayingCard, { SUIT_COLOR_ON_DARK, SUIT_SYMBOL, rankLabel } from "@/src/components/PlayingCard";
 import { useAuth } from "@/src/context/AuthContext";
 import { useGameSocket } from "@/src/game/useGameSocket";
 import { TKey, useI18n } from "@/src/i18n";
@@ -304,7 +304,7 @@ export default function GameScreen() {
   const myTurn = state.turn === mySeat;
 
   // tutorial coach: my-turn hint takes precedence over transient commentary
-  const fmtCard = (c: string) => c.slice(0, -1) + (SUIT_SYMBOL[c.slice(-1)] ?? "");
+  const fmtCard = (c: string) => rankLabel(c.slice(0, -1)) + (SUIT_SYMBOL[c.slice(-1)] ?? "");
   let coachHintText: string | null = null;
   if (state.coach_mode && state.coach && myTurn && !state.paused) {
     const h = state.coach;
