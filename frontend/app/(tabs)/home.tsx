@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -29,6 +30,7 @@ import { api, ApiError } from "@/src/api";
 import Avatar from "@/src/components/Avatar";
 import ChunkyButton from "@/src/components/ChunkyButton";
 import DuoSetup, { DuoCandidate } from "@/src/components/DuoSetup";
+import ShareSheet from "@/src/components/ShareSheet";
 import { useAuth } from "@/src/context/AuthContext";
 import {
   DuoInviteNotif,
@@ -36,6 +38,7 @@ import {
   useNotifications,
 } from "@/src/context/NotificationsContext";
 import { useI18n } from "@/src/i18n";
+import { APP_INSTALL_URL } from "@/src/share";
 import { C, F, R, SP, shadow } from "@/src/theme";
 
 interface CurrentGame {
@@ -168,6 +171,19 @@ export default function HomeScreen() {
       }
     }
   };
+
+  const [inviteShareOpen, setInviteShareOpen] = useState(false);
+
+  // deep link /join/CODE visited before login: resume the join after auth
+  useEffect(() => {
+    AsyncStorage.getItem("pending_room_code").then((c) => {
+      if (c) {
+        AsyncStorage.removeItem("pending_room_code").catch(() => {});
+        router.push({ pathname: "/join/[code]", params: { code: c } });
+      }
+    }).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const joinRoom = async () => {
     const code = joinCode.trim().toUpperCase();
@@ -457,7 +473,40 @@ export default function HomeScreen() {
             )}
           </View>
         </Animated.View>
+
+        {!codeFocused && (
+          <Animated.View
+            entering={FadeInUp.delay(180)}
+            exiting={FadeOut.duration(120)}
+            layout={LinearTransition.duration(180)}
+          >
+            <Pressable
+              testID="invite-friends-card"
+              onPress={() => setInviteShareOpen(true)}
+              style={({ pressed }) => [styles.inviteFriendsCard, pressed && styles.pressed]}
+            >
+              <View style={styles.inviteFriendsIcon}>
+                <Ionicons name="share-social" size={22} color={C.brand} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.inviteFriendsTitle}>{t("inviteFriends")}</Text>
+                <Text style={styles.inviteFriendsDesc} numberOfLines={1}>
+                  {t("inviteFriendsDesc")}
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={C.ink3} />
+            </Pressable>
+          </Animated.View>
+        )}
       </ScrollView>
+
+      <ShareSheet
+        visible={inviteShareOpen}
+        onClose={() => setInviteShareOpen(false)}
+        title={t("inviteFriends")}
+        message={t("inviteAppMsg", { link: APP_INSTALL_URL })}
+        url={APP_INSTALL_URL}
+      />
 
       <Modal visible={notifOpen} transparent animationType="slide">
         <Pressable style={styles.modalScrim} onPress={() => setNotifOpen(false)}>
@@ -817,6 +866,27 @@ const styles = StyleSheet.create({
   },
   trainingBadgeText: { fontFamily: F.bold, fontSize: 11, color: "#1A1200" },
   pressed: { transform: [{ scale: 0.98 }], opacity: 0.92 },
+  inviteFriendsCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: SP.md,
+    backgroundColor: C.card,
+    borderRadius: R.md,
+    borderWidth: 1,
+    borderColor: C.border,
+    padding: SP.md,
+    marginTop: SP.md,
+  },
+  inviteFriendsIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "rgba(0,229,122,0.12)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  inviteFriendsTitle: { fontFamily: F.display, fontSize: 16, color: C.ink },
+  inviteFriendsDesc: { fontFamily: F.text, fontSize: 12.5, color: C.ink2, marginTop: 1 },
   bigCardIcon: {
     width: 46,
     height: 46,

@@ -5,7 +5,6 @@ import {
   Modal,
   Pressable,
   ScrollView,
-  Share,
   StyleSheet,
   Text,
   View,
@@ -15,8 +14,10 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { api } from "@/src/api";
 import Avatar from "@/src/components/Avatar";
 import ChunkyButton from "@/src/components/ChunkyButton";
+import ShareSheet from "@/src/components/ShareSheet";
 import { useAuth } from "@/src/context/AuthContext";
 import { useI18n } from "@/src/i18n";
+import { roomLink } from "@/src/share";
 import { C, F, R, SP } from "@/src/theme";
 
 interface RoomPlayer {
@@ -138,9 +139,7 @@ export default function RoomScreen() {
     router.back();
   };
 
-  const share = () => {
-    Share.share({ message: `Belote Tunisienne — ${t("roomCode")}: ${code}` }).catch(() => {});
-  };
+  const [shareOpen, setShareOpen] = useState(false);
 
   const seats = room?.seats ?? [null, null, null, null];
 
@@ -166,11 +165,23 @@ export default function RoomScreen() {
             <Text style={styles.code} testID="room-code-text">
               {code}
             </Text>
-            <Pressable onPress={share} style={styles.shareBtn} testID="share-code-button">
+            <Pressable
+              onPress={() => setShareOpen(true)}
+              style={styles.shareBtn}
+              testID="share-code-button"
+            >
               <Ionicons name="share-social" size={16} color={C.brand} />
               <Text style={styles.shareText}>{t("shareCode")}</Text>
             </Pressable>
           </View>
+
+          <ShareSheet
+            visible={shareOpen}
+            onClose={() => setShareOpen(false)}
+            title={t("shareCode")}
+            message={t("shareRoomMsg", { code: code ?? "", link: roomLink(code ?? "") })}
+            url={roomLink(code ?? "")}
+          />
 
           <View style={styles.matchTypeChip}>
             <Ionicons
