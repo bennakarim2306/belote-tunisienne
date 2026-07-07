@@ -95,7 +95,7 @@ export default function AuthScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.langRow}>
-          {(["fr", "ar"] as const).map((l) => (
+          {(["fr", "ar", "en"] as const).map((l) => (
             <Pressable
               key={l}
               testID={`lang-${l}-chip`}
@@ -103,7 +103,7 @@ export default function AuthScreen() {
               style={[styles.langChip, lang === l && styles.langChipActive]}
             >
               <Text style={[styles.langText, lang === l && styles.langTextActive]}>
-                {l === "fr" ? "FR" : "عربي"}
+                {l === "fr" ? "FR" : l === "ar" ? "عربي" : "EN"}
               </Text>
             </Pressable>
           ))}

@@ -231,24 +231,27 @@ export default function ProfileScreen() {
 
         <Text style={styles.sectionTitle}>{t("language")}</Text>
         <View style={styles.langRow}>
-          <Pressable
-            testID="language-fr-option"
-            onPress={() => setLang("fr")}
-            style={[styles.langOption, lang === "fr" && styles.langActive]}
-          >
-            <Text style={[styles.langText, lang === "fr" && styles.langTextActive]}>
-              {t("french")}
-            </Text>
-          </Pressable>
-          <Pressable
-            testID="language-ar-option"
-            onPress={() => setLang("ar")}
-            style={[styles.langOption, lang === "ar" && styles.langActive]}
-          >
-            <Text style={[styles.langText, lang === "ar" && styles.langTextActive]}>
-              {t("arabic")}
-            </Text>
-          </Pressable>
+          {(
+            [
+              { code: "fr", label: t("french") },
+              { code: "ar", label: t("arabic") },
+              { code: "en", label: t("english") },
+            ] as const
+          ).map((l) => (
+            <Pressable
+              key={l.code}
+              testID={`language-${l.code}-option`}
+              onPress={() => setLang(l.code)}
+              style={[styles.langOption, lang === l.code && styles.langActive]}
+            >
+              <Text
+                style={[styles.langText, lang === l.code && styles.langTextActive]}
+                numberOfLines={1}
+              >
+                {l.label}
+              </Text>
+            </Pressable>
+          ))}
         </View>
 
         <ChunkyButton
