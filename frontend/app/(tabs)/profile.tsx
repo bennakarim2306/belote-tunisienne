@@ -99,19 +99,25 @@ export default function ProfileScreen() {
           <Text style={styles.email}>{user?.email}</Text>
           <View style={styles.eloRow}>
             <View style={styles.eloBadge} testID="profile-elo-badge">
-              <Ionicons name="flame" size={16} color={C.gold} />
-              <Text style={styles.eloValue}>{user?.elo ?? 1000}</Text>
-              <Text style={styles.eloLabel}>{t("eloSolo")}</Text>
+              <View style={styles.eloValueRow}>
+                <Ionicons name="flame" size={14} color={C.gold} />
+                <Text style={styles.eloValue}>{user?.elo ?? 1000}</Text>
+              </View>
+              <Text style={styles.eloLabel} numberOfLines={1}>{t("eloSolo")}</Text>
             </View>
             <View style={styles.eloBadge} testID="profile-elo-duo-badge">
-              <Ionicons name="people" size={16} color={C.brand} />
-              <Text style={styles.eloValue}>{user?.elo_duo ?? 1000}</Text>
-              <Text style={styles.eloLabel}>{t("eloDuo")}</Text>
+              <View style={styles.eloValueRow}>
+                <Ionicons name="people" size={14} color={C.brand} />
+                <Text style={styles.eloValue}>{user?.elo_duo ?? 1000}</Text>
+              </View>
+              <Text style={styles.eloLabel} numberOfLines={1}>{t("eloDuo")}</Text>
             </View>
             <View style={styles.eloBadge}>
-              <Ionicons name="podium" size={16} color={C.brand2} />
-              <Text style={styles.eloValue}>#{rank ?? "—"}</Text>
-              <Text style={styles.eloLabel}>{t("rank")}</Text>
+              <View style={styles.eloValueRow}>
+                <Ionicons name="podium" size={14} color={C.brand2} />
+                <Text style={styles.eloValue}>#{rank ?? "—"}</Text>
+              </View>
+              <Text style={styles.eloLabel} numberOfLines={1}>{t("rank")}</Text>
             </View>
           </View>
         </View>
@@ -270,20 +276,27 @@ const styles = StyleSheet.create({
   },
   username: { fontFamily: F.display, fontSize: 24, color: C.ink, marginTop: SP.md },
   email: { fontFamily: F.text, fontSize: 13, color: C.ink3, marginTop: 2 },
-  eloRow: { flexDirection: "row", gap: SP.md, marginTop: SP.lg },
-  eloBadge: {
+  eloRow: {
     flexDirection: "row",
+    gap: SP.sm,
+    marginTop: SP.lg,
+    alignSelf: "stretch",
+  },
+  eloBadge: {
+    flex: 1,
     alignItems: "center",
-    gap: 6,
+    justifyContent: "center",
     backgroundColor: C.bg2,
-    borderRadius: R.pill,
-    paddingHorizontal: SP.lg,
-    height: 40,
+    borderRadius: R.md,
+    paddingVertical: SP.sm,
+    paddingHorizontal: 4,
     borderWidth: 1,
     borderColor: C.border,
+    minWidth: 0,
   },
-  eloValue: { fontFamily: F.extra, fontSize: 17, color: C.ink },
-  eloLabel: { fontFamily: F.text, fontSize: 12, color: C.ink3 },
+  eloValueRow: { flexDirection: "row", alignItems: "center", gap: 4 },
+  eloValue: { fontFamily: F.extra, fontSize: 16, color: C.ink },
+  eloLabel: { fontFamily: F.text, fontSize: 10.5, color: C.ink3, marginTop: 2 },
   sectionTitle: {
     fontFamily: F.display,
     fontSize: 18,
