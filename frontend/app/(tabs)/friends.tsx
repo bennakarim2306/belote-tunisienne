@@ -14,7 +14,9 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { api } from "@/src/api";
 import Avatar from "@/src/components/Avatar";
+import ShareSheet from "@/src/components/ShareSheet";
 import { useI18n } from "@/src/i18n";
+import { APP_INSTALL_URL } from "@/src/share";
 import { C, F, R, SP } from "@/src/theme";
 
 interface FriendRow {
@@ -35,6 +37,7 @@ export default function FriendsScreen() {
   const [results, setResults] = useState<FriendRow[] | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [shareOpen, setShareOpen] = useState(false);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const load = useCallback(async () => {
@@ -99,7 +102,20 @@ export default function FriendsScreen() {
   return (
     <View style={styles.container} testID="friends-screen">
       <View style={[styles.header, { paddingTop: insets.top + SP.md }]}>
-        <Text style={styles.title}>{t("friends")}</Text>
+        <View style={styles.titleRow}>
+          <Text style={styles.title}>{t("friends")}</Text>
+          <Pressable
+            testID="invite-friends-button"
+            onPress={() => setShareOpen(true)}
+            style={({ pressed }) => [styles.inviteBtn, pressed && { opacity: 0.8 }]}
+            hitSlop={6}
+          >
+            <Ionicons name="share-social" size={15} color={C.brand} />
+            <Text style={styles.inviteBtnText} numberOfLines={1}>
+              {t("inviteFriends")}
+            </Text>
+          </Pressable>
+        </View>
         <View style={styles.searchBox}>
           <Ionicons name="search" size={18} color={C.ink3} />
           <TextInput
@@ -215,6 +231,14 @@ export default function FriendsScreen() {
           <Text style={styles.toastText}>{toast}</Text>
         </View>
       )}
+
+      <ShareSheet
+        visible={shareOpen}
+        onClose={() => setShareOpen(false)}
+        title={t("inviteFriends")}
+        message={t("inviteAppMsg", { link: APP_INSTALL_URL })}
+        url={APP_INSTALL_URL}
+      />
     </View>
   );
 }
@@ -228,7 +252,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: SP.lg,
     paddingBottom: SP.md,
   },
-  title: { fontFamily: F.display, fontSize: 26, color: C.ink, marginBottom: SP.md },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: SP.md,
+    marginBottom: SP.md,
+  },
+  title: { fontFamily: F.display, fontSize: 26, color: C.ink },
+  inviteBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    backgroundColor: "rgba(0,229,122,0.10)",
+    borderWidth: 1,
+    borderColor: C.brand3,
+    borderRadius: R.pill,
+    paddingHorizontal: SP.md,
+    height: 32,
+  },
+  inviteBtnText: { fontFamily: F.bold, fontSize: 12.5, color: C.brand },
   searchBox: {
     flexDirection: "row",
     alignItems: "center",
