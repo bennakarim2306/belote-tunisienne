@@ -319,10 +319,13 @@ async def search_users(q: str, request: Request):
 # ---------------- friends ----------------
 
 async def user_brief(user_id):
-    return await db.users.find_one(
+    b = await db.users.find_one(
         {"user_id": user_id},
         {"_id": 0, "user_id": 1, "username": 1, "avatar_id": 1, "elo": 1,
          "elo_duo": 1})
+    if b:
+        b["elo_duo"] = b.get("elo_duo") or 1000
+    return b
 
 
 @api.get("/friends")
@@ -728,6 +731,11 @@ async def startup():
     await db.user_sessions.create_index("expires_at", expireAfterSeconds=0)
     await db.friendships.create_index([("requester_id", 1), ("recipient_id", 1)])
     await db.invites.create_index([("to_user_id", 1), ("status", 1)])
+    # backfill duo ELO for accounts created before the solo/duo split
+    await db.users.update_many(
+        {"$or": [{"elo_duo": {"$exists": False}}, {"elo_duo": None}]},
+        {"$set": {"elo_duo": 1000, "elo_duo_history": []}})
+    await db.users.create_index([("elo_duo", -1)])
     asyncio.create_task(manager.matchmaking_loop())
 
 

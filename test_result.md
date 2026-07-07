@@ -197,3 +197,33 @@ frontend:
 agent_communication:
   - agent: "main"
     message: "Design overhaul complete (visual only). Please run a FRONTEND regression pass over all main flows to ensure the restyle broke nothing: auth login, home cards + notifications bell, solo game full flow (deal anim, bidding, play card, trick collection, hand-end continue, pause/resume, score history), room create + seat move + invite sheet, leaderboard, friends, profile (avatar select, stats). Also flag any illegible text/contrast issues you spot in screenshots. tester1@belote.tn / Belote123!."
+
+backend:
+  - task: "Dual ELO validation + leaderboard mode param (GET /api/leaderboard?mode=solo|duo) + game_manager refactor into mixins (game_runtime/elo_stats/matchmaking/rooms/live_utils) + elo_duo startup backfill + /games/current newest-first"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py, game_manager.py, game_runtime.py, elo_stats.py, matchmaking.py, rooms.py, live_utils.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Full pytest suite 81/81 PASS post-refactor. Stale tests updated (rooms seats contract, host-leave-cancels behavior). Backfill verified: legacy accounts now return elo_duo 1000 on login."
+
+frontend:
+  - task: "Dual ELO UI (profile 3 badges), strict duo-vs-duo DuoSetup, Leaderboard Solo/Duo toggle"
+    implemented: true
+    working: true
+    file: "/app/frontend/app/(tabs)/profile.tsx, (tabs)/leaderboard.tsx, src/components/DuoSetup.tsx, src/i18n.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Testing agent iteration_12 ALL PASS: login, profile badges, leaderboard toggle both directions, duo-setup hint + no legacy mode options, solo game regression, tab navigation clean."
+
+agent_communication:
+  - agent: "main"
+    message: "Session complete: dual ELO validated E2E, leaderboard Solo/Duo toggle added (backend+frontend), backend refactored into modules (81/81 tests), elo_duo backfill at startup, duo candidates now expose elo_duo via user_brief coalescing."
