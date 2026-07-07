@@ -1,6 +1,17 @@
 """Heuristic AI for Belote Tunisienne bots."""
 from game_logic import (SUITS, TRUMP_POINTS, PLAIN_POINTS, legal_moves, trick_winner,
-                        suit_of, rank_of, card_points, trump_str)
+                        suit_of, rank_of, card_points, trump_str, plain_str)
+
+
+def _strength(card, trump):
+    return trump_str(card) if suit_of(card) == trump else plain_str(card)
+
+
+def weakest(cards, trump):
+    """Lowest card by points, ties broken by intrinsic strength: a 7 is dumped
+    before an 8/9, and in plain suits the Jack goes before the Queen, the
+    Queen before the King (K > Q > J is preserved)."""
+    return min(cards, key=lambda c: (card_points(c, trump), _strength(c, trump)))
 
 
 def evaluate_trump(hand, suit):
@@ -73,7 +84,7 @@ def bot_play(hand, trick, trump, seat):
         for c in legal:
             if suit_of(c) != trump and rank_of(c) == "A":
                 return c
-        return min(legal, key=lambda c: card_points(c, trump))
+        return weakest(legal, trump)
 
     partner = (seat + 2) % 4
     current_winner = trick_winner(trick, trump)
@@ -85,15 +96,15 @@ def bot_play(hand, trick, trump, seat):
             pool = non_tr or legal
             return max(pool, key=lambda c: card_points(c, trump))
         pool = non_tr or legal
-        return min(pool, key=lambda c: card_points(c, trump))
+        return weakest(pool, trump)
 
     winning = [c for c in legal
                if trick_winner(trick + [{"seat": seat, "card": c}], trump) == seat]
     if winning:
         if len(trick) == 3:
-            return min(winning, key=lambda c: card_points(c, trump))
+            return weakest(winning, trump)
         non_tr_win = [c for c in winning if suit_of(c) != trump]
         if non_tr_win:
             return max(non_tr_win, key=lambda c: card_points(c, trump))
         return min(winning, key=trump_str)
-    return min(legal, key=lambda c: card_points(c, trump))
+    return weakest(legal, trump)

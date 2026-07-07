@@ -179,9 +179,7 @@ export default function GameScreen() {
         const isPartner = ev.seat % 2 === state.my_seat % 2;
         const key = isPartner
           ? "coach_partner_bid"
-          : (ev.value ?? 0) >= 120
-            ? "coach_opp_bid_strong"
-            : "coach_opp_bid";
+          : `coach_opp_bid_${Math.min(ev.value ?? 90, 130)}`;
         showCoachMsg(t(key as TKey, { name, value: String(ev.value ?? ""), suit: suitSym }));
       } else if (ev.e === "contre") {
         setBanner({ text: t("contreBang"), key: Date.now() });
@@ -316,6 +314,8 @@ export default function GameScreen() {
             suit: h.suit ? SUIT_SYMBOL[h.suit] : "",
             n: String(h.n ?? ""),
             prev: String(h.prev ?? ""),
+            need: String(h.need ?? ""),
+            needBelote: String(h.need_belote ?? ""),
           });
   }
   const coachDisplay = state.coach_mode ? (coachHintText ?? coachMsg?.text ?? null) : null;

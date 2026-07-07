@@ -104,6 +104,8 @@ export interface CoachHint {
   card?: string;
   n?: number;
   prev?: number;
+  need?: number;
+  need_belote?: number;
 }
 
 export interface GameEvent {

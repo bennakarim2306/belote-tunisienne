@@ -31,8 +31,16 @@ def _bidding_hint(g, seat):
     # --- partner holds the current bid: support logic (+10 / +20 / pass) ---
     if cb and cb["seat"] == partner and not cb.get("capot"):
         n_trump, big_trump, aces_out, has_void = _support_features(hand, cb["suit"])
-        score = min(n_trump, 3) + (2 if big_trump else 0) + aces_out + (1 if has_void else 0)
-        raise_by = 20 if score >= 5 else (10 if score >= 2 else 0)
+        if cb["value"] >= 110:
+            # partner already announces trump mastery: only add what you can
+            # actually deliver — an Ace (sure trick) or a cut. +20 demands an
+            # extremely strong helping hand (Ace + cut + extra force).
+            strong = aces_out >= 1 and has_void and (big_trump or aces_out >= 2)
+            raise_by = 20 if strong else (10 if (aces_out >= 1 or has_void) else 0)
+        else:
+            concrete = big_trump or aces_out >= 1 or has_void
+            score = min(n_trump, 3) + (2 if big_trump else 0) + aces_out + (1 if has_void else 0)
+            raise_by = 20 if score >= 5 else (10 if (score >= 2 and concrete) else 0)
         value = cb["value"] + raise_by
         if raise_by and value <= 160:
             return {"kind": "bid", "action": "bid", "value": value, "suit": cb["suit"],
@@ -49,8 +57,13 @@ def _bidding_hint(g, seat):
                     "n": n_trump, "reason": reason}
         act = bot_ai.bot_bidding_action(hand, cb, seat)
         if act["type"] == "contre":
-            return {"kind": "bid", "action": "contre",
-                    "suit": cb["suit"], "reason": "bid_contre"}
+            # defenders make it fall when the attackers stay under value-5:
+            # with 162 points in play they must gather 168-value points
+            # (e.g. 68 vs a 100 contract), +20 more if attackers hold Belote.
+            need = 168 - cb["value"]
+            return {"kind": "bid", "action": "contre", "suit": cb["suit"],
+                    "value": cb["value"], "need": need, "need_belote": need + 20,
+                    "reason": "bid_contre"}
         return {"kind": "bid", "action": "pass", "reason": "bid_pass_high"}
     if best:
         level, suit, reason, n_trump = best
@@ -81,6 +94,10 @@ def _evaluate_hand_bid(hand):
             continue
         has_j = ("J" + s) in hand
         has_9 = ("9" + s) in hand
+        if not (has_j or has_9):
+            # strict rule: never advise a contract without the Jack or the 9
+            # of trumps — whatever the length, it stays a passing suit
+            continue
         has_a = ("A" + s) in hand
         aces_out = sum(1 for c in hand
                        if gl.rank_of(c) == "A" and gl.suit_of(c) != s)
@@ -93,8 +110,6 @@ def _evaluate_hand_bid(hand):
             level, reason = 120, "bid_120"
         elif master:
             level, reason = 110, "bid_110"
-        elif has_j and has_9 and n >= 4:
-            level, reason = 100, "bid_100"
         elif (has_j or has_9) and n >= 4:
             level, reason = 100, "bid_100"
         elif (has_j or has_9) and n >= 3 and aces_out >= 1:
@@ -114,6 +129,18 @@ def _play_hint(g, seat):
         return {"kind": "play", "card": card, "reason": "forced"}
 
     if not g.trick:  # leading the trick
+        cb = g.current_bid
+        defending = cb is not None and cb["seat"] % 2 != seat % 2
+        if defending and gl.suit_of(card) == g.trump:
+            # never advise opening trumps against the opponents' contract:
+            # trumps must be kept to cut — unless the hand holds nothing else
+            plain = [c for c in legal if gl.suit_of(c) != g.trump]
+            if plain:
+                aces = [c for c in plain if gl.rank_of(c) == "A"]
+                if aces:
+                    return {"kind": "play", "card": aces[0], "reason": "lead_ace"}
+                return {"kind": "play", "card": bot_ai.weakest(plain, g.trump),
+                        "reason": "lead_low_def"}
         if gl.suit_of(card) == g.trump:
             reason = "lead_trump"
         elif gl.rank_of(card) == "A":

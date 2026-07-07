@@ -1,0 +1,32 @@
+{
+  "summary": "Frontend-only verification of Belote tutorial coach bubble fixes. Fixed a critical syntax corruption at the tail of /app/frontend/src/i18n.tsx (duplicate 'export const useI18n' + orphan 'r>) );}' that was preventing the file from parsing. After fix, ran an end-to-end Playwright flow: login tester1 -> unlock tutorial_progress via localStorage -> open /tutorial -> start final pedagogical game -> observe bidding + play tricks -> then run solo-game regression. All 4 verifiable acceptance criteria pass; contre-warning bubble did not occur in this random deal (acceptable per request).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": [
+      {"component": "react-native core", "issue": "Console warning: '\"shadow*\" style props are deprecated. Use \"boxShadow\".' — coming from RN 0.79 web deprecation; app-wide, non-blocking but should be migrated. Reference: theme/shadow helper (grep 'shadow(' in /app/frontend/src/theme)."},
+      {"component": "props.pointerEvents", "issue": "Console warning: 'props.pointerEvents is deprecated. Use style.pointerEvents' — appears throughout the app. Non-blocking. Migrate `pointerEvents=\"none\"` JSX props to style.pointerEvents."},
+      {"component": "react-native-reanimated", "issue": "Console warning: '[Reanimated] Couldn\\'t load entering/exiting animation. Current version supports only predefined animations with modifiers: duration, delay, easing, randomizeDelay, withCallback, reducedMotion.' — appears during hand play, likely on a custom FadeIn/FadeOut. Not blocking but should be reviewed for web compatibility."},
+      {"component": "react-native-keyboard-controller", "issue": "Expo doctor warning in expo logs: react-native-keyboard-controller@1.18.6 installed, expected 1.18.5. Consider aligning."}
+    ]
+  },
+  "test_report_links": ["Inline Playwright scripts run against https://card-table-orient.preview.emergentagent.com; screenshots at /tmp/tutorial_post_bid.png, /tmp/solo_final.png"],
+  "action_items": [
+    "Optional: migrate deprecated RN web props (shadow* → boxShadow, pointerEvents JSX prop → style.pointerEvents) to silence console noise.",
+    "Optional: align react-native-keyboard-controller to 1.18.5 to match Expo SDK expected version.",
+    "The 90 / 110 / 130 opponent bid variants and the contre coach-warning were not observed in this random deal — they can only be validated deterministically via unit-test level fixtures. Backend already covers heuristics with 104/104 pytest; frontend interpolation for {need}/{needBelote}/{value}/{suit} is verified via the other bubbles that rendered without placeholder leaks."
+  ],
+  "critical_code_review_comments": [
+    "CRITICAL FIX APPLIED: /app/frontend/src/i18n.tsx had a duplicated 'export const useI18n = () => useContext(LanguageContext);' followed by orphan JSX ('r> );}') at lines 866–871 that would have broken the whole Metro bundle. Removed the trailing garbage. Please double-check any recent edit to this file to avoid a regression.",
+    "Minor: /app/frontend/app/game/[id].tsx line 182 uses `Math.min(ev.value ?? 90, 130)` to pick coach_opp_bid_{value}. If a bot ever bids 80 (rare in this game), key 'coach_opp_bid_80' is undefined and i18n will fall back to the raw key. Consider clamping the low end too (e.g. Math.max(90, Math.min(v, 130)))."
+  ],
+  "updated_files": ["/app/frontend/src/i18n.tsx (removed duplicated export + orphan JSX at EOF)"],
+  "success_rate": {"backend": "n/a", "frontend": "100%"},
+  "seed_data_creation": "None — used existing tester1@belote.tn account and localStorage.tutorial_progress=14 to unlock the final-game row.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Verified: (1) coach-bubble testID renders in tutorial with fully-interpolated French text ('L'enchère dépasse ce que ta main promet. Ne surenchéris pas sans vraie force : passe.', 'Ton partenaire annonce 110 ♣ : son atout devient le tien — soutiens-le !', 'Le pli est perdu : fournis au plus bas (8♥).'). No {need}/{needBelote}/{value}/{suit}/{n}/{prev}/{card} placeholder leaks anywhere. (2) NEW level-based opponent bid commentary confirmed: 'Moncef monte à 100 ♠ : il contrôle l'atout — au moins 4 atouts avec le Valet ou le 9.' (coach_opp_bid_100) and 'Moncef annonce 120 ♠ : maître d'atout avec une coupe — il coupera tes couleurs.' (coach_opp_bid_120). Old generic texts ('il tient sûrement le Valet...', 'jeu très fort...') NOT observed. (3) Contre-warning coach bubble did not occur in the random deal played (per request, this is not a failure). (4) Play hints work with pulsing hint text; no crashes across 8 played cards. (5) Regression: solo game (Home -> Jouer contre l'IA -> Partie courte) shows ZERO coach-bubble elements for 12s+ during bidding. Fixed a bundle-breaking syntax error in i18n.tsx.",
+  "rca_of_issue": "Bundle-breaking syntax bug root cause: someone left trailing orphan JSX ('r>\\n  );\\n}\\n\\nexport const useI18n...') after the intended final export in /app/frontend/src/i18n.tsx. This looked like a bad merge or paste. Reproduction: open the file at HEAD; TypeScript/Metro will fail parsing. Mitigation: removed the duplicated block and confirmed Metro serves 200 OK after restarting Expo."
+}
