@@ -85,8 +85,10 @@ export default function HandFan({ hand, legal, myTurn, trump, onPlay, coachCard 
         return (
           <Animated.View
             key={card}
-            entering={FadeInDown.duration(320).delay(420 + i * 230).springify().damping(15)}
-            layout={LinearTransition.springify().damping(18)}
+            entering={FadeInDown.duration(300)
+              .delay(420 + i * 230)
+              .easing(Easing.out(Easing.cubic))}
+            layout={LinearTransition.duration(180).easing(Easing.out(Easing.quad))}
             style={[
               { marginLeft: i === 0 ? 0 : -cardW * (1 - overlap) },
               { zIndex: isCoach ? 100 : i },
