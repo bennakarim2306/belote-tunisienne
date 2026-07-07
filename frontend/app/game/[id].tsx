@@ -23,6 +23,7 @@ import {
   preloadInterstitial,
 } from "@/src/ads/interstitial";
 import BiddingPanel from "@/src/components/game/BiddingPanel";
+import CoachBubble from "@/src/components/game/CoachBubble";
 import DealAnimation from "@/src/components/game/DealAnimation";
 import { HandEndModal, MatchEndOverlay } from "@/src/components/game/HandEndModal";
 import HandFan from "@/src/components/game/HandFan";
@@ -117,8 +118,17 @@ export default function GameScreen() {
   const [chatOpen, setChatOpen] = useState(false);
   const [chatBubbles, setChatBubbles] = useState<Record<number, { text: string; key: number }>>({});
   const chatTimers = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
+  const [coachMsg, setCoachMsg] = useState<{ text: string; key: number } | null>(null);
+  const coachMsgTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastEventId = useRef(0);
   const prevHandRef = useRef<number | null>(null);
+
+  // transient coach commentary (e.g. what an opponent's bid may mean)
+  const showCoachMsg = (text: string) => {
+    setCoachMsg({ text, key: Date.now() });
+    if (coachMsgTimer.current) clearTimeout(coachMsgTimer.current);
+    coachMsgTimer.current = setTimeout(() => setCoachMsg(null), 6500);
+  };
 
   // trigger the dealing animation on every fresh hand
   useEffect(() => {
@@ -162,8 +172,24 @@ export default function GameScreen() {
       } else if (ev.e === "belote") {
         playSound("belote");
         setBanner({ text: t(ev.word === "belote" ? "belote" : "rebelote"), key: Date.now() });
+      } else if (ev.e === "bid" && state?.coach_mode && ev.seat !== undefined &&
+                 ev.seat !== state.my_seat) {
+        const name = state.players.find((p) => p.seat === ev.seat)?.username ?? "";
+        const suitSym = SUIT_SYMBOL[ev.suit ?? ""] ?? "";
+        const isPartner = ev.seat % 2 === state.my_seat % 2;
+        const key = isPartner
+          ? "coach_partner_bid"
+          : (ev.value ?? 0) >= 120
+            ? "coach_opp_bid_strong"
+            : "coach_opp_bid";
+        showCoachMsg(t(key as TKey, { name, value: String(ev.value ?? ""), suit: suitSym }));
       } else if (ev.e === "contre") {
         setBanner({ text: t("contreBang"), key: Date.now() });
+        if (state?.coach_mode && ev.seat !== undefined &&
+            ev.seat % 2 !== state.my_seat % 2) {
+          const name = state.players.find((p) => p.seat === ev.seat)?.username ?? "";
+          showCoachMsg(t("coach_opp_contre", { name }));
+        }
       } else if (ev.e === "surcontre") {
         setBanner({ text: t("surcontreBang"), key: Date.now() });
       } else if (ev.e === "capot") {
@@ -276,6 +302,23 @@ export default function GameScreen() {
   const contract = state.contract;
 
   const myTurn = state.turn === mySeat;
+
+  // tutorial coach: my-turn hint takes precedence over transient commentary
+  const fmtCard = (c: string) => c.slice(0, -1) + (SUIT_SYMBOL[c.slice(-1)] ?? "");
+  let coachHintText: string | null = null;
+  if (state.coach_mode && state.coach && myTurn && !state.paused) {
+    const h = state.coach;
+    coachHintText =
+      h.kind === "play" && h.card
+        ? t(`coach_${h.reason}` as TKey, { card: fmtCard(h.card) })
+        : t(`coach_${h.reason}` as TKey, {
+            value: String(h.value ?? ""),
+            suit: h.suit ? SUIT_SYMBOL[h.suit] : "",
+          });
+  }
+  const coachDisplay = state.coach_mode ? (coachHintText ?? coachMsg?.text ?? null) : null;
+  const coachCard =
+    state.coach_mode && myTurn && state.coach?.kind === "play" ? state.coach.card : null;
 
   // announced contract holder badge (visible while the hand is being played)
   const contractLabelFor = (seat: number) =>
@@ -476,6 +519,7 @@ export default function GameScreen() {
           myTurn={myTurn && state.phase === "playing"}
           trump={state.trump}
           onPlay={(card) => send({ action: "play", card })}
+          coachCard={coachCard}
         />
       </View>
 
@@ -485,6 +529,11 @@ export default function GameScreen() {
           style={[styles.biddingWrap, { bottom: insets.bottom + 140 }]}
           pointerEvents="box-none"
         >
+          {coachDisplay && (
+            <View style={{ paddingHorizontal: SP.md, marginBottom: SP.sm }}>
+              <CoachBubble text={coachDisplay} label={t("coachLabel")} />
+            </View>
+          )}
           <BiddingPanel state={state} t={t} onAction={send} />
         </View>
       )}

@@ -540,6 +540,17 @@ async def create_solo(body: MatchTypeBody, request: Request):
     return {"game_id": game_id}
 
 
+@api.post("/tutorial/game")
+async def create_tutorial_game(request: Request):
+    """Final teaching game of the tutorial: solo vs 3 AIs with the coach on."""
+    user = await get_current_user(request)
+    game_id = manager.create_game([to_player(user)], "short",
+                                  shuffle=False, ranked=False, turn_timeout=None,
+                                  host_user_id=user["user_id"], origin="solo")
+    manager.games[game_id].game.coach = True
+    return {"game_id": game_id}
+
+
 @api.get("/games/current")
 async def current_game(request: Request):
     """Ongoing (non-finished) live game the user is seated in — for rejoining.

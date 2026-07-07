@@ -91,6 +91,17 @@ export interface GameState {
   turn_deadline: number;
   turn_timeout: number | null;
   elo_changes: Record<string, number> | null;
+  coach_mode?: boolean;
+  coach?: CoachHint;
+}
+
+export interface CoachHint {
+  kind: "bid" | "play";
+  reason: string;
+  action?: "bid" | "contre" | "pass";
+  value?: number;
+  suit?: string;
+  card?: string;
 }
 
 export interface GameEvent {

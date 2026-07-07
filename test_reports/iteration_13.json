@@ -1,0 +1,44 @@
+{
+  "summary": "Frontend-only validation of the new Belote Tunisienne structured tutorial (14 sequential lessons + TTS listen + final teaching game with coach mode). All 9 requested test items PASSED. No React Native red screen, no unresolved coach placeholders, no deprecated Expo packages detected.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/ (existing pytest suites — not re-run per request)"
+  ],
+  "action_items": [
+    "No blocking action items — feature is production-ready per this iteration.",
+    "Optional polish: on headless-web where expo-speech has no voices, Speech.speak() invokes onDone immediately so the Listen button never visibly toggles to 'Arrêter'. On a real device/browser with voices this works; if a purely visual confirmation is desired on web, consider a small delay or a 'starting' state before setting speaking=true from onStart. Not required by spec."
+  ],
+  "critical_code_review_comments": [
+    "tutorial/index.tsx and tutorial/[step].tsx are clean, use testIDs, StyleSheet, respect SafeAreaInsets and route guards (sequential lock verified: /tutorial/12 with progress=0 redirects to /tutorial).",
+    "CoachBubble uses Reanimated FadeInDown / FadeOut with pointerEvents='none' — correctly overlaid without blocking taps on the hand fan.",
+    "i18n t() uses split(`{k}`).join(v) which is effectively replaceAll — all coach placeholders ({suit}, {card}, {value}, {name}) are substituted; no literal tokens observed in bubble text ('Tu es fort dans leur atout : Contre !').",
+    "No deprecated Expo packages (expo-av / expo-barcode-scanner / expo-background-fetch not present). expo-audio ~1.1.1 and expo-speech ~14.0.8 are current."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (skipped per request — 83/83 already pass)", "frontend": "100% (9/9 tutorial+coach test items)"},
+  "seed_data_creation": "None. Used existing account tester1@belote.tn. Progress was manipulated only via web localStorage (tutorial_progress key) which is per-browser and does not touch backend state. Language restored to FR at end of testing as requested.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Tutorial feature validated end-to-end via preview URL with mobile viewport (390x844). Auth flow: tester1@belote.tn / Belote123! -> /home. Tutorial route: /tutorial and /tutorial/[step]. Coach bubble testID: 'coach-bubble' (present only when state.coach_mode). Solo game via play-solo-card + match-type-short does NOT enable coach_mode (regression confirmed). Final teaching game endpoint: POST /api/tutorial/game (returns game_id, opens /game/{id}). Language testIDs on profile page: language-{fr|en|ar}-option (NOT lang-{code}). Profile route is /profile not /profil.",
+  "rca_of_issue": "N/A — no defects found.",
+  "detailed_test_evidence": {
+    "1_home_layout": "learn-card (y=367) rendered BELOW play-solo-card (y=262). Tapping learn-card routes to /tutorial.",
+    "2_tutorial_index": "tutorial-screen visible. All 14 lesson-row-{0..13} present. Fresh account shows 0/14; lesson-row-0 has gold border; rows 1-13 show lock-closed icon; final-game-row locked with 'Termine toutes les leçons pour débloquer'. After completing lesson 1, row 0 shows green checkmark and row 1 becomes gold-bordered current.",
+    "3_lesson_screen": "lesson-screen renders title 'Bienvenue !', 3 paragraph cards, lesson-tip (gold Astuce). listen-button click did not crash (headless Chrome expo-speech no-op). lesson-ok-button labelled 'OK, j'ai compris'.",
+    "4_ok_and_back": "OK navigates to /tutorial/1 with title 'L'atout'. lesson-back returns to /tutorial with 'tutorial-progress-text' = '1/14 leçons terminées'.",
+    "5_sequential_lock": "Direct navigation to /tutorial/12 with progress=0 -> automatic redirect to /tutorial. Locked row2 click while progress=1 also stays on /tutorial. Revisiting completed lesson-row-0 works.",
+    "6_i18n": "EN progress = '0/14 lessons completed', title 'Welcome!', OK 'OK, got it'. AR progress = '0/14 دروس مكملة', title 'مرحبا بيك !'. FR restored = '0/14 leçons terminées'.",
+    "7_final_game_unlock": "localStorage.setItem('tutorial_progress','14') + reload => progress '14/14 leçons terminées', final-game-row active with trophy icon. Click => POST /api/tutorial/game succeeded, routed to /game/g_1cfd1026ad28.",
+    "8_coach_bubble": "coach-bubble visible above bidding panel with text: 'Coach\\nTu es fort dans leur atout : Contre !'. No literal {suit}/{card}/{value}/{name} placeholders present. Opponents' bids (Mabrouk 100♥, Fatma 110♦) rendered around the table.",
+    "9_regression_solo_game": "Regular play-solo-card -> match-type-short opens /game/g_dec304155429 with normal bidding panel and NO coach-bubble (polled for 8 seconds)."
+  }
+}

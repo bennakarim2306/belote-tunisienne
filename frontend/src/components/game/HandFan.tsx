@@ -1,7 +1,15 @@
 import * as Haptics from "expo-haptics";
-import React from "react";
+import React, { useEffect } from "react";
 import { Platform, Pressable, StyleSheet, View, useWindowDimensions } from "react-native";
-import Animated, { FadeInDown, LinearTransition } from "react-native-reanimated";
+import Animated, {
+  Easing,
+  FadeInDown,
+  LinearTransition,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+} from "react-native-reanimated";
 
 import PlayingCard from "@/src/components/PlayingCard";
 
@@ -11,9 +19,37 @@ interface Props {
   myTurn: boolean;
   trump: string | null;
   onPlay: (card: string) => void;
+  coachCard?: string | null; // tutorial coach suggestion: pulsing gold ring
 }
 
-export default function HandFan({ hand, legal, myTurn, trump, onPlay }: Props) {
+// Pulsing golden highlight around the card suggested by the tutorial coach.
+function CoachPulse({ children, radius }: { children: React.ReactNode; radius: number }) {
+  const v = useSharedValue(0);
+  useEffect(() => {
+    v.value = withRepeat(
+      withTiming(1, { duration: 650, easing: Easing.inOut(Easing.quad) }),
+      -1,
+      true,
+    );
+  }, [v]);
+  const lift = useAnimatedStyle(() => ({ transform: [{ translateY: -8 * v.value }] }));
+  const ring = useAnimatedStyle(() => ({ opacity: 0.5 + 0.5 * v.value }));
+  return (
+    <Animated.View style={lift}>
+      {children}
+      <Animated.View
+        pointerEvents="none"
+        style={[
+          StyleSheet.absoluteFill,
+          { borderWidth: 3, borderColor: "#FFBE3C", borderRadius: radius },
+          ring,
+        ]}
+      />
+    </Animated.View>
+  );
+}
+
+export default function HandFan({ hand, legal, myTurn, trump, onPlay, coachCard }: Props) {
   const { width } = useWindowDimensions();
   const n = hand.length;
   if (n === 0) return <View style={styles.row} />;
@@ -35,8 +71,17 @@ export default function HandFan({ hand, legal, myTurn, trump, onPlay }: Props) {
     <View style={styles.row} testID="hand-fan">
       {hand.map((card, i) => {
         const playable = myTurn && legal.includes(card);
+        const isCoach = playable && coachCard === card;
         const rot = (i - mid) * 2.5;
         const lift = Math.abs(i - mid) * Math.abs(i - mid) * 1.1;
+        const cardEl = (
+          <PlayingCard
+            card={card}
+            width={cardW}
+            trumpSuit={trump}
+            dimmed={myTurn && !playable}
+          />
+        );
         return (
           <Animated.View
             key={card}
@@ -44,7 +89,7 @@ export default function HandFan({ hand, legal, myTurn, trump, onPlay }: Props) {
             layout={LinearTransition.springify().damping(18)}
             style={[
               { marginLeft: i === 0 ? 0 : -cardW * (1 - overlap) },
-              { zIndex: i },
+              { zIndex: isCoach ? 100 : i },
             ]}
           >
             <View
@@ -60,12 +105,11 @@ export default function HandFan({ hand, legal, myTurn, trump, onPlay }: Props) {
                 onPress={() => play(card)}
                 disabled={!playable}
               >
-                <PlayingCard
-                  card={card}
-                  width={cardW}
-                  trumpSuit={trump}
-                  dimmed={myTurn && !playable}
-                />
+                {isCoach ? (
+                  <CoachPulse radius={cardW * 0.14}>{cardEl}</CoachPulse>
+                ) : (
+                  cardEl
+                )}
               </Pressable>
             </View>
           </Animated.View>

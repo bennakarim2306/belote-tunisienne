@@ -414,6 +414,27 @@ export default function HomeScreen() {
           </Animated.View>
         )}
 
+        {!codeFocused && (
+          <Animated.View entering={FadeInUp.delay(100)} exiting={FadeOut.duration(120)}>
+            <Pressable
+              testID="learn-card"
+              onPress={() => router.push("/tutorial")}
+              style={({ pressed }) => [styles.learnCard, pressed && styles.pressed]}
+            >
+              <View style={styles.learnIcon}>
+                <Ionicons name="school" size={22} color={C.gold} />
+              </View>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={styles.learnTitle}>{t("tutorialTitle")}</Text>
+                <Text style={styles.learnDesc} numberOfLines={1}>
+                  {t("tutorialDesc")}
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={C.ink3} />
+            </Pressable>
+          </Animated.View>
+        )}
+
         <Animated.View
           entering={FadeInUp.delay(120)}
           layout={LinearTransition.duration(180)}
@@ -829,6 +850,27 @@ const styles = StyleSheet.create({
   },
   trainingBadgeText: { fontFamily: F.bold, fontSize: 11, color: "#1A1200" },
   pressed: { transform: [{ scale: 0.98 }], opacity: 0.92 },
+  learnCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: SP.md,
+    backgroundColor: C.card,
+    borderRadius: R.md,
+    borderWidth: 1,
+    borderColor: "rgba(255,190,60,0.35)",
+    padding: SP.md,
+    marginBottom: SP.md,
+  },
+  learnIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "rgba(255,190,60,0.12)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  learnTitle: { fontFamily: F.display, fontSize: 16, color: C.ink },
+  learnDesc: { fontFamily: F.text, fontSize: 12.5, color: C.ink2, marginTop: 1 },
   bigCardIcon: {
     width: 46,
     height: 46,

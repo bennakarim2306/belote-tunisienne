@@ -5,6 +5,7 @@ import random
 import time
 
 import bot_ai
+import coach
 import game_logic as gl
 
 logger = logging.getLogger(__name__)
@@ -32,6 +33,17 @@ class LiveGame:
 class GameRuntimeMixin:
     """WebSocket connections, action handling and the automatic driver."""
 
+    def _coach_state(self, g, seat):
+        """Game state + coach payload for tutorial (coach-mode) games."""
+        state = g.state_for(seat)
+        if (getattr(g, "coach", False) and seat is not None
+                and not g.players[seat]["is_bot"]):
+            state["coach_mode"] = True
+            hint = coach.hint_for(g, seat)
+            if hint:
+                state["coach"] = hint
+        return state
+
     async def connect(self, game_id, user_id, ws):
         live = self.games.get(game_id)
         if not live:
@@ -50,7 +62,7 @@ class GameRuntimeMixin:
                     and g.paused.get("reason") == "disconnect"
                     and g.paused["seat"] == seat):
                 resumed = g.resume(None)
-        await self._send(ws, live.game.state_for(seat), [])
+        await self._send(ws, self._coach_state(live.game, seat), [])
         events = ([{"e": "rejoined", "seat": seat}] if rejoined else []) + (resumed or [])
         if events:
             await self.broadcast(live, events)
@@ -113,7 +125,7 @@ class GameRuntimeMixin:
     async def broadcast(self, live, events):
         for user_id, conns in list(live.sockets.items()):
             seat = live.game.seat_of(user_id)
-            state = live.game.state_for(seat)
+            state = self._coach_state(live.game, seat)
             for ws in list(conns):
                 await self._send(ws, state, events)
 
