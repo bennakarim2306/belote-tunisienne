@@ -65,26 +65,33 @@ function Pips({ rank, suit, w, h }: { rank: string; suit: string; w: number; h: 
   const pts = PIPS[rank];
   if (!pts) return null;
   const fs = w * (PIP_SIZE[rank] ?? 0.2);
+  const box = fs * 1.3;
   const color = SUIT_COLOR[suit];
   return (
     <>
       {pts.map(([x, y], i) => (
-        <Text
+        // absolutely-positioned VIEW wrapper (not Text): reliable on native —
+        // bare absolute Texts drift on phones (web renders them fine)
+        <View
           key={i}
           style={{
             position: "absolute",
-            left: x * w - fs * 0.62,
-            top: y * h - fs * 0.62,
-            width: fs * 1.24,
-            textAlign: "center",
-            fontSize: fs,
-            lineHeight: fs * 1.15,
-            color,
+            left: x * w - box / 2,
+            top: y * h - box / 2,
+            width: box,
+            height: box,
+            alignItems: "center",
+            justifyContent: "center",
             transform: y > 0.55 ? [{ rotate: "180deg" }] : undefined,
           }}
         >
-          {SUIT_SYMBOL[suit]}
-        </Text>
+          <Text
+            style={{ fontSize: fs, color, includeFontPadding: false }}
+            allowFontScaling={false}
+          >
+            {SUIT_SYMBOL[suit]}
+          </Text>
+        </View>
       ))}
     </>
   );
@@ -162,31 +169,29 @@ function CourtCenter({ rank, suit, w, h }: { rank: string; suit: string; w: numb
         <HalfBust rank={rank} />
       </View>
       {/* small suit pips inside the frame, like real courts */}
-      <Text
-        style={{
-          position: "absolute",
-          top: 1,
-          left: 2,
-          fontSize: suitFs,
-          lineHeight: suitFs * 1.15,
-          color,
-        }}
-      >
-        {SUIT_SYMBOL[suit]}
-      </Text>
-      <Text
+      <View style={{ position: "absolute", top: 1, left: 2 }}>
+        <Text
+          style={{ fontSize: suitFs, color, includeFontPadding: false }}
+          allowFontScaling={false}
+        >
+          {SUIT_SYMBOL[suit]}
+        </Text>
+      </View>
+      <View
         style={{
           position: "absolute",
           bottom: 1,
           right: 2,
-          fontSize: suitFs,
-          lineHeight: suitFs * 1.15,
-          color,
           transform: [{ rotate: "180deg" }],
         }}
       >
-        {SUIT_SYMBOL[suit]}
-      </Text>
+        <Text
+          style={{ fontSize: suitFs, color, includeFontPadding: false }}
+          allowFontScaling={false}
+        >
+          {SUIT_SYMBOL[suit]}
+        </Text>
+      </View>
     </View>
   );
 }
@@ -236,18 +241,24 @@ export default function PlayingCard({
       {isCourt ? (
         <CourtCenter rank={rank} suit={suit} w={width} h={height} />
       ) : rank === "A" ? (
-        <Text
+        <View
           style={{
             position: "absolute",
-            alignSelf: "center",
-            top: height / 2 - width * 0.31,
-            fontSize: width * 0.52,
-            lineHeight: width * 0.62,
-            color,
+            left: 0,
+            right: 0,
+            top: 0,
+            bottom: 0,
+            alignItems: "center",
+            justifyContent: "center",
           }}
         >
-          {SUIT_SYMBOL[suit]}
-        </Text>
+          <Text
+            style={{ fontSize: width * 0.52, color, includeFontPadding: false }}
+            allowFontScaling={false}
+          >
+            {SUIT_SYMBOL[suit]}
+          </Text>
+        </View>
       ) : (
         <Pips rank={rank} suit={suit} w={width} h={height} />
       )}

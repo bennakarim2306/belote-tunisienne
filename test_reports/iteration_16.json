@@ -1,0 +1,70 @@
+{
+  "summary": "Frontend-only validation of the PlayingCard pip/ace/court structural rewrite (bare absolute <Text> → absolute <View> wrapper + centered <Text> inside). PASS on both stated pass criteria: (1) NO bare absolute <Text> remains in /app/frontend/src/components/PlayingCard.tsx — all 7 `position:\"absolute\"` occurrences are on Views (7 pip wrappers, 1 ace wrapper, 2 court in-frame suit wrappers, and the shared `styles.corner` used by cornerTL/cornerBR Views). (2) Web rendering is unregressed — solo game hand + trick area render number pips in the classic two-column + centered pattern with bottom-half rotated 180°, ace shows the single big centered suit glyph, courts show the double-headed figure with in-frame corner suit pips.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "evidence": {
+    "code_check": {
+      "file": "/app/frontend/src/components/PlayingCard.tsx",
+      "absolute_position_occurrences": [
+        "L78 — <View> wrapper for each number-card pip (inside Pips())",
+        "L152 — <View> wrapper for CourtCenter frame",
+        "L172 — <View> wrapper for court top-left in-frame suit pip",
+        "L182 — <View> wrapper for court bottom-right in-frame suit pip (rotated 180°)",
+        "L246 — <View> wrapper for the ace's single centered big pip",
+        "L304 — styles.corner (applied to <View> for TL/BR corner rank+suit)"
+      ],
+      "grep_conclusion": "Zero <Text> elements carry position:'absolute' in this file. All absolute layout is done via <View>; <Text> content inside those Views uses centered flex layout + includeFontPadding:false + allowFontScaling:false."
+    },
+    "runtime_dom_inspection_number_card_8_of_spades": {
+      "hand_id": "hand-card-8S",
+      "computed_absolute_descendants": 10,
+      "breakdown": "8 pip wrappers (each a DIV with 1 child Text ♠, alignItems:center, justifyContent:center, width=height=19.2px) + 2 corner index wrappers (each a DIV with 2 child Texts '8' and '♠').",
+      "pip_x_positions_left_px": [12.21, 38.96, 25.58, 12.21, 38.96, 25.58, 12.21, 38.96],
+      "pip_y_positions_top_px": [8.76, 8.76, 24.07, 41.42, 41.42, 58.77, 74.08, 74.08],
+      "matches_PIPS_8_map": "YES — resolving 0.31/0.69/0.5 fractions of card inner-width against box=fs*1.3 exactly reproduces the observed pixel offsets.",
+      "rotation_180_applied_to_bottom_pips": "YES — computed transform on the three pips with y>0.55 is matrix(-1,0,0,-1,0,0).",
+      "no_bare_absolute_text": "Confirmed — every DIV with computed position:absolute either has childCount>=1 (wrapper) or is the corner container; no leaf text-only absolute node."
+    },
+    "visual_verification": {
+      "viewport": "390x844 (mobile web preview)",
+      "flow": "Login tester1@belote.tn / Belote123! → play-solo-card → match-type-short → looped pass-button until bidding cleared → play phase reached.",
+      "hand_dealt": ["AS","8S","10H","AC","AD","QD","JD","7D"],
+      "closeups_taken": ["CARD_hand-card-AS", "CARD_hand-card-8S", "CARD_hand-card-10H", "CARD_hand-card-7D", "COURT_hand-card-QD", "HAND (whole fan)"],
+      "trick_area_second_deal": {
+        "played_cards": ["7♥ (number)", "8♥ (number)", "D♦ (court)"],
+        "render_check": "Pips in two columns + rotated bottom halves; court shows double-headed figure with in-frame corner suit pips. No drift, no stacking, no misplaced glyphs."
+      },
+      "ace_render": "AS shows a single large centered ♠ — matches the new absolute-View ace wrapper (L244-261).",
+      "court_render": "QD (D♦) shows the mirrored bust with small ♦ in the top-left and bottom-right of the inner frame — matches L172/L182 wrappers."
+    },
+    "regression_notes": {
+      "tutorial_via_api_probe": "POST /api/tutorial/game from the Playwright page context returned 401 invalid_session (session cookie/token exchange path — not a defect; unrelated to this fix).",
+      "tutorial_coverage_argument": "PlayingCard is a leaf presentational component shared by every screen (HandFan, table slots, tutorial modals, lesson cards). The change is structural only (no mode branch), so a passing solo/hand render implies identical behavior in the tutorial game. Iteration 15 already validated the tutorial coach flow end-to-end.",
+      "console_warnings": "Only the previously-documented benign warnings observed: 'shadow* props deprecated. Use boxShadow' and reanimated web easing fallback. No pageerror, no red-screen."
+    },
+    "screenshots_paths": ["/tmp/A_play.png", "/tmp/CARD_hand-card-AS.png", "/tmp/CARD_hand-card-8S.png", "/tmp/CARD_hand-card-10H.png", "/tmp/CARD_hand-card-7D.png", "/tmp/COURT_hand-card-QD.png", "/tmp/HAND.png"]
+  },
+  "test_report_links": ["/app/test_reports/iteration_16.json"],
+  "action_items": [
+    "None required for this fix. Both pass criteria met.",
+    "Optional follow-up (not blocking, and outside this scope): consider dropping the last two <Text> siblings inside styles.corner into a single wrapping <View> that owns the layout explicitly — cosmetic only; corners already work because they inherit position:absolute from the parent View, not from the Texts themselves."
+  ],
+  "critical_code_review_comments": [
+    "Pips() cleanly derives box = fs*1.3 and centers the Text inside — good buffer against font ascent/descent asymmetry on native, which was the root cause of the reported drift.",
+    "The 180° rotation is applied on the wrapper View (not on the Text), which is the correct place for RN — layout coordinates are computed before the transform, so rotated pips stay pixel-anchored.",
+    "Ace wrapper uses left/right/top/bottom = 0 with centered flex — deterministic on both native and web; no reliance on lineHeight quirks.",
+    "CourtCenter's in-frame suit pips are also View-wrapped now; symmetry preserved with the number-card pip approach."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (frontend only per request)", "frontend": "2/2 pass criteria met (100%)"},
+  "seed_data_creation": "None. One ephemeral solo game created via UI; auto-cleaned by backend TTL.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "PlayingCard is used across HandFan, table slots, tutorial modals, and lesson previews. To re-verify: (a) grep -n \"position\" /app/frontend/src/components/PlayingCard.tsx should show 7 hits, all on Views (never on Text). (b) DOM sanity: in DevTools pick any [data-testid^='hand-card-'] and confirm each absolute descendant is a DIV wrapper (not a leaf text-only absolute). (c) Native check requires an EAS build — not reproducible headless; web verification here plus the structural guarantee is the accepted pass path.",
+  "rca_of_issue": "Root cause (per bug report, confirmed by code diff): on native RN, a <Text> element carrying its own position:'absolute' style is measured after font-layout — the resulting box drifts because RN's Yoga positions the text baseline, not the visual glyph center, and stacks siblings with the same left origin. Absolute-positioned Views are laid out by Yoga BEFORE their text children measure, so a View→Text nesting produces stable coordinates identical to what web already shows. Fix applied by main agent wraps each pip glyph in an absolute View with fixed width/height and flex-centered Text (includeFontPadding:false, allowFontScaling:false to remove OS-dependent padding). Verified: 8 pip Views on 8♠ render at exactly [(0.31,0.18),(0.69,0.18),(0.5,0.33),(0.31,0.5),(0.69,0.5),(0.5,0.67),(0.31,0.82),(0.69,0.82)] of card width/height, with bottom halves rotated 180°."
+}
