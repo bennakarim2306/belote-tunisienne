@@ -1,6 +1,6 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
-import Svg, { Circle, Ellipse, Path, Rect } from "react-native-svg";
+import Svg, { Circle, Ellipse, G, Path, Rect } from "react-native-svg";
 
 import { C, F } from "@/src/theme";
 
@@ -46,54 +46,101 @@ const SKIN = "#F4C9A0";
 const OUTLINE = "#35302B";
 const HAIR = "#E8E2D8";
 
+// ---------- SVG suit shapes ----------
+// Pips are drawn as vector paths (never font glyphs): text symbols like ♣ use
+// platform font metrics that shift/scale unpredictably on iOS/Android, which
+// scrambled the pip grid on real devices. SVG coordinates are exact everywhere.
+// Each glyph fills a 100×100 box centered on (50, 50).
+function SuitGlyph({ suit }: { suit: string }) {
+  const color = SUIT_COLOR[suit];
+  switch (suit) {
+    case "D":
+      return <Path d="M50 4 L83 50 L50 96 L17 50 Z" fill={color} />;
+    case "H":
+      return (
+        <Path
+          d="M50 92 C24 68 8 48 8 31 C8 17 19 8 31 8 C40 8 47 13 50 21 C53 13 60 8 69 8 C81 8 92 17 92 31 C92 48 76 68 50 92 Z"
+          fill={color}
+        />
+      );
+    case "S":
+      return (
+        <Path
+          d="M50 5 C60 24 88 39 88 59 C88 72 78 81 67 81 C61 81 56 78 52 74 C53 83 57 89 63 94 L37 94 C43 89 47 83 48 74 C44 78 39 81 33 81 C22 81 12 72 12 59 C12 39 40 24 50 5 Z"
+          fill={color}
+        />
+      );
+    case "C":
+      return (
+        <>
+          <Circle cx={50} cy={27} r={20} fill={color} />
+          <Circle cx={28} cy={59} r={20} fill={color} />
+          <Circle cx={72} cy={59} r={20} fill={color} />
+          <Path d="M46 56 C48 74 44 84 38 94 L62 94 C56 84 52 74 54 56 Z" fill={color} />
+        </>
+      );
+  }
+  return null;
+}
+
+// Small standalone suit mark (corner indices, court frames)
+function SuitMark({ suit, size }: { suit: string; size: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 100 100">
+      <SuitGlyph suit={suit} />
+    </Svg>
+  );
+}
+
 // ---------- pip layouts (fractions of the card) ----------
-// Bottom-half pips are rotated 180°, like on real cards.
+// Real French layouts; bottom-half pips are rotated 180°, like on real cards.
 const PIPS: Record<string, [number, number][]> = {
-  "7": [[0.31, 0.18], [0.69, 0.18], [0.5, 0.33], [0.31, 0.5], [0.69, 0.5],
-        [0.31, 0.82], [0.69, 0.82]],
-  "8": [[0.31, 0.18], [0.69, 0.18], [0.5, 0.33], [0.31, 0.5], [0.69, 0.5],
-        [0.5, 0.67], [0.31, 0.82], [0.69, 0.82]],
-  "9": [[0.31, 0.16], [0.69, 0.16], [0.31, 0.39], [0.69, 0.39], [0.5, 0.5],
-        [0.31, 0.61], [0.69, 0.61], [0.31, 0.84], [0.69, 0.84]],
-  "10": [[0.31, 0.16], [0.69, 0.16], [0.5, 0.26], [0.31, 0.39], [0.69, 0.39],
-         [0.31, 0.61], [0.69, 0.61], [0.5, 0.74], [0.31, 0.84], [0.69, 0.84]],
+  "7": [[0.3, 0.19], [0.7, 0.19], [0.5, 0.345], [0.3, 0.5], [0.7, 0.5],
+        [0.3, 0.81], [0.7, 0.81]],
+  "8": [[0.3, 0.19], [0.7, 0.19], [0.5, 0.345], [0.3, 0.5], [0.7, 0.5],
+        [0.5, 0.655], [0.3, 0.81], [0.7, 0.81]],
+  "9": [[0.3, 0.17], [0.7, 0.17], [0.3, 0.39], [0.7, 0.39], [0.5, 0.5],
+        [0.3, 0.61], [0.7, 0.61], [0.3, 0.83], [0.7, 0.83]],
+  "10": [[0.3, 0.17], [0.7, 0.17], [0.5, 0.28], [0.3, 0.39], [0.7, 0.39],
+         [0.3, 0.61], [0.7, 0.61], [0.5, 0.72], [0.3, 0.83], [0.7, 0.83]],
 };
 
-const PIP_SIZE: Record<string, number> = { "7": 0.21, "8": 0.21, "9": 0.19, "10": 0.18 };
+// pip size in viewBox units (card width = 100 units)
+const PIP_SIZE: Record<string, number> = { "7": 19, "8": 19, "9": 17, "10": 16 };
 
-function Pips({ rank, suit, w, h }: { rank: string; suit: string; w: number; h: number }) {
+// One pip placed inside the card-face Svg (viewBox 0 0 100 145)
+function Pip({ x, y, s, suit, flip }: {
+  x: number; y: number; s: number; suit: string; flip?: boolean;
+}) {
+  const cx = x * 100;
+  const cy = y * 145;
+  return (
+    <G
+      transform={`translate(${cx}, ${cy}) ${flip ? "rotate(180) " : ""}scale(${s / 100}) translate(-50, -50)`}
+    >
+      <SuitGlyph suit={suit} />
+    </G>
+  );
+}
+
+// Full face of a number card: a single Svg holding every pip, so all
+// positions live in one exact coordinate space (no per-pip native views).
+function PipsFace({ rank, suit }: { rank: string; suit: string }) {
   const pts = PIPS[rank];
   if (!pts) return null;
-  const fs = w * (PIP_SIZE[rank] ?? 0.2);
-  const box = fs * 1.3;
-  const color = SUIT_COLOR[suit];
+  const s = PIP_SIZE[rank] ?? 17;
   return (
-    <>
+    <Svg
+      width="100%"
+      height="100%"
+      viewBox="0 0 100 145"
+      style={StyleSheet.absoluteFill}
+      pointerEvents="none"
+    >
       {pts.map(([x, y], i) => (
-        // absolutely-positioned VIEW wrapper (not Text): reliable on native —
-        // bare absolute Texts drift on phones (web renders them fine)
-        <View
-          key={i}
-          style={{
-            position: "absolute",
-            left: x * w - box / 2,
-            top: y * h - box / 2,
-            width: box,
-            height: box,
-            alignItems: "center",
-            justifyContent: "center",
-            transform: y > 0.55 ? [{ rotate: "180deg" }] : undefined,
-          }}
-        >
-          <Text
-            style={{ fontSize: fs, color, includeFontPadding: false }}
-            allowFontScaling={false}
-          >
-            {SUIT_SYMBOL[suit]}
-          </Text>
-        </View>
+        <Pip key={i} x={x} y={y} s={s} suit={suit} flip={y > 0.55} />
       ))}
-    </>
+    </Svg>
   );
 }
 
@@ -144,8 +191,7 @@ function HalfBust({ rank }: { rank: string }) {
 }
 
 function CourtCenter({ rank, suit, w, h }: { rank: string; suit: string; w: number; h: number }) {
-  const color = SUIT_COLOR[suit];
-  const suitFs = w * 0.17;
+  const suitFs = w * 0.14;
   return (
     <View
       style={{
@@ -169,28 +215,18 @@ function CourtCenter({ rank, suit, w, h }: { rank: string; suit: string; w: numb
         <HalfBust rank={rank} />
       </View>
       {/* small suit pips inside the frame, like real courts */}
-      <View style={{ position: "absolute", top: 1, left: 2 }}>
-        <Text
-          style={{ fontSize: suitFs, color, includeFontPadding: false }}
-          allowFontScaling={false}
-        >
-          {SUIT_SYMBOL[suit]}
-        </Text>
+      <View style={{ position: "absolute", top: 2, left: 2 }}>
+        <SuitMark suit={suit} size={suitFs} />
       </View>
       <View
         style={{
           position: "absolute",
-          bottom: 1,
+          bottom: 2,
           right: 2,
           transform: [{ rotate: "180deg" }],
         }}
       >
-        <Text
-          style={{ fontSize: suitFs, color, includeFontPadding: false }}
-          allowFontScaling={false}
-        >
-          {SUIT_SYMBOL[suit]}
-        </Text>
+        <SuitMark suit={suit} size={suitFs} />
       </View>
     </View>
   );
@@ -227,7 +263,7 @@ export default function PlayingCard({
   const isTrump = trumpSuit && suit === trumpSuit;
   const isCourt = rank === "J" || rank === "Q" || rank === "K";
   const rankFs = width * 0.26;
-  const suitFs = width * 0.2;
+  const suitFs = width * 0.15;
   return (
     <View
       style={[
@@ -241,26 +277,17 @@ export default function PlayingCard({
       {isCourt ? (
         <CourtCenter rank={rank} suit={suit} w={width} h={height} />
       ) : rank === "A" ? (
-        <View
-          style={{
-            position: "absolute",
-            left: 0,
-            right: 0,
-            top: 0,
-            bottom: 0,
-            alignItems: "center",
-            justifyContent: "center",
-          }}
+        <Svg
+          width="100%"
+          height="100%"
+          viewBox="0 0 100 145"
+          style={StyleSheet.absoluteFill}
+          pointerEvents="none"
         >
-          <Text
-            style={{ fontSize: width * 0.52, color, includeFontPadding: false }}
-            allowFontScaling={false}
-          >
-            {SUIT_SYMBOL[suit]}
-          </Text>
-        </View>
+          <Pip x={0.5} y={0.5} s={42} suit={suit} />
+        </Svg>
       ) : (
-        <Pips rank={rank} suit={suit} w={width} h={height} />
+        <PipsFace rank={rank} suit={suit} />
       )}
 
       {/* corner indices — top-left and mirrored bottom-right, like real decks */}
@@ -268,17 +295,13 @@ export default function PlayingCard({
         <Text style={[styles.rank, { color, fontSize: rankFs, lineHeight: rankFs * 1.05 }]}>
           {rankLabel(rank)}
         </Text>
-        <Text style={{ color, fontSize: suitFs, lineHeight: suitFs * 1.1, marginTop: -1 }}>
-          {SUIT_SYMBOL[suit]}
-        </Text>
+        <SuitMark suit={suit} size={suitFs} />
       </View>
       <View style={[styles.corner, styles.cornerBR, { transform: [{ rotate: "180deg" }] }]}>
         <Text style={[styles.rank, { color, fontSize: rankFs, lineHeight: rankFs * 1.05 }]}>
           {rankLabel(rank)}
         </Text>
-        <Text style={{ color, fontSize: suitFs, lineHeight: suitFs * 1.1, marginTop: -1 }}>
-          {SUIT_SYMBOL[suit]}
-        </Text>
+        <SuitMark suit={suit} size={suitFs} />
       </View>
     </View>
   );
