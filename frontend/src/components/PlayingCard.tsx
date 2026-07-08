@@ -47,130 +47,57 @@ const OUTLINE = "#35302B";
 const HAIR = "#E8E2D8";
 
 // ---------- SVG suit shapes ----------
-// Pips are drawn as vector paths (never font glyphs): text symbols like ♣ use
-// platform font metrics that shift/scale unpredictably on iOS/Android, which
-// scrambled the pip grid on real devices.
-// Geometry is stored as raw numbers (100×100 box centered on 50,50) so every
-// pip can be emitted with FINAL absolute coordinates baked into the path data —
-// no SVG transform strings at all. Plain <Path d>/<Circle> are the exact same
-// primitives as the court figures, which render pixel-perfect on real devices.
-type Tok = string | number;
-const SUIT_PATH: Record<string, Tok[]> = {
-  D: ["M", 50, 4, "L", 83, 50, "L", 50, 96, "L", 17, 50, "Z"],
-  H: ["M", 50, 92, "C", 24, 68, 8, 48, 8, 31, "C", 8, 17, 19, 8, 31, 8,
-      "C", 40, 8, 47, 13, 50, 21, "C", 53, 13, 60, 8, 69, 8,
-      "C", 81, 8, 92, 17, 92, 31, "C", 92, 48, 76, 68, 50, 92, "Z"],
-  S: ["M", 50, 5, "C", 60, 24, 88, 39, 88, 59, "C", 88, 72, 78, 81, 67, 81,
-      "C", 61, 81, 56, 78, 52, 74, "C", 53, 83, 57, 89, 63, 94, "L", 37, 94,
-      "C", 43, 89, 47, 83, 48, 74, "C", 44, 78, 39, 81, 33, 81,
-      "C", 22, 81, 12, 72, 12, 59, "C", 12, 39, 40, 24, 50, 5, "Z"],
+// Suit symbols are vector paths (never font glyphs): text symbols like ♣ use
+// platform font metrics that shift unpredictably on devices. Static absolute
+// coordinates in a 100×100 box — same primitives as the court figures.
+const SUIT_D: Record<string, string> = {
+  D: "M50 4 L83 50 L50 96 L17 50 Z",
+  H: "M50 92 C24 68 8 48 8 31 C8 17 19 8 31 8 C40 8 47 13 50 21 C53 13 60 8 69 8 C81 8 92 17 92 31 C92 48 76 68 50 92 Z",
+  S: "M50 5 C60 24 88 39 88 59 C88 72 78 81 67 81 C61 81 56 78 52 74 C53 83 57 89 63 94 L37 94 C43 89 47 83 48 74 C44 78 39 81 33 81 C22 81 12 72 12 59 C12 39 40 24 50 5 Z",
   // club stem only — the three lobes are plain circles
-  C: ["M", 46, 56, "C", 48, 74, 44, 84, 38, 94, "L", 62, 94,
-      "C", 56, 84, 52, 74, 54, 56, "Z"],
+  C: "M46 56 C48 74 44 84 38 94 L62 94 C56 84 52 74 54 56 Z",
 };
-const CLUB_LOBES: [number, number][] = [[50, 27], [28, 59], [72, 59]];
-const CLUB_R = 20;
 
-// Map base-glyph coordinates to absolute viewBox coordinates.
-// flip (f = -1) is a point reflection about the pip center == a 180° rotation.
-function pipPath(tokens: Tok[], cx: number, cy: number, k: number, f: number) {
-  let isX = true;
-  return tokens
-    .map((t) => {
-      if (typeof t === "string") {
-        isX = true;
-        return t;
-      }
-      const v = isX ? cx + (t - 50) * k * f : cy + (t - 50) * k * f;
-      isX = !isX;
-      return v.toFixed(2);
-    })
-    .join(" ");
-}
-
-// One pip with absolute coordinates inside the card-face Svg (viewBox 0 0 100 145).
-// x/y are fractions of the card; s is the pip size in viewBox units.
-function PipShape({ x, y, s, suit, flip }: {
-  x: number; y: number; s: number; suit: string; flip?: boolean;
-}) {
-  const cx = x * 100;
-  const cy = y * 145;
-  const k = s / 100;
-  const f = flip ? -1 : 1;
-  const color = SUIT_COLOR[suit];
-  const d = pipPath(SUIT_PATH[suit], cx, cy, k, f);
-  if (suit === "C") {
-    return (
-      <>
-        {CLUB_LOBES.map(([lx, ly], i) => (
-          <Circle
-            key={i}
-            cx={cx + (lx - 50) * k * f}
-            cy={cy + (ly - 50) * k * f}
-            r={CLUB_R * k}
-            fill={color}
-          />
-        ))}
-        <Path d={d} fill={color} />
-      </>
-    );
-  }
-  return <Path d={d} fill={color} />;
-}
-
-// Standalone suit mark (corner indices, court frames) — static paths, no transforms.
+// Standalone suit symbol (corner indices, card centers) — no transforms.
 function SuitMark({ suit, size }: { suit: string; size: number }) {
   const color = SUIT_COLOR[suit];
   return (
     <Svg width={size} height={size} viewBox="0 0 100 100">
-      {suit === "C" ? (
+      {suit === "C" && (
         <>
-          {CLUB_LOBES.map(([lx, ly], i) => (
-            <Circle key={i} cx={lx} cy={ly} r={CLUB_R} fill={color} />
-          ))}
-          <Path d={pipPath(SUIT_PATH.C, 50, 50, 1, 1)} fill={color} />
+          <Circle cx={50} cy={27} r={20} fill={color} />
+          <Circle cx={28} cy={59} r={20} fill={color} />
+          <Circle cx={72} cy={59} r={20} fill={color} />
         </>
-      ) : (
-        <Path d={pipPath(SUIT_PATH[suit], 50, 50, 1, 1)} fill={color} />
       )}
+      <Path d={SUIT_D[suit]} fill={color} />
     </Svg>
   );
 }
 
-// ---------- pip layouts (fractions of the card) ----------
-// Real French layouts; bottom-half pips are rotated 180°, like on real cards.
-const PIPS: Record<string, [number, number][]> = {
-  "7": [[0.3, 0.19], [0.7, 0.19], [0.5, 0.345], [0.3, 0.5], [0.7, 0.5],
-        [0.3, 0.81], [0.7, 0.81]],
-  "8": [[0.3, 0.19], [0.7, 0.19], [0.5, 0.345], [0.3, 0.5], [0.7, 0.5],
-        [0.5, 0.655], [0.3, 0.81], [0.7, 0.81]],
-  "9": [[0.3, 0.17], [0.7, 0.17], [0.3, 0.39], [0.7, 0.39], [0.5, 0.5],
-        [0.3, 0.61], [0.7, 0.61], [0.3, 0.83], [0.7, 0.83]],
-  "10": [[0.3, 0.17], [0.7, 0.17], [0.5, 0.28], [0.3, 0.39], [0.7, 0.39],
-         [0.3, 0.61], [0.7, 0.61], [0.5, 0.72], [0.3, 0.83], [0.7, 0.83]],
-};
-
-// pip size in viewBox units (card width = 100 units)
-const PIP_SIZE: Record<string, number> = { "7": 19, "8": 19, "9": 17, "10": 16 };
-
-// One pip placed inside the card-face Svg (viewBox 0 0 100 145)
-// positions live in one exact coordinate space (no per-pip native views).
-function PipsFace({ rank, suit }: { rank: string; suit: string }) {
-  const pts = PIPS[rank];
-  if (!pts) return null;
-  const s = PIP_SIZE[rank] ?? 17;
+// Face of number cards (7-10) and aces: mobile-first readability — a big rank
+// digit above a big suit symbol instead of realistic pip grids, which turn
+// into unreadable clutter at hand-fan sizes. Courts keep their figures.
+function CenterFace({ rank, suit, w }: { rank: string; suit: string; w: number }) {
+  const color = SUIT_COLOR[suit];
+  const isAce = rank === "A";
   return (
-    <Svg
-      width="100%"
-      height="100%"
-      viewBox="0 0 100 145"
-      style={StyleSheet.absoluteFill}
-      pointerEvents="none"
-    >
-      {pts.map(([x, y], i) => (
-        <PipShape key={i} x={x} y={y} s={s} suit={suit} flip={y > 0.55} />
-      ))}
-    </Svg>
+    <View style={styles.centerFace} pointerEvents="none">
+      {!isAce && (
+        <Text
+          style={{
+            fontFamily: F.extra,
+            fontSize: w * 0.38,
+            lineHeight: w * 0.42,
+            color,
+          }}
+          allowFontScaling={false}
+        >
+          {rank}
+        </Text>
+      )}
+      <SuitMark suit={suit} size={isAce ? w * 0.52 : w * 0.32} />
+    </View>
   );
 }
 
@@ -292,8 +219,8 @@ export default function PlayingCard({
   const color = SUIT_COLOR[suit];
   const isTrump = trumpSuit && suit === trumpSuit;
   const isCourt = rank === "J" || rank === "Q" || rank === "K";
-  const rankFs = width * 0.26;
-  const suitFs = width * 0.15;
+  const rankFs = width * 0.28;
+  const suitFs = width * 0.18;
   return (
     <View
       style={[
@@ -303,21 +230,11 @@ export default function PlayingCard({
         dimmed && { opacity: 0.4 },
       ]}
     >
-      {/* center: figure, pips, or the big "1" ace pip */}
+      {/* center: court figure, or big rank + suit (numbers), or big suit (ace) */}
       {isCourt ? (
         <CourtCenter rank={rank} suit={suit} w={width} h={height} />
-      ) : rank === "A" ? (
-        <Svg
-          width="100%"
-          height="100%"
-          viewBox="0 0 100 145"
-          style={StyleSheet.absoluteFill}
-          pointerEvents="none"
-        >
-          <PipShape x={0.5} y={0.5} s={42} suit={suit} />
-        </Svg>
       ) : (
-        <PipsFace rank={rank} suit={suit} />
+        <CenterFace rank={rank} suit={suit} w={width} />
       )}
 
       {/* corner indices — top-left and mirrored bottom-right, like real decks */}
@@ -367,6 +284,11 @@ const styles = StyleSheet.create({
   },
   rank: {
     fontFamily: F.extra,
+  },
+  centerFace: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: "center",
+    justifyContent: "center",
   },
   back: {
     backgroundColor: "#1C1714",
