@@ -1,6 +1,6 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
-import Svg, { Circle, Ellipse, G, Path, Rect } from "react-native-svg";
+import Svg, { Circle, Ellipse, Path, Rect } from "react-native-svg";
 
 import { C, F } from "@/src/theme";
 
@@ -49,45 +49,90 @@ const HAIR = "#E8E2D8";
 // ---------- SVG suit shapes ----------
 // Pips are drawn as vector paths (never font glyphs): text symbols like ♣ use
 // platform font metrics that shift/scale unpredictably on iOS/Android, which
-// scrambled the pip grid on real devices. SVG coordinates are exact everywhere.
-// Each glyph fills a 100×100 box centered on (50, 50).
-function SuitGlyph({ suit }: { suit: string }) {
-  const color = SUIT_COLOR[suit];
-  switch (suit) {
-    case "D":
-      return <Path d="M50 4 L83 50 L50 96 L17 50 Z" fill={color} />;
-    case "H":
-      return (
-        <Path
-          d="M50 92 C24 68 8 48 8 31 C8 17 19 8 31 8 C40 8 47 13 50 21 C53 13 60 8 69 8 C81 8 92 17 92 31 C92 48 76 68 50 92 Z"
-          fill={color}
-        />
-      );
-    case "S":
-      return (
-        <Path
-          d="M50 5 C60 24 88 39 88 59 C88 72 78 81 67 81 C61 81 56 78 52 74 C53 83 57 89 63 94 L37 94 C43 89 47 83 48 74 C44 78 39 81 33 81 C22 81 12 72 12 59 C12 39 40 24 50 5 Z"
-          fill={color}
-        />
-      );
-    case "C":
-      return (
-        <>
-          <Circle cx={50} cy={27} r={20} fill={color} />
-          <Circle cx={28} cy={59} r={20} fill={color} />
-          <Circle cx={72} cy={59} r={20} fill={color} />
-          <Path d="M46 56 C48 74 44 84 38 94 L62 94 C56 84 52 74 54 56 Z" fill={color} />
-        </>
-      );
-  }
-  return null;
+// scrambled the pip grid on real devices.
+// Geometry is stored as raw numbers (100×100 box centered on 50,50) so every
+// pip can be emitted with FINAL absolute coordinates baked into the path data —
+// no SVG transform strings at all. Plain <Path d>/<Circle> are the exact same
+// primitives as the court figures, which render pixel-perfect on real devices.
+type Tok = string | number;
+const SUIT_PATH: Record<string, Tok[]> = {
+  D: ["M", 50, 4, "L", 83, 50, "L", 50, 96, "L", 17, 50, "Z"],
+  H: ["M", 50, 92, "C", 24, 68, 8, 48, 8, 31, "C", 8, 17, 19, 8, 31, 8,
+      "C", 40, 8, 47, 13, 50, 21, "C", 53, 13, 60, 8, 69, 8,
+      "C", 81, 8, 92, 17, 92, 31, "C", 92, 48, 76, 68, 50, 92, "Z"],
+  S: ["M", 50, 5, "C", 60, 24, 88, 39, 88, 59, "C", 88, 72, 78, 81, 67, 81,
+      "C", 61, 81, 56, 78, 52, 74, "C", 53, 83, 57, 89, 63, 94, "L", 37, 94,
+      "C", 43, 89, 47, 83, 48, 74, "C", 44, 78, 39, 81, 33, 81,
+      "C", 22, 81, 12, 72, 12, 59, "C", 12, 39, 40, 24, 50, 5, "Z"],
+  // club stem only — the three lobes are plain circles
+  C: ["M", 46, 56, "C", 48, 74, 44, 84, 38, 94, "L", 62, 94,
+      "C", 56, 84, 52, 74, 54, 56, "Z"],
+};
+const CLUB_LOBES: [number, number][] = [[50, 27], [28, 59], [72, 59]];
+const CLUB_R = 20;
+
+// Map base-glyph coordinates to absolute viewBox coordinates.
+// flip (f = -1) is a point reflection about the pip center == a 180° rotation.
+function pipPath(tokens: Tok[], cx: number, cy: number, k: number, f: number) {
+  let isX = true;
+  return tokens
+    .map((t) => {
+      if (typeof t === "string") {
+        isX = true;
+        return t;
+      }
+      const v = isX ? cx + (t - 50) * k * f : cy + (t - 50) * k * f;
+      isX = !isX;
+      return v.toFixed(2);
+    })
+    .join(" ");
 }
 
-// Small standalone suit mark (corner indices, court frames)
+// One pip with absolute coordinates inside the card-face Svg (viewBox 0 0 100 145).
+// x/y are fractions of the card; s is the pip size in viewBox units.
+function PipShape({ x, y, s, suit, flip }: {
+  x: number; y: number; s: number; suit: string; flip?: boolean;
+}) {
+  const cx = x * 100;
+  const cy = y * 145;
+  const k = s / 100;
+  const f = flip ? -1 : 1;
+  const color = SUIT_COLOR[suit];
+  const d = pipPath(SUIT_PATH[suit], cx, cy, k, f);
+  if (suit === "C") {
+    return (
+      <>
+        {CLUB_LOBES.map(([lx, ly], i) => (
+          <Circle
+            key={i}
+            cx={cx + (lx - 50) * k * f}
+            cy={cy + (ly - 50) * k * f}
+            r={CLUB_R * k}
+            fill={color}
+          />
+        ))}
+        <Path d={d} fill={color} />
+      </>
+    );
+  }
+  return <Path d={d} fill={color} />;
+}
+
+// Standalone suit mark (corner indices, court frames) — static paths, no transforms.
 function SuitMark({ suit, size }: { suit: string; size: number }) {
+  const color = SUIT_COLOR[suit];
   return (
     <Svg width={size} height={size} viewBox="0 0 100 100">
-      <SuitGlyph suit={suit} />
+      {suit === "C" ? (
+        <>
+          {CLUB_LOBES.map(([lx, ly], i) => (
+            <Circle key={i} cx={lx} cy={ly} r={CLUB_R} fill={color} />
+          ))}
+          <Path d={pipPath(SUIT_PATH.C, 50, 50, 1, 1)} fill={color} />
+        </>
+      ) : (
+        <Path d={pipPath(SUIT_PATH[suit], 50, 50, 1, 1)} fill={color} />
+      )}
     </Svg>
   );
 }
@@ -109,21 +154,6 @@ const PIPS: Record<string, [number, number][]> = {
 const PIP_SIZE: Record<string, number> = { "7": 19, "8": 19, "9": 17, "10": 16 };
 
 // One pip placed inside the card-face Svg (viewBox 0 0 100 145)
-function Pip({ x, y, s, suit, flip }: {
-  x: number; y: number; s: number; suit: string; flip?: boolean;
-}) {
-  const cx = x * 100;
-  const cy = y * 145;
-  return (
-    <G
-      transform={`translate(${cx}, ${cy}) ${flip ? "rotate(180) " : ""}scale(${s / 100}) translate(-50, -50)`}
-    >
-      <SuitGlyph suit={suit} />
-    </G>
-  );
-}
-
-// Full face of a number card: a single Svg holding every pip, so all
 // positions live in one exact coordinate space (no per-pip native views).
 function PipsFace({ rank, suit }: { rank: string; suit: string }) {
   const pts = PIPS[rank];
@@ -138,7 +168,7 @@ function PipsFace({ rank, suit }: { rank: string; suit: string }) {
       pointerEvents="none"
     >
       {pts.map(([x, y], i) => (
-        <Pip key={i} x={x} y={y} s={s} suit={suit} flip={y > 0.55} />
+        <PipShape key={i} x={x} y={y} s={s} suit={suit} flip={y > 0.55} />
       ))}
     </Svg>
   );
@@ -284,7 +314,7 @@ export default function PlayingCard({
           style={StyleSheet.absoluteFill}
           pointerEvents="none"
         >
-          <Pip x={0.5} y={0.5} s={42} suit={suit} />
+          <PipShape x={0.5} y={0.5} s={42} suit={suit} />
         </Svg>
       ) : (
         <PipsFace rank={rank} suit={suit} />
