@@ -40,7 +40,8 @@ function CoachPulse({ children, radius }: { children: React.ReactNode; radius: n
       <Animated.View
         pointerEvents="none"
         style={[
-          StyleSheet.absoluteFill,
+          // explicit offsets (not StyleSheet.absoluteFill) — reliable everywhere
+          { position: "absolute", top: 0, left: 0, right: 0, bottom: 0 },
           { borderWidth: 3, borderColor: "#FFBE3C", borderRadius: radius },
           ring,
         ]}

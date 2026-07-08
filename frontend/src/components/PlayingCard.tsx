@@ -1,8 +1,8 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
-import Svg, { Circle, Ellipse, Path, Rect } from "react-native-svg";
+import Svg, { Circle, Ellipse, G, Path, Rect, Text as SvgText } from "react-native-svg";
 
-import { C, F } from "@/src/theme";
+import { C } from "@/src/theme";
 
 export const SUIT_SYMBOL: Record<string, string> = {
   S: "♠",
@@ -12,10 +12,10 @@ export const SUIT_SYMBOL: Record<string, string> = {
 };
 
 export const SUIT_COLOR: Record<string, string> = {
-  S: "#2A2421",
-  C: "#2A2421",
-  H: "#C0392B",
-  D: "#C0392B",
+  S: "#23201C",
+  C: "#23201C",
+  H: "#C8102E",
+  D: "#C8102E",
 };
 
 // Brighter variants for dark surfaces (felt table, dark chips) so ♥/♦ stay visible
@@ -26,85 +26,145 @@ export const SUIT_COLOR_ON_DARK: Record<string, string> = {
   D: "#FF7A66",
 };
 
-// Tunisian (French-pattern) indices: 1 / V / D / R
+// French indices: V / D / R / A (like the classic reference deck)
 const RANK_LABEL: Record<string, string> = {
   J: "V",
   Q: "D",
   K: "R",
-  A: "1",
 };
 
 export const suitOf = (card: string) => card.slice(-1);
 export const rankOf = (card: string) => card.slice(0, -1);
 export const rankLabel = (rank: string) => RANK_LABEL[rank] ?? rank;
 
-// Classic French-pattern palette (as on Tunisian café decks)
+// Classic French-pattern palette
 const RED = "#CE2B2B";
 const BLUE = "#2456A6";
 const GOLD = "#E9B542";
 const SKIN = "#F4C9A0";
 const OUTLINE = "#35302B";
 const HAIR = "#E8E2D8";
+const CARD_BG = "#FFFEF9";
 
-// ---------- SVG suit shapes ----------
-// Suit symbols are vector paths (never font glyphs): text symbols like ♣ use
-// platform font metrics that shift unpredictably on devices. Static absolute
-// coordinates in a 100×100 box — same primitives as the court figures.
-const SUIT_D: Record<string, string> = {
-  D: "M50 4 L83 50 L50 96 L17 50 Z",
-  H: "M50 92 C24 68 8 48 8 31 C8 17 19 8 31 8 C40 8 47 13 50 21 C53 13 60 8 69 8 C81 8 92 17 92 31 C92 48 76 68 50 92 Z",
-  S: "M50 5 C60 24 88 39 88 59 C88 72 78 81 67 81 C61 81 56 78 52 74 C53 83 57 89 63 94 L37 94 C43 89 47 83 48 74 C44 78 39 81 33 81 C22 81 12 72 12 59 C12 39 40 24 50 5 Z",
+/* ------------------------------------------------------------------ *
+ * The WHOLE card face is a single SVG (viewBox 100×145): background,
+ * indices, pips and court figures live in one exact vector coordinate
+ * space. No React-Native layout is used inside the card, because
+ * absolutely-positioned RN views proved unreliable in some preview
+ * browsers/devices (pips drifting, centers sticking to the top).
+ * ------------------------------------------------------------------ */
+
+// Suit glyph geometry in a 100×100 box centered on (50,50).
+type Tok = string | number;
+const SUIT_PATH: Record<string, Tok[]> = {
+  D: ["M", 50, 4, "L", 83, 50, "L", 50, 96, "L", 17, 50, "Z"],
+  H: ["M", 50, 92, "C", 24, 68, 8, 48, 8, 31, "C", 8, 17, 19, 8, 31, 8,
+      "C", 40, 8, 47, 13, 50, 21, "C", 53, 13, 60, 8, 69, 8,
+      "C", 81, 8, 92, 17, 92, 31, "C", 92, 48, 76, 68, 50, 92, "Z"],
+  S: ["M", 50, 5, "C", 60, 24, 88, 39, 88, 59, "C", 88, 72, 78, 81, 67, 81,
+      "C", 61, 81, 56, 78, 52, 74, "C", 53, 83, 57, 89, 63, 94, "L", 37, 94,
+      "C", 43, 89, 47, 83, 48, 74, "C", 44, 78, 39, 81, 33, 81,
+      "C", 22, 81, 12, 72, 12, 59, "C", 12, 39, 40, 24, 50, 5, "Z"],
   // club stem only — the three lobes are plain circles
-  C: "M46 56 C48 74 44 84 38 94 L62 94 C56 84 52 74 54 56 Z",
+  C: ["M", 46, 56, "C", 48, 74, 44, 84, 38, 94, "L", 62, 94,
+      "C", 56, 84, 52, 74, 54, 56, "Z"],
 };
+const CLUB_LOBES: [number, number][] = [[50, 27], [28, 59], [72, 59]];
+const CLUB_R = 20;
 
-// Standalone suit symbol (corner indices, card centers) — no transforms.
-function SuitMark({ suit, size }: { suit: string; size: number }) {
+// Map glyph coordinates to absolute viewBox coordinates baked into the path.
+// flip (f = -1) is a point reflection about the pip center == a 180° rotation.
+function pipPath(tokens: Tok[], cx: number, cy: number, k: number, f: number) {
+  let isX = true;
+  return tokens
+    .map((t) => {
+      if (typeof t === "string") {
+        isX = true;
+        return t;
+      }
+      const v = isX ? cx + (t - 50) * k * f : cy + (t - 50) * k * f;
+      isX = !isX;
+      return v.toFixed(2);
+    })
+    .join(" ");
+}
+
+// One suit pip at absolute (cx, cy), s units tall, optionally upside down.
+function PipGlyph({ cx, cy, s, suit, flip }: {
+  cx: number; cy: number; s: number; suit: string; flip?: boolean;
+}) {
+  const k = s / 100;
+  const f = flip ? -1 : 1;
   const color = SUIT_COLOR[suit];
+  const d = pipPath(SUIT_PATH[suit], cx, cy, k, f);
+  if (suit === "C") {
+    return (
+      <>
+        {CLUB_LOBES.map(([lx, ly], i) => (
+          <Circle
+            key={i}
+            cx={cx + (lx - 50) * k * f}
+            cy={cy + (ly - 50) * k * f}
+            r={CLUB_R * k}
+            fill={color}
+          />
+        ))}
+        <Path d={d} fill={color} />
+      </>
+    );
+  }
+  return <Path d={d} fill={color} />;
+}
+
+// ---------- pip layouts (fractions of the card, like the reference deck) ----
+const PIPS: Record<string, [number, number][]> = {
+  "7": [[0.3, 0.2], [0.7, 0.2], [0.5, 0.35], [0.3, 0.5], [0.7, 0.5],
+        [0.3, 0.8], [0.7, 0.8]],
+  "8": [[0.3, 0.2], [0.7, 0.2], [0.5, 0.35], [0.3, 0.5], [0.7, 0.5],
+        [0.5, 0.65], [0.3, 0.8], [0.7, 0.8]],
+  "9": [[0.3, 0.18], [0.7, 0.18], [0.3, 0.395], [0.7, 0.395], [0.5, 0.5],
+        [0.3, 0.605], [0.7, 0.605], [0.3, 0.82], [0.7, 0.82]],
+  "10": [[0.3, 0.18], [0.7, 0.18], [0.5, 0.29], [0.3, 0.395], [0.7, 0.395],
+         [0.3, 0.605], [0.7, 0.605], [0.5, 0.71], [0.3, 0.82], [0.7, 0.82]],
+};
+const PIP_SIZE: Record<string, number> = { "7": 18, "8": 18, "9": 17, "10": 16 };
+
+function NumberFace({ rank, suit }: { rank: string; suit: string }) {
+  const pts = PIPS[rank];
+  const s = PIP_SIZE[rank] ?? 17;
   return (
-    <Svg width={size} height={size} viewBox="0 0 100 100">
-      {suit === "C" && (
-        <>
-          <Circle cx={50} cy={27} r={20} fill={color} />
-          <Circle cx={28} cy={59} r={20} fill={color} />
-          <Circle cx={72} cy={59} r={20} fill={color} />
-        </>
-      )}
-      <Path d={SUIT_D[suit]} fill={color} />
-    </Svg>
+    <>
+      {pts.map(([x, y], i) => (
+        <PipGlyph key={i} cx={x * 100} cy={y * 145} s={s} suit={suit} flip={y > 0.55} />
+      ))}
+    </>
   );
 }
 
-// Face of number cards (7-10) and aces: mobile-first readability — a big rank
-// digit above a big suit symbol instead of realistic pip grids, which turn
-// into unreadable clutter at hand-fan sizes. Courts keep their figures.
-function CenterFace({ rank, suit, w }: { rank: string; suit: string; w: number }) {
-  const color = SUIT_COLOR[suit];
-  const isAce = rank === "A";
+// Corner index: rank over a small suit pip (drawn once, mirrored via a G).
+function CornerIndex({ rank, suit }: { rank: string; suit: string }) {
+  const label = rankLabel(rank);
   return (
-    <View style={styles.centerFace} pointerEvents="none">
-      {!isAce && (
-        <Text
-          style={{
-            fontFamily: F.extra,
-            fontSize: w * 0.38,
-            lineHeight: w * 0.42,
-            color,
-          }}
-          allowFontScaling={false}
-        >
-          {rank}
-        </Text>
-      )}
-      <SuitMark suit={suit} size={isAce ? w * 0.52 : w * 0.32} />
-    </View>
+    <>
+      <SvgText
+        x={label.length > 1 ? 14.5 : 11}
+        y={17.5}
+        fontSize={16}
+        fontWeight="700"
+        fill={SUIT_COLOR[suit]}
+        textAnchor="middle"
+      >
+        {label}
+      </SvgText>
+      <PipGlyph cx={11} cy={27} s={10} suit={suit} />
+    </>
   );
 }
 
 // ---------- court figures (double-headed, mirrored like real decks) ----------
-function HalfBust({ rank }: { rank: string }) {
+function BustShapes({ rank }: { rank: string }) {
   return (
-    <Svg width="100%" height="100%" viewBox="0 0 100 78" preserveAspectRatio="xMidYMax meet">
+    <>
       {/* tunic: red / blue halves with gold trim */}
       <Path d="M20 78 L29 52 Q38 43 50 43 L50 78 Z" fill={RED} stroke={OUTLINE} strokeWidth={1.4} />
       <Path d="M80 78 L71 52 Q62 43 50 43 L50 78 Z" fill={BLUE} stroke={OUTLINE} strokeWidth={1.4} />
@@ -143,49 +203,30 @@ function HalfBust({ rank }: { rank: string }) {
           <Rect x={39} y={14.5} width={22} height={4.5} rx={2} fill={GOLD} stroke={OUTLINE} strokeWidth={1} />
         </>
       )}
-    </Svg>
+    </>
   );
 }
 
-function CourtCenter({ rank, suit, w, h }: { rank: string; suit: string; w: number; h: number }) {
-  const suitFs = w * 0.14;
+function CourtFace({ rank, suit }: { rank: string; suit: string }) {
+  const half = (
+    <>
+      <G x={22} y={22} scale={0.56}>
+        <BustShapes rank={rank} />
+      </G>
+      {/* small suit pip inside the frame, like real courts */}
+      <PipGlyph cx={29.5} cy={26} s={9} suit={suit} />
+    </>
+  );
   return (
-    <View
-      style={{
-        position: "absolute",
-        left: w * 0.2,
-        right: w * 0.2,
-        top: h * 0.13,
-        bottom: h * 0.13,
-        borderWidth: 1,
-        borderColor: "#B9AF9E",
-        borderRadius: 2,
-        overflow: "hidden",
-        backgroundColor: "#FFFDF8",
-      }}
-    >
-      <View style={{ flex: 1 }}>
-        <HalfBust rank={rank} />
-      </View>
-      <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: "#B9AF9E" }} />
-      <View style={{ flex: 1, transform: [{ rotate: "180deg" }] }}>
-        <HalfBust rank={rank} />
-      </View>
-      {/* small suit pips inside the frame, like real courts */}
-      <View style={{ position: "absolute", top: 2, left: 2 }}>
-        <SuitMark suit={suit} size={suitFs} />
-      </View>
-      <View
-        style={{
-          position: "absolute",
-          bottom: 2,
-          right: 2,
-          transform: [{ rotate: "180deg" }],
-        }}
-      >
-        <SuitMark suit={suit} size={suitFs} />
-      </View>
-    </View>
+    <>
+      <Rect x={22} y={18} width={56} height={109} rx={2}
+            fill={CARD_BG} stroke="#B9AF9E" strokeWidth={1.2} />
+      <Path d="M22 72.5 L78 72.5" stroke="#B9AF9E" strokeWidth={0.8} />
+      {half}
+      <G rotation={180} originX={50} originY={72.5}>
+        {half}
+      </G>
+    </>
   );
 }
 
@@ -216,79 +257,46 @@ export default function PlayingCard({
   }
   const suit = suitOf(card);
   const rank = rankOf(card);
-  const color = SUIT_COLOR[suit];
-  const isTrump = trumpSuit && suit === trumpSuit;
+  const isTrump = !!trumpSuit && suit === trumpSuit;
   const isCourt = rank === "J" || rank === "Q" || rank === "K";
-  const rankFs = width * 0.28;
-  const suitFs = width * 0.18;
   return (
-    <View
-      style={[
-        styles.card,
-        { width, height, borderRadius: width * 0.14 },
-        isTrump && styles.trumpEdge,
-        dimmed && { opacity: 0.4 },
-      ]}
-    >
-      {/* center: court figure, or big rank + suit (numbers), or big suit (ace) */}
-      {isCourt ? (
-        <CourtCenter rank={rank} suit={suit} w={width} h={height} />
-      ) : (
-        <CenterFace rank={rank} suit={suit} w={width} />
-      )}
-
-      {/* corner indices — top-left and mirrored bottom-right, like real decks */}
-      <View style={[styles.corner, styles.cornerTL]}>
-        <Text style={[styles.rank, { color, fontSize: rankFs, lineHeight: rankFs * 1.05 }]}>
-          {rankLabel(rank)}
-        </Text>
-        <SuitMark suit={suit} size={suitFs} />
-      </View>
-      <View style={[styles.corner, styles.cornerBR, { transform: [{ rotate: "180deg" }] }]}>
-        <Text style={[styles.rank, { color, fontSize: rankFs, lineHeight: rankFs * 1.05 }]}>
-          {rankLabel(rank)}
-        </Text>
-        <SuitMark suit={suit} size={suitFs} />
-      </View>
+    <View style={[{ width, height }, dimmed && { opacity: 0.4 }]}>
+      <Svg width={width} height={height} viewBox="0 0 100 145">
+        {/* card body + border (gold when trump) */}
+        <Rect
+          x={1.5}
+          y={1.5}
+          width={97}
+          height={142}
+          rx={13}
+          fill={CARD_BG}
+          stroke={isTrump ? C.gold : "#CFC6B8"}
+          strokeWidth={isTrump ? 3.5 : 1.5}
+        />
+        {/* center: court figure, single ace pip, or the classic pip grid */}
+        {isCourt ? (
+          <CourtFace rank={rank} suit={suit} />
+        ) : rank === "A" ? (
+          <PipGlyph cx={50} cy={72.5} s={34} suit={suit} />
+        ) : (
+          <NumberFace rank={rank} suit={suit} />
+        )}
+        {/* corner indices — top-left and mirrored bottom-right */}
+        <CornerIndex rank={rank} suit={suit} />
+        <G rotation={180} originX={50} originY={72.5}>
+          <CornerIndex rank={rank} suit={suit} />
+        </G>
+      </Svg>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: "#FFFDF8",
+    backgroundColor: CARD_BG,
     borderWidth: 1,
     borderColor: "#D8CFC0",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3,
-    elevation: 3,
     overflow: "hidden",
-  },
-  trumpEdge: {
-    borderColor: C.gold,
-    borderWidth: 2,
-  },
-  corner: {
-    position: "absolute",
-    alignItems: "center",
-  },
-  cornerTL: {
-    top: 2,
-    left: 4,
-  },
-  cornerBR: {
-    bottom: 2,
-    right: 4,
-  },
-  rank: {
-    fontFamily: F.extra,
-  },
-  centerFace: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: "center",
-    justifyContent: "center",
   },
   back: {
     backgroundColor: "#1C1714",
