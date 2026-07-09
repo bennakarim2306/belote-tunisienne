@@ -1,6 +1,10 @@
 """GameManager facade: composes the live-game runtime, ELO/stats persistence,
 matchmaking queues and private rooms. See game_runtime.py, elo_stats.py,
-matchmaking.py and rooms.py for the implementations."""
+matchmaking.py and rooms.py for the implementations.
+
+All shared live state (games, rooms, queues, invites) is persisted in MongoDB
+so any server process can serve any request; self.games is only a per-process
+cache of sockets + state."""
 import random
 import uuid
 
@@ -15,15 +19,11 @@ from rooms import RoomsMixin
 class GameManager(GameRuntimeMixin, EloStatsMixin, MatchmakingMixin, RoomsMixin):
     def __init__(self, db):
         self.db = db
-        self.games = {}  # game_id -> LiveGame
-        self.queues = {"short": [], "long": []}  # entries {players[], duo, ts}
-        self.matched = {}  # user_id -> {game_id, ts}
-        self.rooms = {}  # code -> room dict
-        self.duo_invites = {}  # invite_id -> {from_player, to_user, match_type, mode, ts, status}
-        self.duo_feedback = {}  # user_id -> {"status", "ts"} one-shot info (declined/cancelled)
+        self.games = {}  # game_id -> LiveGame (local cache; truth = live_games)
 
-    def create_game(self, humans, match_type, shuffle=True, ranked=True, turn_timeout=30,
-                    host_user_id=None, origin="online"):
+    async def create_game(self, humans, match_type, shuffle=True, ranked=True,
+                          turn_timeout=30, host_user_id=None, origin="online",
+                          elo_mode="solo", coach=False):
         players = list(humans)
         bots = make_bots(4 - len(players), {p["username"] for p in players})
         players += bots
@@ -34,7 +34,12 @@ class GameManager(GameRuntimeMixin, EloStatsMixin, MatchmakingMixin, RoomsMixin)
         game.ranked = ranked
         game.host_user_id = host_user_id
         game.origin = origin
+        game.elo_mode = elo_mode
+        if coach:
+            game.coach = True
         live = LiveGame(game)
         self.games[game_id] = live
+        await self._insert_game_doc(live)
         self.schedule(live)
+        self._ensure_poller(live)
         return game_id

@@ -402,7 +402,7 @@ async def notifications(request: Request):
     ).sort("created_at", -1).to_list(10)
     invites = []
     for inv in inv_rows:
-        room = manager.get_room(inv["room_code"])
+        room = await manager.get_room(inv["room_code"])
         if room and not room["started"]:
             invites.append(inv)
     duo_invites = [{"invite_id": v["invite_id"],
@@ -410,7 +410,7 @@ async def notifications(request: Request):
                                   "username": v["from_player"]["username"],
                                   "avatar_id": v["from_player"]["avatar_id"]},
                     "match_type": v["match_type"], "mode": v["mode"]}
-                   for v in manager.pending_duo_invites_for(uid)]
+                   for v in await manager.pending_duo_invites_for(uid)]
     return {"friend_requests": friend_requests, "invites": invites,
             "duo_invites": duo_invites}
 
@@ -420,22 +420,22 @@ async def notifications(request: Request):
 @api.post("/matchmaking/join")
 async def mm_join(body: MatchTypeBody, request: Request):
     user = await get_current_user(request)
-    manager.join_queue(to_player(user), body.match_type)
+    await manager.join_queue(to_player(user), body.match_type)
     return {"ok": True}
 
 
 @api.get("/matchmaking/status")
 async def mm_status(request: Request):
     user = await get_current_user(request)
-    return manager.queue_status(user["user_id"])
+    return await manager.queue_status(user["user_id"])
 
 
 @api.delete("/matchmaking/leave")
 async def mm_leave(request: Request):
     user = await get_current_user(request)
-    manager.leave_queue(user["user_id"])
-    manager.cancel_duo_invite(user["user_id"])
-    manager.matched.pop(user["user_id"], None)
+    await manager.leave_queue(user["user_id"])
+    await manager.cancel_duo_invite(user["user_id"])
+    await manager.clear_matched(user["user_id"])
     return {"ok": True}
 
 
@@ -507,15 +507,15 @@ async def duo_invite(body: DuoInviteBody, request: Request):
                or body.to_user_id in await _recent_coplayer_ids(uid))
     if not allowed:
         raise HTTPException(status_code=403, detail="not_allowed")
-    invite_id = manager.create_duo_invite(to_player(user), target,
-                                          body.match_type, body.mode)
+    invite_id = await manager.create_duo_invite(to_player(user), target,
+                                                body.match_type, body.mode)
     return {"invite_id": invite_id}
 
 
 @api.post("/matchmaking/duo/{invite_id}/accept")
 async def duo_accept(invite_id: str, request: Request):
     user = await get_current_user(request)
-    inv = manager.accept_duo_invite(invite_id, to_player(user))
+    inv = await manager.accept_duo_invite(invite_id, to_player(user))
     if not inv:
         raise HTTPException(status_code=404, detail="invite_gone")
     return {"ok": True, "match_type": inv["match_type"], "mode": inv["mode"],
@@ -525,7 +525,7 @@ async def duo_accept(invite_id: str, request: Request):
 @api.post("/matchmaking/duo/{invite_id}/decline")
 async def duo_decline(invite_id: str, request: Request):
     user = await get_current_user(request)
-    manager.decline_duo_invite(invite_id, user["user_id"])
+    await manager.decline_duo_invite(invite_id, user["user_id"])
     return {"ok": True}
 
 
@@ -534,9 +534,11 @@ async def duo_decline(invite_id: str, request: Request):
 @api.post("/solo")
 async def create_solo(body: MatchTypeBody, request: Request):
     user = await get_current_user(request)
-    game_id = manager.create_game([to_player(user)], body.match_type,
-                                  shuffle=False, ranked=False, turn_timeout=None,
-                                  host_user_id=user["user_id"], origin="solo")
+    game_id = await manager.create_game([to_player(user)], body.match_type,
+                                        shuffle=False, ranked=False,
+                                        turn_timeout=None,
+                                        host_user_id=user["user_id"],
+                                        origin="solo")
     return {"game_id": game_id}
 
 
@@ -544,10 +546,11 @@ async def create_solo(body: MatchTypeBody, request: Request):
 async def create_tutorial_game(request: Request):
     """Final teaching game of the tutorial: solo vs 3 AIs with the coach on."""
     user = await get_current_user(request)
-    game_id = manager.create_game([to_player(user)], "short",
-                                  shuffle=False, ranked=False, turn_timeout=None,
-                                  host_user_id=user["user_id"], origin="solo")
-    manager.games[game_id].game.coach = True
+    game_id = await manager.create_game([to_player(user)], "short",
+                                        shuffle=False, ranked=False,
+                                        turn_timeout=None,
+                                        host_user_id=user["user_id"],
+                                        origin="solo", coach=True)
     return {"game_id": game_id}
 
 
@@ -556,16 +559,18 @@ async def current_game(request: Request):
     """Ongoing (non-finished) live game the user is seated in — for rejoining.
     Newest first: a freshly started game takes precedence over older left-over ones."""
     user = await get_current_user(request)
-    for game_id, live in reversed(list(manager.games.items())):
-        g = live.game
-        if g.phase == "finished":
-            continue
-        me = next((p for p in g.players
+    rows = await db.live_games.find(
+        {"user_ids": user["user_id"], "phase": {"$ne": "finished"}},
+        {"state": 1, "created_at": 1}
+    ).sort("created_at", -1).to_list(5)
+    for doc in rows:
+        g = doc["state"]
+        me = next((p for p in g["players"]
                    if p["user_id"] == user["user_id"] and not p["is_bot"]), None)
         if me:
-            return {"game_id": game_id, "match_type": g.match_type,
-                    "phase": g.phase, "hand_number": g.hand_number,
-                    "match_scores": g.match_scores, "target": g.target,
+            return {"game_id": g["game_id"], "match_type": g["match_type"],
+                    "phase": g["phase"], "hand_number": g["hand_number"],
+                    "match_scores": g["match_scores"], "target": g["target"],
                     "my_team": me["seat"] % 2}
     return {"game_id": None}
 
@@ -586,14 +591,15 @@ def room_public(room):
 @api.post("/rooms")
 async def create_room(body: MatchTypeBody, request: Request):
     user = await get_current_user(request)
-    room = manager.create_room(to_player(user), body.match_type, body.turn_timer)
+    room = await manager.create_room(to_player(user), body.match_type,
+                                     body.turn_timer)
     return room_public(room)
 
 
 @api.get("/rooms/{code}")
 async def get_room(code: str, request: Request):
     await get_current_user(request)
-    room = manager.get_room(code)
+    room = await manager.get_room(code)
     if not room:
         raise HTTPException(status_code=404, detail="room_not_found")
     return room_public(room)
@@ -603,7 +609,7 @@ async def get_room(code: str, request: Request):
 async def join_room(code: str, request: Request):
     user = await get_current_user(request)
     try:
-        room = manager.join_room(code, to_player(user))
+        room = await manager.join_room(code, to_player(user))
     except ValueError as err:
         raise HTTPException(status_code=400, detail=str(err))
     return room_public(room)
@@ -612,7 +618,7 @@ async def join_room(code: str, request: Request):
 @api.post("/rooms/{code}/leave")
 async def leave_room(code: str, request: Request):
     user = await get_current_user(request)
-    manager.leave_room(code, user["user_id"])
+    await manager.leave_room(code, user["user_id"])
     return {"ok": True}
 
 
@@ -620,7 +626,7 @@ async def leave_room(code: str, request: Request):
 async def change_seat(code: str, body: SeatBody, request: Request):
     user = await get_current_user(request)
     try:
-        room = manager.move_seat(code, user["user_id"], body.seat)
+        room = await manager.move_seat(code, user["user_id"], body.seat)
     except ValueError as err:
         raise HTTPException(status_code=400, detail=str(err))
     return room_public(room)
@@ -630,7 +636,7 @@ async def change_seat(code: str, body: SeatBody, request: Request):
 async def start_room(code: str, request: Request):
     user = await get_current_user(request)
     try:
-        game_id = manager.start_room(code, user["user_id"])
+        game_id = await manager.start_room(code, user["user_id"])
     except ValueError as err:
         raise HTTPException(status_code=400, detail=str(err))
     return {"game_id": game_id}
@@ -639,7 +645,7 @@ async def start_room(code: str, request: Request):
 @api.post("/rooms/{code}/invite")
 async def invite_to_room(code: str, body: InviteBody, request: Request):
     user = await get_current_user(request)
-    room = manager.get_room(code)
+    room = await manager.get_room(code)
     if not room or room["started"]:
         raise HTTPException(status_code=404, detail="room_not_found")
     if not any(p and p["user_id"] == user["user_id"] for p in room["seats"]):
@@ -656,7 +662,7 @@ async def invite_to_room(code: str, body: InviteBody, request: Request):
                   "status": "pending",
                   "created_at": datetime.now(timezone.utc).isoformat()}},
         upsert=True)
-    manager.reserve_seat(room["code"], body.user_id, body.seat)
+    await manager.reserve_seat(room["code"], body.user_id, body.seat)
     return {"ok": True}
 
 
@@ -668,7 +674,7 @@ async def pending_invites(request: Request):
     ).sort("created_at", -1).to_list(10)
     valid = []
     for inv in rows:
-        room = manager.get_room(inv["room_code"])
+        room = await manager.get_room(inv["room_code"])
         if room and not room["started"]:
             valid.append(inv)
         else:
@@ -742,6 +748,9 @@ async def startup():
     await db.user_sessions.create_index("expires_at", expireAfterSeconds=0)
     await db.friendships.create_index([("requester_id", 1), ("recipient_id", 1)])
     await db.invites.create_index([("to_user_id", 1), ("status", 1)])
+    await db.live_games.create_index([("user_ids", 1), ("phase", 1)])
+    await db.mm_queue.create_index("user_ids")
+    await db.mm_duo_invites.create_index("to_user.user_id")
     # backfill duo ELO for accounts created before the solo/duo split
     await db.users.update_many(
         {"$or": [{"elo_duo": {"$exists": False}}, {"elo_duo": None}]},

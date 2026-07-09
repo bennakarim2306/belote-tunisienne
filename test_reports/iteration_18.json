@@ -1,0 +1,35 @@
+{
+  "summary": "P0 regression + all listed frontend flows validated over the live preview URL after backend Mongo-migration refactor. Duo-vs-AI end-to-end (tester1 host invites Tester2, Tester2 accepts from notifications bell): BOTH clients land in the SAME /game/{game_id} route (e.g. g_5b79ea19f0f5). NO 'Partie introuvable' text on host. Solo vs AI, private room (create -> sit seat 0 -> start-game-button -> /game/*), matchmaking queue (waiting + leave), tutorial listing (14 lessons), notifications bell, and rejoin banner (resume-game-banner + resume-game-button) all work. React Native web-only console warnings still emitted but non-blocking (see react_native_issues).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": [
+      {"component": "react-native web", "issue": "Console warning: '\"shadow*\" style props are deprecated. Use \"boxShadow\".' — coming from RN 0.79 web deprecation, still present. Reference: /app/frontend/src/theme (shadow helper) and any component using shadowColor/shadowRadius/etc."},
+      {"component": "props.pointerEvents", "issue": "Console warning: 'props.pointerEvents is deprecated. Use style.pointerEvents' — persists app-wide. Migrate JSX prop to style.pointerEvents."},
+      {"component": "react-native-reanimated", "issue": "Console warnings: '[Reanimated] Selected easing is not currently supported on web. Using linear easing instead.' — emitted repeatedly during matchmaking screen shuffle animation (matchmaking.tsx uses Easing.inOut(Easing.quad) inside withRepeat/withSequence). Not blocking, but consider gating with Platform.OS !== 'web'."},
+      {"component": "react-dom", "issue": "Console error: 'Invalid DOM property `transform-origin`. Did you mean `transformOrigin`?' — happens on the tutorial route entry and during matchmaking on web. Likely a style being spread with a kebab-case key (or a Reanimated animation param). Reference: likely /app/frontend/app/matchmaking.tsx (ShufflingCard) or /app/frontend/app/tutorial/index.tsx."}
+    ]
+  },
+  "test_report_links": [
+    "Playwright inline scripts run against https://card-table-orient.preview.emergentagent.com",
+    "screenshots: /tmp/duo_t1.png (host in game), /tmp/duo_t2.png (guest in game), /tmp/solo_game.png, /tmp/room.png, /tmp/room_or_game.png, /tmp/tutorial.png"
+  ],
+  "action_items": [
+    "Optional: fix invalid DOM style key 'transform-origin' -> use camelCase 'transformOrigin' (likely in matchmaking.tsx ShufflingCard or tutorial screen intro animation).",
+    "Optional: silence 'shadow*' and 'props.pointerEvents' deprecation warnings by migrating to boxShadow / style.pointerEvents (RN 0.79 web).",
+    "Optional: guard non-linear easings (Easing.inOut(Easing.quad)) with Platform.OS !== 'web' or accept the linear fallback."
+  ],
+  "critical_code_review_comments": [
+    "P0 fix confirmed at runtime: no 'Partie introuvable' on host after Tester2 accepts duo-vs-AI invite. game_id polled from /matchmaking/status on host and accept response on guest both return the same id from the Mongo-backed live_games — cross-worker routing is fine.",
+    "home.tsx acceptDuoInvite() correctly branches on res.game_id vs res.status (vs_ai returns game_id immediately, online returns queued state). Matchmaking screen (matchmaking.tsx) correctly listens for status==='found' + game_id via polling and does router.replace to /game/[id]. No changes needed."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (already validated by main agent: pytest 104/104, cross-process 9/9)", "frontend": "100% of listed flows"},
+  "seed_data_creation": "Used existing tester1@belote.tn / tester2@belote.tn (they were already friends). Between tests I ran a small Mongo cleanup script setting live_games.phase='finished' for existing test games and clearing mm_queue/mm_matched/mm_duo_invites/live_rooms so /games/current returns null and subsequent flows can create fresh games.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Verified flows (all PASS on preview URL, mobile viewport 390x844): (1) P0 Duo vs AI: host on /solo card -> online-mode-duo -> duo-candidate-Tester2 -> match-type-short lands on /matchmaking-screen; guest bell -> notif-duo-accept-{id} accepts; BOTH end up on /game/{same_id} within ~5s, no 'Partie introuvable', hand cards visible. (2) Solo vs AI: play-solo-card -> online-mode-solo -> match-type-short -> /game/*. (3) Rejoin: after solo game, back to home shows resume-game-banner + resume-game-button; clicking it returns to the same /game/{id}. (4) Private room: create-party-button -> match-type-short -> /room/{code}; room-code-text visible; room-seat-0..3 present; after clicking room-seat-0, start-game-button becomes available and starting it transitions to /game/{id}. (5) Matchmaking queue (solo online short): matchmaking-status-text='Recherche de joueurs…', matchmaking-elo-range='Plage ELO ±100', matchmaking-players-count='1/4 joueurs'; cancel-search-button returns to /home and mm_queue is cleared server-side. (6) Tutorial: learn-card -> /tutorial; tutorial-screen present with lesson-row-0..13 (14 lessons). (7) Notifications: notifications-bell opens notifications-panel showing pending friend requests and duo invites. Auth login working with auth-email-input / auth-password-input / auth-submit-button.",
+  "rca_of_issue": "N/A - no regression detected. P0 previously reported ('host got Partie introuvable in Duo vs AI') is CONFIRMED FIXED at runtime: both host (via /matchmaking/status polling that now correctly reads live_games from Mongo shared across workers) and guest (via /matchmaking/duo/{id}/accept returning game_id) resolve to the same game document created in Mongo. The un-awaited-async fixes E1 applied in server.py are visible in the wire behavior (invite persists to mm_duo_invites, live_games doc appears immediately on accept, /games/current returns it for both users on next poll)."
+}

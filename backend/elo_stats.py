@@ -12,6 +12,12 @@ class EloStatsMixin:
             return
         live.finalized = True
         g = live.game
+        # cross-process guard: only one server process may write ELO/history
+        claim = await self.db.live_games.find_one_and_update(
+            {"_id": g.game_id, "finalized": {"$ne": True}},
+            {"$set": {"finalized": True}})
+        if claim is None:
+            return
         winner = g.winner_team
         now = datetime.now(timezone.utc)
         if not getattr(g, "ranked", True):

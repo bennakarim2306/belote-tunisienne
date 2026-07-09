@@ -227,3 +227,20 @@ frontend:
 agent_communication:
   - agent: "main"
     message: "Session complete: dual ELO validated E2E, leaderboard Solo/Duo toggle added (backend+frontend), backend refactored into modules (81/81 tests), elo_duo backfill at startup, duo candidates now expose elo_duo via user_brief coalescing."
+
+backend:
+  - task: "MongoDB persistence refactor for live state (live_games, live_rooms, mm_queue, mm_matched, mm_duo_invites, mm_feedback, locks) - fixes 'Partie introuvable' multi-worker bug"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py, game_runtime.py, matchmaking.py, rooms.py, game_manager.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Fixed ~20 un-awaited async manager calls in server.py, replaced manager.matched with clear_matched, /games/current now queries DB, tutorial coach passed via create_game kwarg, matchmaking lock now owner-renewable (passes run every 2s), create_duo_invite purges stale matched tickets. Validated: pytest 104/104, e2e script 29/29 (duo vs_ai invite/accept/WS/rooms/solo/tutorial/queue), cross-process test 9/9 with TWO server processes on same Mongo (host on A, invitee on B - the exact production bug scenario)."
+
+agent_communication:
+  - agent: "main"
+    message: "DB persistence refactor verified at backend level. Please run a FULL-STACK regression: frontend flows over the real preview URL - login, home, solo game (bidding+play a few cards), private room create/invite/start, duo vs AI invite flow between tester1 and tester2 (host must land in game - previous P0 bug), matchmaking queue UI, tutorial mode with coach hints, rejoin flow (/games/current). tester1@belote.tn / tester2@belote.tn / Belote123!."

@@ -506,6 +506,28 @@ class BeloteGame:
         self.version += 1
         return [{"e": "resumed"}]
 
+    # ---------- persistence ----------
+
+    _INT_KEY_FIELDS = ("seat_stats",)
+
+    def to_doc(self):
+        """Plain-JSON snapshot of the whole game for MongoDB."""
+        doc = {}
+        for k, v in self.__dict__.items():
+            if k in self._INT_KEY_FIELDS:
+                v = {str(i): s for i, s in v.items()}
+            doc[k] = v
+        return doc
+
+    @classmethod
+    def from_doc(cls, doc):
+        g = cls.__new__(cls)
+        for k, v in doc.items():
+            if k in cls._INT_KEY_FIELDS:
+                v = {int(i): s for i, s in v.items()}
+            setattr(g, k, v)
+        return g
+
     # ---------- serialization ----------
 
     def state_for(self, seat):

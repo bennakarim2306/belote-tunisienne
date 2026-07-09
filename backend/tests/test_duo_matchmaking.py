@@ -1,11 +1,16 @@
 """Duo matchmaking — duo ONLY matches duo; separate duo ELO (elo_duo)."""
+import os
 import time
 import uuid
 
 import sys
 sys.path.insert(0, "/app/backend")
+from dotenv import load_dotenv  # noqa: E402
+from motor.motor_asyncio import AsyncIOMotorClient  # noqa: E402
 from game_manager import GameManager  # noqa: E402
 from conftest import API, auth_headers  # noqa: E402
+
+load_dotenv("/app/backend/.env")
 
 
 def _p(uid, elo=1000, elo_duo=1000):
@@ -13,105 +18,135 @@ def _p(uid, elo=1000, elo_duo=1000):
             "is_bot": False, "elo": elo, "elo_duo": elo_duo}
 
 
-def _mgr():
-    m = GameManager(db=None)
-    m.schedule = lambda live: None  # don't spawn the async driver in unit tests
+def _entry(players, duo, ts=None):
+    """Queue entry shaped exactly like the mm_queue documents."""
+    now = time.time()
+    return {"_id": f"q_{uuid.uuid4().hex[:10]}", "match_type": "short",
+            "players": players, "user_ids": [p["user_id"] for p in players],
+            "duo": duo, "ts": ts if ts is not None else now, "last_seen": now}
+
+
+def _mgr(db=None):
+    m = GameManager(db=db)
+    m.schedule = lambda live: None       # no async driver in unit tests
+    m._ensure_poller = lambda live: None
     return m
 
 
-# ---------------- queue / grouping unit tests ----------------
+def _live_db():
+    client = AsyncIOMotorClient(os.environ["MONGO_URL"])
+    return client[os.environ["DB_NAME"]]
+
+
+# ---------------- grouping unit tests (pure, no DB) ----------------
 
 def test_duo_matches_duo():
     m = _mgr()
-    m.join_queue_duo(_p("a1"), _p("a2"), "short")
-    m.join_queue_duo(_p("b1"), _p("b2"), "short")
-    group = m._find_group(m.queues["short"], time.time())
+    q = [_entry([_p("a1"), _p("a2")], duo=True),
+         _entry([_p("b1"), _p("b2")], duo=True)]
+    group = m._find_group(q, time.time())
     assert group is not None and all(e["duo"] for e in group)
 
 
 def test_duo_never_matches_solos():
     m = _mgr()
-    m.join_queue_duo(_p("a1"), _p("a2"), "short")
-    m.join_queue(_p("s1"), "short")
-    m.join_queue(_p("s2"), "short")
     now = time.time()
-    duo_entry = next(e for e in m.queues["short"] if e["duo"])
-    duo_entry["ts"] = now - 3600  # even after an hour of waiting
-    assert m._find_group(m.queues["short"], now) is None
+    q = [_entry([_p("a1"), _p("a2")], duo=True, ts=now - 3600),
+         _entry([_p("s1")], duo=False),
+         _entry([_p("s2")], duo=False)]
+    assert m._find_group(q, now) is None
 
 
 def test_four_solos_still_match():
     m = _mgr()
-    for i in range(4):
-        m.join_queue(_p(f"s{i}"), "short")
-    group = m._find_group(m.queues["short"], time.time())
+    q = [_entry([_p(f"s{i}")], duo=False) for i in range(4)]
+    group = m._find_group(q, time.time())
     assert group is not None and len(group) == 4
 
 
 def test_duo_uses_duo_elo_average():
     m = _mgr()
     # solo ELOs wildly different, duo ELOs compatible -> must match
-    m.join_queue_duo(_p("a1", elo=2000, elo_duo=1000),
-                     _p("a2", elo=300, elo_duo=1000), "short")
-    m.join_queue_duo(_p("b1", elo=1000, elo_duo=1040),
-                     _p("b2", elo=1000, elo_duo=980), "short")
-    assert m._find_group(m.queues["short"], time.time()) is not None
+    q = [_entry([_p("a1", elo=2000, elo_duo=1000),
+                 _p("a2", elo=300, elo_duo=1000)], duo=True),
+         _entry([_p("b1", elo=1000, elo_duo=1040),
+                 _p("b2", elo=1000, elo_duo=980)], duo=True)]
+    assert m._find_group(q, time.time()) is not None
 
 
 def test_duo_elo_gap_blocks_match():
     m = _mgr()
     # duo ELO averages 1000 vs 1600 -> outside the initial window
-    m.join_queue_duo(_p("a1", elo_duo=1000), _p("a2", elo_duo=1000), "short")
-    m.join_queue_duo(_p("b1", elo_duo=1600), _p("b2", elo_duo=1600), "short")
-    assert m._find_group(m.queues["short"], time.time()) is None
+    q = [_entry([_p("a1", elo_duo=1000), _p("a2", elo_duo=1000)], duo=True),
+         _entry([_p("b1", elo_duo=1600), _p("b2", elo_duo=1600)], duo=True)]
+    assert m._find_group(q, time.time()) is None
 
+
+# ---------------- DB-backed unit tests (real local Mongo) ----------------
 
 async def test_make_match_duo_seats_and_duo_rating():
-    m = _mgr()
-    m.join_queue_duo(_p("a1", elo=1500, elo_duo=1010),
-                     _p("a2", elo=900, elo_duo=990), "short")
-    m.join_queue_duo(_p("b1", elo_duo=1000), _p("b2", elo_duo=1000), "short")
-    group = m._find_group(m.queues["short"], time.time())
-    m._make_match(group, "short")
-    gid = m.matched["a1"]["game_id"]
+    m = _mgr(_live_db())
+    ua = [f"a1_{uuid.uuid4().hex[:6]}", f"a2_{uuid.uuid4().hex[:6]}"]
+    ub = [f"b1_{uuid.uuid4().hex[:6]}", f"b2_{uuid.uuid4().hex[:6]}"]
+    group = [_entry([_p(ua[0], elo=1500, elo_duo=1010),
+                     _p(ua[1], elo=900, elo_duo=990)], duo=True),
+             _entry([_p(ub[0], elo_duo=1000), _p(ub[1], elo_duo=1000)],
+                    duo=True)]
+    await m._make_match(group, "short")
+    matched = await m.db.mm_matched.find_one({"_id": ua[0]})
+    assert matched, "matched ticket missing"
+    gid = matched["game_id"]
     g = m.games[gid].game
     seat_of = {p["user_id"]: p["seat"] for p in g.players}
-    assert seat_of["a1"] % 2 == seat_of["a2"] % 2, "duo must be teammates"
-    assert seat_of["b1"] % 2 == seat_of["b2"] % 2
+    assert seat_of[ua[0]] % 2 == seat_of[ua[1]] % 2, "duo must be teammates"
+    assert seat_of[ub[0]] % 2 == seat_of[ub[1]] % 2
     assert getattr(g, "elo_mode", "solo") == "duo"
     # in-game elo values are the DUO ratings, not the solo ones
     elos = {p["user_id"]: p["elo"] for p in g.players}
-    assert elos["a1"] == 1010 and elos["a2"] == 990
+    assert elos[ua[0]] == 1010 and elos[ua[1]] == 990
     assert getattr(g, "ranked", True) is True and g.origin == "online"
+    # the game itself must be persisted for other processes
+    assert await m.db.live_games.find_one({"_id": gid}) is not None
+    # cleanup
+    await m.db.live_games.delete_one({"_id": gid})
+    for uid in ua + ub:
+        await m.db.mm_matched.delete_one({"_id": uid})
 
 
-def test_leave_dissolves_duo_and_notifies_partner():
-    m = _mgr()
-    m.join_queue_duo(_p("a1"), _p("a2"), "short")
-    m.leave_queue("a1")
-    assert m.queues["short"] == []
-    st = m.queue_status("a2")
+async def test_leave_dissolves_duo_and_notifies_partner():
+    m = _mgr(_live_db())
+    a1, a2 = f"a1_{uuid.uuid4().hex[:6]}", f"a2_{uuid.uuid4().hex[:6]}"
+    await m.join_queue_duo(_p(a1, elo_duo=9000), _p(a2, elo_duo=9000), "short")
+    await m.leave_queue(a1)
+    assert await m.db.mm_queue.find_one({"user_ids": a2}) is None
+    st = await m.queue_status(a2)
     assert st["status"] == "duo_cancelled"
-    assert m.queue_status("a2")["status"] == "idle"  # one-shot
+    assert (await m.queue_status(a2))["status"] == "idle"  # one-shot
 
 
-def test_queue_status_duo_fields():
-    m = _mgr()
-    m.join_queue_duo(_p("a1"), _p("a2", elo_duo=1234), "short")
-    st = m.queue_status("a1")
+async def test_queue_status_duo_fields():
+    m = _mgr(_live_db())
+    a1, a2 = f"a1_{uuid.uuid4().hex[:6]}", f"a2_{uuid.uuid4().hex[:6]}"
+    await m.join_queue_duo(_p(a1, elo_duo=9000), _p(a2, elo_duo=9234), "short")
+    st = await m.queue_status(a1)
     assert st["status"] == "waiting"
-    assert st["duo"]["partner"]["username"] == "a2"
-    assert st["duo"]["partner"]["elo"] == 1234  # duo ELO displayed
+    assert st["duo"]["partner"]["username"] == a2
+    assert st["duo"]["partner"]["elo"] == 9234  # duo ELO displayed
     assert st["found_count"] == 2
+    await m.leave_queue(a1)
 
 
-def test_solo_status_never_lists_duos():
-    m = _mgr()
-    m.join_queue_duo(_p("a1"), _p("a2"), "short")
-    m.join_queue(_p("s1"), "short")
-    assert m.queue_status("s1")["players"] == []
-    st = m.queue_status("a1")
+async def test_solo_status_never_lists_duos():
+    m = _mgr(_live_db())
+    a1, a2 = f"a1_{uuid.uuid4().hex[:6]}", f"a2_{uuid.uuid4().hex[:6]}"
+    s1 = f"s1_{uuid.uuid4().hex[:6]}"
+    await m.join_queue_duo(_p(a1, elo_duo=9000), _p(a2, elo_duo=9000), "short")
+    await m.join_queue(_p(s1, elo=9000), "short")
+    assert (await m.queue_status(s1))["players"] == []
+    st = await m.queue_status(a1)
     assert st["players"] == []  # and duos never list solos
+    await m.leave_queue(s1)
+    await m.leave_queue(a1)
 
 
 # ---------------- invite flow via API ----------------

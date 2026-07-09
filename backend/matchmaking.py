@@ -1,4 +1,9 @@
-"""ELO-based matchmaking queues and duo invites (duo vs duo strictly)."""
+"""ELO-based matchmaking queues and duo invites (duo vs duo strictly).
+
+All queue/invite/match state lives in MongoDB (mm_queue, mm_matched,
+mm_duo_invites, mm_feedback) so that ANY server process — and a freshly
+restarted one — can serve any request. The matching pass itself runs behind a
+short Mongo lease so only one process matches at a time."""
 import asyncio
 import logging
 import time
@@ -10,101 +15,119 @@ logger = logging.getLogger(__name__)
 
 QUEUE_STALE_SECONDS = 12
 DUO_INVITE_TTL = 120  # duo invites expire after 2 minutes
+MATCHED_TTL = 120     # "found" tickets stay readable for 2 minutes
+FEEDBACK_TTL = 30
+MM_LOCK_TTL = 6
 
 
 class MatchmakingMixin:
-    """Queue entries: {"players": [p] or [p1, p2], "duo": bool,
-                       "ts": float, "last_seen": float}
+    """Queue docs: {_id, match_type, players: [p] or [p1, p2], user_ids,
+                    duo: bool, ts, last_seen}
     Duos ONLY match other duos (duo vs duo); solos only match solos.
     Duo rating uses each player's separate duo ELO (elo_duo), averaged."""
 
-    def join_queue(self, player, match_type):
-        self.leave_queue(player["user_id"])
-        self.matched.pop(player["user_id"], None)
-        now = time.time()
-        self.queues[match_type].append({"players": [player], "duo": False,
-                                        "ts": now, "last_seen": now})
+    # ---------- queues ----------
 
-    def join_queue_duo(self, p1, p2, match_type):
+    async def join_queue(self, player, match_type):
+        await self.leave_queue(player["user_id"])
+        await self.db.mm_matched.delete_one({"_id": player["user_id"]})
+        now = time.time()
+        await self.db.mm_queue.insert_one({
+            "_id": f"q_{uuid.uuid4().hex[:10]}", "match_type": match_type,
+            "players": [player], "user_ids": [player["user_id"]],
+            "duo": False, "ts": now, "last_seen": now})
+
+    async def join_queue_duo(self, p1, p2, match_type):
         for p in (p1, p2):
-            self.leave_queue(p["user_id"])
-            self.matched.pop(p["user_id"], None)
-            self.duo_feedback.pop(p["user_id"], None)
+            await self.leave_queue(p["user_id"])
+            await self.db.mm_matched.delete_one({"_id": p["user_id"]})
+            await self.db.mm_feedback.delete_one({"_id": p["user_id"]})
         now = time.time()
-        self.queues[match_type].append({"players": [p1, p2], "duo": True,
-                                        "ts": now, "last_seen": now})
+        await self.db.mm_queue.insert_one({
+            "_id": f"q_{uuid.uuid4().hex[:10]}", "match_type": match_type,
+            "players": [p1, p2], "user_ids": [p1["user_id"], p2["user_id"]],
+            "duo": True, "ts": now, "last_seen": now})
 
-    def leave_queue(self, user_id):
+    async def leave_queue(self, user_id):
         """Remove the whole entry containing the user (dissolves a duo)."""
-        for q in self.queues.values():
-            for e in list(q):
-                if any(p["user_id"] == user_id for p in e["players"]):
-                    q.remove(e)
-                    if e["duo"]:
-                        for p in e["players"]:
-                            if p["user_id"] != user_id:
-                                self.duo_feedback[p["user_id"]] = {
-                                    "status": "duo_cancelled", "ts": time.time()}
+        rows = await self.db.mm_queue.find({"user_ids": user_id}).to_list(10)
+        for e in rows:
+            res = await self.db.mm_queue.delete_one({"_id": e["_id"]})
+            if res.deleted_count and e["duo"]:
+                for p in e["players"]:
+                    if p["user_id"] != user_id:
+                        await self._set_feedback(p["user_id"], "duo_cancelled")
+
+    async def clear_matched(self, user_id):
+        await self.db.mm_matched.delete_one({"_id": user_id})
+
+    async def _set_feedback(self, user_id, status):
+        await self.db.mm_feedback.replace_one(
+            {"_id": user_id},
+            {"_id": user_id, "status": status, "ts": time.time()}, upsert=True)
+
+    async def _set_matched(self, user_ids, game_id):
+        now = time.time()
+        for uid in user_ids:
+            await self.db.mm_matched.replace_one(
+                {"_id": uid}, {"_id": uid, "game_id": game_id, "ts": now},
+                upsert=True)
 
     # ---------- duo invites ----------
 
-    def create_duo_invite(self, from_player, to_user, match_type, mode):
-        self.cancel_duo_invite(from_player["user_id"])
+    async def create_duo_invite(self, from_player, to_user, match_type, mode):
+        await self.cancel_duo_invite(from_player["user_id"])
+        # a new search invalidates any previous "found" ticket / feedback
+        await self.db.mm_matched.delete_one({"_id": from_player["user_id"]})
+        await self.db.mm_feedback.delete_one({"_id": from_player["user_id"]})
         iid = f"di_{uuid.uuid4().hex[:10]}"
-        self.duo_invites[iid] = {"invite_id": iid, "from_player": from_player,
-                                 "to_user": to_user, "match_type": match_type,
-                                 "mode": mode, "ts": time.time(), "status": "pending"}
+        await self.db.mm_duo_invites.insert_one({
+            "_id": iid, "invite_id": iid, "from_player": from_player,
+            "to_user": to_user, "match_type": match_type,
+            "mode": mode, "ts": time.time(), "status": "pending"})
         return iid
 
-    def _purge_duo_invites(self):
-        now = time.time()
-        for iid in [i for i, v in self.duo_invites.items()
-                    if now - v["ts"] > DUO_INVITE_TTL]:
-            self.duo_invites.pop(iid, None)
+    async def pending_duo_invites_for(self, user_id):
+        return await self.db.mm_duo_invites.find(
+            {"to_user.user_id": user_id, "status": "pending",
+             "ts": {"$gt": time.time() - DUO_INVITE_TTL}}).to_list(10)
 
-    def pending_duo_invites_for(self, user_id):
-        self._purge_duo_invites()
-        return [v for v in self.duo_invites.values()
-                if v["to_user"]["user_id"] == user_id and v["status"] == "pending"]
-
-    def accept_duo_invite(self, invite_id, to_player):
-        self._purge_duo_invites()
-        inv = self.duo_invites.get(invite_id)
-        if (not inv or inv["status"] != "pending"
-                or inv["to_user"]["user_id"] != to_player["user_id"]):
+    async def accept_duo_invite(self, invite_id, to_player):
+        # atomic take: only one accept can consume the invite
+        inv = await self.db.mm_duo_invites.find_one_and_delete(
+            {"_id": invite_id, "status": "pending",
+             "to_user.user_id": to_player["user_id"],
+             "ts": {"$gt": time.time() - DUO_INVITE_TTL}})
+        if not inv:
             return None
-        self.duo_invites.pop(invite_id, None)
         if inv["mode"] == "vs_ai":
             # duo vs AI: create the training game right away (humans seats 0&2)
             p1 = inv["from_player"]
             for p in (p1, to_player):
-                self.leave_queue(p["user_id"])
-                self.matched.pop(p["user_id"], None)
-                self.duo_feedback.pop(p["user_id"], None)
+                await self.leave_queue(p["user_id"])
+                await self.db.mm_matched.delete_one({"_id": p["user_id"]})
+                await self.db.mm_feedback.delete_one({"_id": p["user_id"]})
             bots = make_bots(2, {p1["username"], to_player["username"]})
-            game_id = self.create_game([p1, bots[0], to_player, bots[1]],
-                                       inv["match_type"], shuffle=False,
-                                       ranked=False, turn_timeout=None,
-                                       host_user_id=p1["user_id"], origin="solo")
-            now = time.time()
-            for uid in (p1["user_id"], to_player["user_id"]):
-                self.matched[uid] = {"game_id": game_id, "ts": now}
+            game_id = await self.create_game([p1, bots[0], to_player, bots[1]],
+                                             inv["match_type"], shuffle=False,
+                                             ranked=False, turn_timeout=None,
+                                             host_user_id=p1["user_id"],
+                                             origin="solo")
+            await self._set_matched([p1["user_id"], to_player["user_id"]], game_id)
             inv["game_id"] = game_id
             return inv
-        self.join_queue_duo(inv["from_player"], to_player, inv["match_type"])
+        await self.join_queue_duo(inv["from_player"], to_player, inv["match_type"])
         return inv
 
-    def decline_duo_invite(self, invite_id, user_id):
-        inv = self.duo_invites.get(invite_id)
-        if inv and inv["to_user"]["user_id"] == user_id and inv["status"] == "pending":
-            self.duo_invites.pop(invite_id, None)
-            self.duo_feedback[inv["from_player"]["user_id"]] = {
-                "status": "duo_declined", "ts": time.time()}
+    async def decline_duo_invite(self, invite_id, user_id):
+        inv = await self.db.mm_duo_invites.find_one_and_delete(
+            {"_id": invite_id, "to_user.user_id": user_id, "status": "pending"})
+        if inv:
+            await self._set_feedback(inv["from_player"]["user_id"], "duo_declined")
 
-    def cancel_duo_invite(self, from_user_id):
-        for iid, v in list(self.duo_invites.items()):
-            if v["from_player"]["user_id"] == from_user_id and v["status"] == "pending":
-                self.duo_invites.pop(iid, None)
+    async def cancel_duo_invite(self, from_user_id):
+        await self.db.mm_duo_invites.delete_many(
+            {"from_player.user_id": from_user_id, "status": "pending"})
 
     # ---------- status & matching ----------
 
@@ -115,27 +138,28 @@ class MatchmakingMixin:
             return sum(p.get("elo_duo", 1000) for p in e["players"]) / 2
         return e["players"][0]["elo"]
 
-    def queue_status(self, user_id):
-        m = self.matched.get(user_id)
+    async def queue_status(self, user_id):
+        now = time.time()
+        m = await self.db.mm_matched.find_one(
+            {"_id": user_id, "ts": {"$gt": now - MATCHED_TTL}})
         if m:
             return {"status": "found", "game_id": m["game_id"]}
-        fb = self.duo_feedback.pop(user_id, None)
-        if fb and time.time() - fb["ts"] < 30:
+        fb = await self.db.mm_feedback.find_one_and_delete({"_id": user_id})
+        if fb and now - fb["ts"] < FEEDBACK_TTL:
             return {"status": fb["status"]}
-        now = time.time()
-        for mt, q in self.queues.items():
-            me = next((e for e in q
-                       if any(p["user_id"] == user_id for p in e["players"])), None)
-            if not me:
-                continue
-            me["last_seen"] = now
+        me = await self.db.mm_queue.find_one({"user_ids": user_id})
+        if me:
+            mt = me["match_type"]
+            await self.db.mm_queue.update_one({"_id": me["_id"]},
+                                              {"$set": {"last_seen": now}})
+            q = await self.db.mm_queue.find({"match_type": mt}).to_list(200)
             waited = now - me["ts"]
             my_window = elo_window(waited)
             my_elo = self._entry_elo(me)
             remaining = 4 - len(me["players"])
             compatible = []
             for e in q:
-                if e is me or len(compatible) >= remaining:
+                if e["_id"] == me["_id"] or len(compatible) >= remaining:
                     continue
                 if e["duo"] != me["duo"]:  # duo vs duo / solo vs solo only
                     continue
@@ -159,33 +183,72 @@ class MatchmakingMixin:
                 }
             return res
         # launcher waiting for the invited partner to accept
-        self._purge_duo_invites()
-        inv = next((v for v in self.duo_invites.values()
-                    if v["from_player"]["user_id"] == user_id
-                    and v["status"] == "pending"), None)
+        inv = await self.db.mm_duo_invites.find_one(
+            {"from_player.user_id": user_id, "status": "pending",
+             "ts": {"$gt": now - DUO_INVITE_TTL}})
         if inv:
             return {"status": "duo_pending", "invite_id": inv["invite_id"],
                     "match_type": inv["match_type"], "mode": inv["mode"],
                     "partner": inv["to_user"]}
         return {"status": "idle"}
 
+    async def _acquire_lock(self, name, ttl):
+        """Short Mongo lease so a single process runs the matching pass.
+        The current owner renews freely; others take over once it expires."""
+        owner = getattr(self, "_mm_owner", None)
+        if owner is None:
+            owner = self._mm_owner = uuid.uuid4().hex
+        now = time.time()
+        res = await self.db.locks.find_one_and_update(
+            {"_id": name, "$or": [{"owner": owner}, {"expires": {"$lt": now}}]},
+            {"$set": {"expires": now + ttl, "owner": owner}})
+        if res is not None:
+            return True
+        try:
+            await self.db.locks.insert_one(
+                {"_id": name, "expires": now + ttl, "owner": owner})
+            return True
+        except Exception:
+            return False
+
     async def matchmaking_loop(self):
         while True:
             try:
                 await asyncio.sleep(2)
+                if not await self._acquire_lock("matchmaking", MM_LOCK_TTL):
+                    continue
                 now = time.time()
-                for uid in [u for u, m in self.matched.items() if now - m["ts"] > 120]:
-                    self.matched.pop(uid, None)
-                for mt, q in self.queues.items():
-                    # purge entries whose members stopped polling
-                    q[:] = [e for e in q if now - e["last_seen"] <= QUEUE_STALE_SECONDS]
+                # expired one-shot data
+                await self.db.mm_matched.delete_many({"ts": {"$lt": now - MATCHED_TTL}})
+                await self.db.mm_feedback.delete_many({"ts": {"$lt": now - FEEDBACK_TTL}})
+                await self.db.mm_duo_invites.delete_many({"ts": {"$lt": now - DUO_INVITE_TTL}})
+                # purge entries whose members stopped polling
+                stale = await self.db.mm_queue.find(
+                    {"last_seen": {"$lt": now - QUEUE_STALE_SECONDS}}).to_list(200)
+                for e in stale:
+                    res = await self.db.mm_queue.delete_one({"_id": e["_id"]})
+                    if res.deleted_count and e["duo"]:
+                        for p in e["players"]:
+                            await self._set_feedback(p["user_id"], "duo_cancelled")
+                for mt in ("short", "long"):
+                    q = await self.db.mm_queue.find({"match_type": mt}).to_list(200)
                     while True:
                         group = self._find_group(q, now)
                         if not group:
                             break
                         for e in group:
                             q.remove(e)
-                        self._make_match(group, mt)
+                            await self.db.mm_queue.delete_one({"_id": e["_id"]})
+                        await self._make_match(group, mt)
+                # sweep leftover live data (any process may have crashed)
+                await self.db.live_games.delete_many(
+                    {"phase": "finished", "updated_at": {"$lt": now - 900}})
+                await self.db.live_games.delete_many(
+                    {"updated_at": {"$lt": now - 1800}})
+                await self.db.live_rooms.delete_many(
+                    {"started": True, "started_at": {"$lt": now - 300}})
+                await self.db.live_rooms.delete_many(
+                    {"created": {"$lt": now - 21600}})
             except Exception:
                 logger.exception("matchmaking loop error")
 
@@ -215,7 +278,7 @@ class MatchmakingMixin:
                     return window
         return None
 
-    def _make_match(self, batch, match_type):
+    async def _make_match(self, batch, match_type):
         duos = [e for e in batch if e["duo"]]
         if len(duos) == 2:
             a, b = duos
@@ -224,17 +287,15 @@ class MatchmakingMixin:
             seats = [dict(p, elo=p.get("elo_duo", 1000))
                      for p in (a["players"][0], b["players"][0],
                                a["players"][1], b["players"][1])]
-            game_id = self.create_game(seats, match_type, shuffle=False)
-            self.games[game_id].game.elo_mode = "duo"
+            game_id = await self.create_game(seats, match_type, shuffle=False,
+                                             elo_mode="duo")
         else:
             players = sorted((e["players"][0] for e in batch),
                              key=lambda p: p["elo"], reverse=True)
             # balanced teams: strongest + weakest (seats 0 & 2) vs the two middles
             seats = [players[0], players[1], players[3], players[2]]
-            game_id = self.create_game(seats, match_type, shuffle=False)
-        now = time.time()
-        for e in batch:
-            for p in e["players"]:
-                self.matched[p["user_id"]] = {"game_id": game_id, "ts": now}
+            game_id = await self.create_game(seats, match_type, shuffle=False)
+        await self._set_matched([p["user_id"] for e in batch
+                                 for p in e["players"]], game_id)
         logger.info("match created %s (duo=%d, elo %s)", game_id, len(duos),
                     [p["elo"] for p in seats])
