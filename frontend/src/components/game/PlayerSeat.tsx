@@ -95,7 +95,7 @@ export default function PlayerSeat({
         <Avatar
           avatarId={player.avatar_id}
           size={size}
-          ringColor={isMe ? C.gold : "rgba(255,255,255,0.35)"}
+          ringColor={isMe ? C.gold : "rgba(233,196,106,0.7)"}
           ringWidth={2}
         />
         {isDealer && (
@@ -204,16 +204,28 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  nameRow: { flexDirection: "row", alignItems: "center", marginTop: 2 },
+  nameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 3,
+    backgroundColor: "rgba(8,26,17,0.8)",
+    borderWidth: 1,
+    borderColor: "rgba(233,196,106,0.5)",
+    borderRadius: R.pill,
+    paddingHorizontal: 9,
+    paddingVertical: 1.5,
+  },
   name: {
-    fontFamily: F.bold,
+    fontFamily: F.serifSemi,
     fontSize: 11.5,
     color: C.cream,
     maxWidth: 90,
     textAlign: "center",
   },
   cardCount: {
-    backgroundColor: "rgba(0,0,0,0.35)",
+    backgroundColor: "rgba(8,26,17,0.7)",
+    borderWidth: 1,
+    borderColor: "rgba(233,196,106,0.35)",
     borderRadius: R.pill,
     paddingHorizontal: 7,
     paddingVertical: 1,

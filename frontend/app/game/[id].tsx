@@ -352,8 +352,15 @@ export default function GameScreen() {
       <ImageBackground
         source={{ uri: PATTERN_BG }}
         style={StyleSheet.absoluteFill}
-        imageStyle={{ opacity: 0.06 }}
+        imageStyle={{ opacity: 0.09 }}
       />
+      {/* ornamental gilded frame + central medallion */}
+      <View pointerEvents="none" style={styles.ornateFrame} />
+      <View pointerEvents="none" style={styles.medallionWrap}>
+        <View style={styles.medallionOuter} />
+        <View style={styles.medallionInner} />
+        <View style={styles.medallionDiamond} />
+      </View>
 
       {/* header */}
       <View style={[styles.header, { paddingTop: insets.top + SP.sm }]}>
@@ -400,7 +407,7 @@ export default function GameScreen() {
           <View
             style={[
               styles.contractChip,
-              { borderColor: contract!.team === myTeam ? C.gold : C.brand3 },
+              { borderColor: contract!.team === myTeam ? C.goldLine : "rgba(194,59,34,0.75)" },
             ]}
             testID="contract-chip"
           >
@@ -856,6 +863,46 @@ export default function GameScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.feltDark },
+  ornateFrame: {
+    position: "absolute",
+    top: 6,
+    left: 10,
+    right: 10,
+    bottom: 6,
+    borderRadius: 26,
+    borderWidth: 1.5,
+    borderColor: "rgba(233,196,106,0.16)",
+  },
+  medallionWrap: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: "center",
+    justifyContent: "center",
+    transform: [{ translateY: -12 }],
+  },
+  medallionOuter: {
+    position: "absolute",
+    width: 320,
+    height: 320,
+    borderRadius: 160,
+    borderWidth: 1.5,
+    borderColor: "rgba(233,196,106,0.10)",
+  },
+  medallionInner: {
+    position: "absolute",
+    width: 230,
+    height: 230,
+    borderRadius: 115,
+    borderWidth: 1,
+    borderColor: "rgba(233,196,106,0.08)",
+  },
+  medallionDiamond: {
+    position: "absolute",
+    width: 150,
+    height: 150,
+    borderWidth: 1,
+    borderColor: "rgba(233,196,106,0.07)",
+    transform: [{ rotate: "45deg" }],
+  },
   loadingWrap: {
     flex: 1,
     backgroundColor: C.feltDark,
@@ -877,24 +924,26 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: "rgba(0,0,0,0.3)",
+    backgroundColor: "rgba(0,0,0,0.4)",
+    borderWidth: 1.5,
+    borderColor: "rgba(233,196,106,0.45)",
     alignItems: "center",
     justifyContent: "center",
   },
   scoreBox: {
     alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.35)",
+    backgroundColor: "rgba(8,26,17,0.78)",
     borderRadius: R.md,
     borderWidth: 1.5,
-    borderColor: "rgba(255,255,255,0.28)",
+    borderColor: C.goldLine,
     paddingHorizontal: SP.md,
     paddingVertical: 3,
   },
-  scoreText: { fontFamily: F.text, fontSize: 13, color: "rgba(255,255,255,0.8)" },
-  scoreNum: { fontFamily: F.extra, fontSize: 17, color: C.cream },
-  targetText: { fontFamily: F.text, fontSize: 10.5, color: "rgba(255,255,255,0.55)" },
+  scoreText: { fontFamily: F.serifSemi, fontSize: 12.5, color: "rgba(233,196,106,0.9)" },
+  scoreNum: { fontFamily: F.serif, fontSize: 18, color: C.cream },
+  targetText: { fontFamily: F.text, fontSize: 10.5, color: "rgba(233,196,106,0.55)" },
   contractChip: {
-    backgroundColor: "rgba(0,0,0,0.35)",
+    backgroundColor: "rgba(8,26,17,0.78)",
     borderRadius: R.md,
     borderWidth: 1.5,
     paddingHorizontal: SP.md,
@@ -902,8 +951,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     minWidth: 64,
   },
-  contractText: { fontFamily: F.extra, fontSize: 15, color: C.cream },
-  contractTeam: { fontFamily: F.text, fontSize: 10, color: "rgba(255,255,255,0.7)" },
+  contractText: { fontFamily: F.serif, fontSize: 15, color: C.cream },
+  contractTeam: { fontFamily: F.text, fontSize: 10, color: "rgba(233,196,106,0.75)" },
   table: { flex: 1 },
   partnerRow: { alignItems: "center", marginTop: -46, zIndex: 5 },
   middleRow: {
@@ -938,7 +987,7 @@ const styles = StyleSheet.create({
     borderRadius: 21,
     backgroundColor: "rgba(0,0,0,0.45)",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.3)",
+    borderColor: "rgba(233,196,106,0.4)",
     alignItems: "center",
     justifyContent: "center",
   },

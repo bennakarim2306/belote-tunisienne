@@ -111,7 +111,7 @@ const styles = StyleSheet.create({
     borderRadius: R.md,
     backgroundColor: C.card,
     borderWidth: 1,
-    borderColor: C.border,
+    borderColor: "rgba(233,196,106,0.35)",
     alignItems: "center",
     justifyContent: "center",
   },

@@ -34,6 +34,8 @@ export default function RootLayout() {
     Jakarta: require("../assets/fonts/PlusJakartaSans-Regular.ttf"),
     JakartaBold: require("../assets/fonts/PlusJakartaSans-Bold.ttf"),
     JakartaExtraBold: require("../assets/fonts/PlusJakartaSans-ExtraBold.ttf"),
+    Playfair: require("../assets/fonts/PlayfairDisplay-Bold.ttf"),
+    PlayfairSemi: require("../assets/fonts/PlayfairDisplay-SemiBold.ttf"),
   });
 
   const iconsReady = iconsLoaded || !!iconsError;

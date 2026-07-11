@@ -43,6 +43,24 @@ interface CurrentGame {
   target: number;
 }
 
+const SUIT_DECO = [
+  { s: "♠", c: "#8F9A55" },
+  { s: "♥", c: "#C0392B" },
+  { s: "♦", c: "#D35400" },
+  { s: "♣", c: "#7E9B4E" },
+];
+
+/** thin gilded rule with a small diamond — under card titles (mockup style) */
+function GoldDivider() {
+  return (
+    <View style={styles.dividerRow}>
+      <View style={styles.dividerLine} />
+      <View style={styles.dividerDiamond} />
+      <View style={styles.dividerLine} />
+    </View>
+  );
+}
+
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -239,7 +257,12 @@ export default function HomeScreen() {
       <View style={[styles.header, { paddingTop: insets.top + SP.sm }]}>
         <View style={styles.headerRow}>
           <MenuButton />
-          <Avatar avatarId={user?.avatar_id} size={44} testID="home-user-avatar" />
+          <Avatar
+            avatarId={user?.avatar_id}
+            size={44}
+            ringColor={C.goldSoft}
+            testID="home-user-avatar"
+          />
           <View style={{ marginHorizontal: SP.md, flexShrink: 1, minWidth: 0 }}>
             <Text style={styles.hello}>{t("hello")},</Text>
             <Text style={styles.username} numberOfLines={1}>
@@ -247,7 +270,7 @@ export default function HomeScreen() {
             </Text>
           </View>
           <View style={styles.headerMiddle}>
-            {currentGame && (
+            {currentGame ? (
               <Pressable
                 testID="resume-game-button"
                 onPress={() =>
@@ -268,10 +291,18 @@ export default function HomeScreen() {
                 </View>
                 <Ionicons name="chevron-forward" size={16} color={C.onBrand} />
               </Pressable>
+            ) : (
+              <View style={styles.suitsDeco} pointerEvents="none">
+                {SUIT_DECO.map((d) => (
+                  <Text key={d.s} style={[styles.suitDecoText, { color: d.c }]}>
+                    {d.s}
+                  </Text>
+                ))}
+              </View>
             )}
           </View>
           <View style={styles.eloPill} testID="home-elo-pill">
-            <Ionicons name="flame" size={14} color={C.gold} />
+            <Ionicons name="flame" size={15} color={C.gold} />
             <Text style={styles.eloText}>{user?.elo ?? 1000}</Text>
           </View>
           <Pressable
@@ -280,7 +311,7 @@ export default function HomeScreen() {
             hitSlop={8}
             style={styles.bellBtn}
           >
-            <Ionicons name="notifications" size={20} color={C.ink2} />
+            <Ionicons name="notifications" size={20} color={C.goldSoft} />
             {notifCount > 0 && (
               <View style={styles.bellBadge} testID="notifications-badge">
                 <Text style={styles.bellBadgeText}>{notifCount}</Text>
@@ -303,23 +334,30 @@ export default function HomeScreen() {
                   style={({ pressed }) => [styles.gridCard, styles.onlineCard, pressed && styles.pressed]}
                 >
                   <LinearGradient
-                    colors={[C.felt, C.feltDark]}
+                    colors={["#14582F", "#0A2E1C"]}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
                     style={StyleSheet.absoluteFill}
                   />
-                  <View style={styles.gridIcon}>
-                    <Ionicons name="globe" size={24} color={C.cream} />
+                  <View style={[styles.gridIcon, styles.gridIconFelt]}>
+                    <Ionicons name="globe-outline" size={26} color={C.goldSoft} />
                   </View>
                   <View style={styles.gridTextWrap}>
                     <Text style={[styles.gridTitle, { color: C.cream }]} numberOfLines={1}>
                       {t("playOnline")}
                     </Text>
+                    <GoldDivider />
                     <Text style={styles.gridDesc} numberOfLines={2}>
                       {t("playOnlineDesc")}
                     </Text>
                   </View>
-                  <Text style={styles.cardSuits}>♠ ♥ ♦ ♣</Text>
+                  <View style={styles.cardSuitsRow}>
+                    {SUIT_DECO.map((d) => (
+                      <Text key={d.s} style={[styles.cardSuitText, { color: d.c }]}>
+                        {d.s}
+                      </Text>
+                    ))}
+                  </View>
                 </Pressable>
               </Animated.View>
             </Animated.View>
@@ -330,13 +368,18 @@ export default function HomeScreen() {
                 onPress={() => setTypeModal("solo")}
                 style={({ pressed }) => [styles.gridCard, styles.soloCard, pressed && styles.pressed]}
               >
-                <View style={[styles.gridIcon, { backgroundColor: C.brand2 }]}>
-                  <Ionicons name="game-controller" size={24} color={C.onBrand} />
+                <View style={[styles.gridIcon, styles.gridIconCopper]}>
+                  <LinearGradient
+                    colors={["#FFA02E", "#E96D00"]}
+                    style={StyleSheet.absoluteFill}
+                  />
+                  <Ionicons name="game-controller" size={26} color="#2C1400" />
                 </View>
                 <View style={styles.gridTextWrap}>
                   <Text style={[styles.gridTitle, { color: C.ink }]} numberOfLines={1}>
                     {t("playVsAI")}
                   </Text>
+                  <GoldDivider />
                   <Text style={[styles.gridDesc, { color: C.ink2 }]} numberOfLines={2}>
                     {t("playVsAIDesc")}
                   </Text>
@@ -355,13 +398,14 @@ export default function HomeScreen() {
                 onPress={() => router.push("/tutorial")}
                 style={({ pressed }) => [styles.gridCard, styles.learnCard, pressed && styles.pressed]}
               >
-                <View style={[styles.gridIcon, { backgroundColor: "rgba(255,190,60,0.14)" }]}>
-                  <Ionicons name="school" size={24} color={C.gold} />
+                <View style={[styles.gridIcon, styles.gridIconGold]}>
+                  <Ionicons name="school" size={26} color={C.goldSoft} />
                 </View>
                 <View style={styles.gridTextWrap}>
                   <Text style={[styles.gridTitle, { color: C.ink }]} numberOfLines={1}>
                     {t("tutorialTitle")}
                   </Text>
+                  <GoldDivider />
                   <Text style={[styles.gridDesc, { color: C.ink2 }]} numberOfLines={2}>
                     {t("tutorialDesc")}
                   </Text>
@@ -378,13 +422,18 @@ export default function HomeScreen() {
                 }}
                 style={({ pressed }) => [styles.gridCard, styles.privateCard, pressed && styles.pressed]}
               >
-                <View style={[styles.gridIcon, { backgroundColor: C.brand2 }]}>
-                  <Ionicons name="people" size={24} color={C.onBrand} />
+                <View style={[styles.gridIcon, styles.gridIconCopper]}>
+                  <LinearGradient
+                    colors={["#FFA02E", "#E96D00"]}
+                    style={StyleSheet.absoluteFill}
+                  />
+                  <Ionicons name="people" size={26} color="#2C1400" />
                 </View>
                 <View style={styles.gridTextWrap}>
                   <Text style={[styles.gridTitle, { color: C.ink }]} numberOfLines={1}>
                     {t("privateParty")}
                   </Text>
+                  <GoldDivider />
                   <Text style={[styles.gridDesc, { color: C.ink2 }]} numberOfLines={2}>
                     {t("privatePartyDesc")}
                   </Text>
@@ -648,34 +697,31 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.bg },
   header: {
-    backgroundColor: C.card,
-    borderBottomWidth: 1,
-    borderBottomColor: C.border,
     paddingHorizontal: SP.lg,
     paddingBottom: SP.sm,
   },
   headerRow: { flexDirection: "row", alignItems: "center" },
   hello: { fontFamily: F.text, fontSize: 13, color: C.ink3 },
-  username: { fontFamily: F.display, fontSize: 20, color: C.ink },
+  username: { fontFamily: F.serif, fontSize: 22, color: C.ink },
   eloPill: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-    backgroundColor: C.bg2,
+    gap: 6,
+    backgroundColor: "rgba(28,23,20,0.9)",
     borderRadius: R.pill,
-    paddingHorizontal: SP.md,
-    height: 34,
-    borderWidth: 1,
-    borderColor: C.border,
-  },
-  eloText: { fontFamily: F.extra, fontSize: 15, color: C.ink },
-  bellBtn: {
-    width: 40,
+    paddingHorizontal: SP.lg,
     height: 40,
-    borderRadius: 20,
-    backgroundColor: C.bg2,
-    borderWidth: 1,
-    borderColor: C.border,
+    borderWidth: 1.5,
+    borderColor: "rgba(233,196,106,0.5)",
+  },
+  eloText: { fontFamily: F.serif, fontSize: 17, color: C.ink },
+  bellBtn: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: "rgba(28,23,20,0.9)",
+    borderWidth: 1.5,
+    borderColor: "rgba(233,196,106,0.35)",
     alignItems: "center",
     justifyContent: "center",
     marginLeft: SP.sm,
@@ -687,12 +733,12 @@ const styles = StyleSheet.create({
     minWidth: 18,
     height: 18,
     borderRadius: 9,
-    backgroundColor: C.brand,
+    backgroundColor: "#E4572E",
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 4,
   },
-  bellBadgeText: { fontFamily: F.extra, fontSize: 10.5, color: C.onBrand },
+  bellBadgeText: { fontFamily: F.extra, fontSize: 10.5, color: "#FFF" },
   notifSection: {
     fontFamily: F.display,
     fontSize: 14,
@@ -755,51 +801,81 @@ const styles = StyleSheet.create({
   gridItem: { flex: 1 },
   gridCard: {
     flex: 1,
-    borderRadius: R.lg,
-    padding: SP.md,
+    borderRadius: 22,
+    padding: SP.lg,
     minHeight: 76,
     flexDirection: "row",
     alignItems: "center",
-    gap: SP.md,
+    gap: SP.lg,
     ...shadow,
   },
   heroGlow: {
-    borderRadius: R.lg,
-    borderWidth: 1.5,
-    shadowColor: C.brand,
+    borderRadius: 22,
+    borderWidth: 2,
+    shadowColor: "#58D68D",
     shadowOffset: { width: 0, height: 0 },
     shadowRadius: 18,
     elevation: 10,
   },
-  onlineCard: { backgroundColor: C.felt, overflow: "hidden" },
-  privateCard: { backgroundColor: C.card, borderWidth: 1, borderColor: C.border },
+  onlineCard: { backgroundColor: C.felt, overflow: "hidden", borderRadius: 20 },
+  privateCard: {
+    backgroundColor: "#1A130E",
+    borderWidth: 1.5,
+    borderColor: "rgba(255,123,0,0.45)",
+  },
   soloCard: {
-    backgroundColor: C.bg3,
-    borderWidth: 1,
-    borderColor: C.brand3,
+    backgroundColor: "#1A130E",
+    borderWidth: 1.5,
+    borderColor: "rgba(255,123,0,0.6)",
   },
   learnCard: {
-    backgroundColor: C.card,
-    borderWidth: 1,
-    borderColor: "rgba(255,190,60,0.35)",
+    backgroundColor: "#1B1510",
+    borderWidth: 1.5,
+    borderColor: "rgba(233,196,106,0.5)",
   },
   gridIcon: {
-    width: 46,
-    height: 46,
-    borderRadius: 15,
-    backgroundColor: "rgba(255,255,255,0.18)",
+    width: 54,
+    height: 54,
+    borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
+    overflow: "hidden",
   },
+  gridIconFelt: {
+    backgroundColor: "rgba(0,0,0,0.30)",
+    borderWidth: 1,
+    borderColor: "rgba(233,196,106,0.45)",
+  },
+  gridIconGold: {
+    backgroundColor: "rgba(233,196,106,0.10)",
+    borderWidth: 1,
+    borderColor: "rgba(233,196,106,0.45)",
+  },
+  gridIconCopper: {},
   gridTextWrap: { flex: 1, minWidth: 0 },
-  gridTitle: { fontFamily: F.display, fontSize: 18, color: C.onBrand },
+  gridTitle: { fontFamily: F.serif, fontSize: 21, color: C.ink },
   gridDesc: {
     fontFamily: F.text,
     fontSize: 12.5,
     color: "rgba(255,255,255,0.85)",
-    marginTop: 2,
   },
+  dividerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginVertical: 5,
+    maxWidth: 200,
+  },
+  dividerLine: { flex: 1, height: 1, backgroundColor: "rgba(233,196,106,0.4)" },
+  dividerDiamond: {
+    width: 5,
+    height: 5,
+    backgroundColor: C.goldSoft,
+    transform: [{ rotate: "45deg" }],
+  },
+  suitsDeco: { flexDirection: "row", alignItems: "center", gap: 9 },
+  suitDecoText: { fontSize: 15 },
   trainingBadge: {
     position: "absolute",
     top: SP.sm,
@@ -811,14 +887,14 @@ const styles = StyleSheet.create({
   },
   trainingBadgeText: { fontFamily: F.bold, fontSize: 10, color: "#1A1200" },
   pressed: { transform: [{ scale: 0.98 }], opacity: 0.92 },
-  cardSuits: {
+  cardSuitsRow: {
     position: "absolute",
     right: SP.md,
     top: SP.sm,
-    color: "rgba(255,255,255,0.35)",
-    fontSize: 12,
-    letterSpacing: 2,
+    flexDirection: "row",
+    gap: 5,
   },
+  cardSuitText: { fontSize: 13 },
   joinRow: { flexDirection: "row", gap: SP.sm },
   joinInput: {
     flex: 1,

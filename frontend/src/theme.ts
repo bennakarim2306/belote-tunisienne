@@ -24,6 +24,9 @@ export const C = {
   scrim: "rgba(4,3,2,0.74)",
   glowMint: "rgba(0,229,122,0.45)",
   glowCopper: "rgba(255,123,0,0.45)",
+  goldSoft: "#E9C46A", // aged gold — ornate text & icons
+  goldLine: "rgba(233,196,106,0.55)", // gilded borders
+  goldFaint: "rgba(233,196,106,0.22)", // ornamental frames / dividers
 };
 
 export const F = {
@@ -31,6 +34,8 @@ export const F = {
   text: "Jakarta", // body
   bold: "JakartaBold",
   extra: "SpaceGroteskMedium", // metrics, scores, codes
+  serif: "Playfair", // classic café-lux headings (home cards, table chrome)
+  serifSemi: "PlayfairSemi",
 };
 
 export const SP = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32, xxxl: 48 };
