@@ -200,7 +200,7 @@ export default function BiddingPanel({ state, t, onAction }: Props) {
         <Pressable
           testID="contre-button"
           onPress={() => onAction({ action: "contre" })}
-          style={[styles.contreBtn, { alignSelf: "center", marginTop: SP.sm }]}
+          style={[styles.contreBtn, { alignSelf: "center", marginTop: SP.xs }]}
         >
           <Text style={styles.contreBtnText}>{t("contre")}</Text>
         </Pressable>
@@ -215,10 +215,10 @@ const styles = StyleSheet.create({
     borderRadius: R.lg,
     borderWidth: 1,
     borderColor: C.borderStrong,
-    padding: SP.md,
+    padding: SP.sm,
     marginHorizontal: SP.md,
     width: "94%",
-    maxWidth: 600,
+    maxWidth: 420,
     alignSelf: "center",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: -2 },
@@ -228,21 +228,21 @@ const styles = StyleSheet.create({
   },
   panelTitle: {
     fontFamily: F.display,
-    fontSize: 14,
+    fontSize: 11,
     color: C.ink,
     textAlign: "center",
-    marginBottom: SP.sm,
+    marginBottom: 4,
   },
   suitRow: {
     flexDirection: "row",
     justifyContent: "center",
-    gap: SP.md,
-    marginBottom: SP.sm,
+    gap: SP.sm,
+    marginBottom: 6,
   },
   suitBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: R.md,
+    width: 34,
+    height: 34,
+    borderRadius: R.sm,
     backgroundColor: C.card,
     borderWidth: 2,
     borderColor: C.border,
@@ -250,7 +250,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   suitBtnActive: { borderColor: C.brand, backgroundColor: "rgba(0,229,122,0.12)" },
-  suitText: { fontSize: 24 },
+  suitText: { fontSize: 18 },
   valueGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -258,8 +258,8 @@ const styles = StyleSheet.create({
     gap: SP.xs,
   },
   valueChip: {
-    height: 36,
-    width: 58,
+    height: 28,
+    width: 44,
     borderRadius: R.pill,
     backgroundColor: C.card,
     borderWidth: 1.5,
@@ -269,26 +269,21 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   valueChipActive: { backgroundColor: C.brand, borderColor: C.brand },
-  valueText: { fontFamily: F.extra, fontSize: 15, color: C.ink },
+  valueText: { fontFamily: F.extra, fontSize: 12.5, color: C.ink },
   actionRow: {
     flexDirection: "row",
-    gap: SP.sm,
-    marginTop: SP.sm,
+    gap: SP.xs,
+    marginTop: 6,
   },
   bigAction: {
     flex: 1,
-    height: 44,
+    height: 34,
     borderRadius: R.pill,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: SP.sm,
   },
-  bigActionText: { fontFamily: F.display, fontSize: 14, color: C.onBrand },
-  contreFloat: {
-    position: "absolute",
-    bottom: 8,
-    right: SP.lg,
-  },
+  bigActionText: { fontFamily: F.display, fontSize: 12, color: C.onBrand },
   floatCol: {
     alignItems: "flex-end",
     paddingRight: SP.lg,
@@ -311,21 +306,21 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   capotSuitBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: C.card,
     borderWidth: 1.5,
     borderColor: C.borderStrong,
     alignItems: "center",
     justifyContent: "center",
   },
-  capotSuitText: { fontSize: 24 },
+  capotSuitText: { fontSize: 19 },
   contreBtn: {
     backgroundColor: C.error,
     borderRadius: R.pill,
-    paddingHorizontal: SP.xl,
-    height: 46,
+    paddingHorizontal: SP.lg,
+    height: 36,
     alignItems: "center",
     justifyContent: "center",
     shadowColor: "#000",
@@ -334,5 +329,5 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     elevation: 6,
   },
-  contreBtnText: { fontFamily: F.display, fontSize: 15, color: C.onBrand },
+  contreBtnText: { fontFamily: F.display, fontSize: 12.5, color: C.onBrand },
 });

@@ -73,7 +73,7 @@ function PausedOverlay({
     <View style={styles.pausedScrim} testID="paused-overlay">
       <Ionicons
         name={disconnect ? "wifi" : "pause-circle"}
-        size={64}
+        size={44}
         color={disconnect ? C.warning : C.gold}
       />
       <Text style={styles.pausedTitle}>
@@ -93,7 +93,7 @@ function PausedOverlay({
           testID="pause-resume-button"
           label={t("resume")}
           onPress={onResume}
-          style={{ marginTop: SP.lg, minWidth: 200 }}
+          style={{ marginTop: SP.md, minWidth: 180 }}
         />
       )}
     </View>
@@ -429,7 +429,7 @@ export default function GameScreen() {
 
       {/* table */}
       <View style={styles.table}>
-        <View style={styles.partnerRow}>
+        <View style={styles.partnerRow} pointerEvents="box-none">
           <PlayerSeat
             player={partner}
             isTurn={state.turn === partner.seat}
@@ -905,7 +905,7 @@ const styles = StyleSheet.create({
   contractText: { fontFamily: F.extra, fontSize: 15, color: C.cream },
   contractTeam: { fontFamily: F.text, fontSize: 10, color: "rgba(255,255,255,0.7)" },
   table: { flex: 1 },
-  partnerRow: { alignItems: "center" },
+  partnerRow: { alignItems: "center", marginTop: -46, zIndex: 5 },
   middleRow: {
     flex: 1,
     flexDirection: "row",
@@ -1106,8 +1106,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     padding: SP.xl,
+    zIndex: 1000,
+    elevation: 1000,
   },
-  pausedTitle: { fontFamily: F.display, fontSize: 26, color: C.cream, marginTop: SP.md },
+  pausedTitle: { fontFamily: F.display, fontSize: 20, color: C.cream, marginTop: SP.sm },
   pausedBy: {
     fontFamily: F.text,
     fontSize: 14,

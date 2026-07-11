@@ -18,9 +18,9 @@ const CARD_W = 56;
 // rel position offsets — CLOCKWISE play direction on screen:
 // 0 = me (bottom), 1 = next player (LEFT), 2 = partner (top), 3 = previous (RIGHT)
 const OFFSETS = [
-  { x: 0, y: 26 },
+  { x: 0, y: 22 },
   { x: -72, y: 0 },
-  { x: 0, y: -26 },
+  { x: 0, y: -22 },
   { x: 72, y: 0 },
 ];
 const ROTATIONS_DEG = [-2, -7, 3, 7];
@@ -197,6 +197,8 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
+    // bias upward so the bottom card never slides under the player's hand fan
+    transform: [{ translateY: -16 }],
   },
   cardPos: {
     position: "absolute",
