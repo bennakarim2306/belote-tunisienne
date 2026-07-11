@@ -48,8 +48,8 @@ function ShufflingCard({ delay }: { delay: number }) {
     transform: [{ rotate: `${rot.value + delay}deg` }],
   }));
   return (
-    <Animated.View style={[style, { marginHorizontal: -12 }]}>
-      <PlayingCard faceDown width={52} />
+    <Animated.View style={[style, { marginHorizontal: -10 }]}>
+      <PlayingCard faceDown width={40} />
     </Animated.View>
   );
 }
@@ -280,22 +280,22 @@ export default function MatchmakingScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.feltDark },
   center: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: SP.lg },
-  cardsRow: { flexDirection: "row", marginBottom: SP.sm },
-  title: { fontFamily: F.display, fontSize: 20, color: C.cream },
-  counter: { fontFamily: F.extra, fontSize: 24, color: C.gold, marginTop: 2 },
+  cardsRow: { flexDirection: "row", marginBottom: SP.xs },
+  title: { fontFamily: F.display, fontSize: 18, color: C.cream },
+  counter: { fontFamily: F.extra, fontSize: 20, color: C.gold, marginTop: 2 },
   slotsRow: {
     flexDirection: "row",
-    gap: SP.md,
-    marginTop: SP.md,
+    gap: SP.lg,
+    marginTop: SP.sm,
     justifyContent: "center",
   },
-  slot: { alignItems: "center", width: 74 },
+  slot: { alignItems: "center", width: 96 },
   slotName: {
     fontFamily: F.bold,
     fontSize: 11,
     color: C.cream,
     marginTop: 4,
-    maxWidth: 72,
+    maxWidth: 94,
     textAlign: "center",
   },
   slotElo: { fontFamily: F.text, fontSize: 10, color: "rgba(255,255,255,0.6)" },
@@ -332,12 +332,12 @@ const styles = StyleSheet.create({
     marginTop: SP.md,
   },
   rangeText: { fontFamily: F.bold, fontSize: 12.5, color: C.cream },
-  timer: { fontFamily: F.extra, fontSize: 20, color: C.cream, marginTop: SP.sm, opacity: 0.85 },
+  timer: { fontFamily: F.extra, fontSize: 16, color: C.cream, marginTop: SP.xs, opacity: 0.85 },
   hint: {
     fontFamily: F.text,
-    fontSize: 12,
+    fontSize: 11,
     color: "rgba(255,255,255,0.7)",
-    marginTop: SP.xs,
+    marginTop: 2,
     textAlign: "center",
     paddingHorizontal: SP.xl,
   },

@@ -519,7 +519,7 @@ export default function GameScreen() {
             coachCard={coachCard}
           />
         </View>
-        <View style={[styles.bottomSide, { justifyContent: "flex-end" }]}>
+        <View style={styles.bottomRight}>
           {myTurn && state.phase === "playing" && (
             <View style={styles.turnPill} testID="your-turn-pill">
               <Text style={styles.turnPillText}>{t("yourTurn")}</Text>
@@ -908,6 +908,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "flex-start",
     gap: SP.sm,
+    paddingBottom: SP.sm,
+  },
+  bottomRight: {
+    width: 150,
+    alignItems: "flex-end",
+    justifyContent: "flex-end",
+    gap: SP.xs,
     paddingBottom: SP.sm,
   },
   sideBtn: {

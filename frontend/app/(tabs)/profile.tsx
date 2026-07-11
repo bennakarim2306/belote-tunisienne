@@ -97,9 +97,11 @@ export default function ProfileScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.headerCard}>
-          <Avatar avatarId={user?.avatar_id} size={84} ringColor={C.brand} ringWidth={3} testID="profile-avatar" />
-          <Text style={styles.username} testID="profile-username">{user?.username}</Text>
-          <Text style={styles.email}>{user?.email}</Text>
+          <Avatar avatarId={user?.avatar_id} size={72} ringColor={C.brand} ringWidth={3} testID="profile-avatar" />
+          <View style={styles.headerInfo}>
+            <Text style={styles.username} testID="profile-username" numberOfLines={1}>{user?.username}</Text>
+            <Text style={styles.email} numberOfLines={1}>{user?.email}</Text>
+          </View>
           <View style={styles.eloRow}>
             <View style={styles.eloBadge} testID="profile-elo-badge">
               <View style={styles.eloValueRow}>
@@ -272,7 +274,9 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.bg },
   headerCard: {
+    flexDirection: "row",
     alignItems: "center",
+    gap: SP.lg,
     backgroundColor: C.card,
     marginHorizontal: SP.lg,
     borderRadius: R.lg,
@@ -280,13 +284,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: C.border,
   },
-  username: { fontFamily: F.display, fontSize: 24, color: C.ink, marginTop: SP.md },
+  headerInfo: { flexShrink: 1, minWidth: 0 },
+  username: { fontFamily: F.display, fontSize: 20, color: C.ink },
   email: { fontFamily: F.text, fontSize: 13, color: C.ink3, marginTop: 2 },
   eloRow: {
+    flex: 1,
     flexDirection: "row",
     gap: SP.sm,
-    marginTop: SP.lg,
-    alignSelf: "stretch",
   },
   eloBadge: {
     flex: 1,

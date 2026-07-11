@@ -261,3 +261,7 @@ frontend:
 agent_communication:
   - agent: "main"
     message: "App switched to LANDSCAPE everywhere per user request. Test all frontend flows at 844x390 viewport (landscape phone). Note the web RotateGate overlay appears if viewport is portrait - always use landscape viewport. testIDs changed: private game box is 'private-game-card' opening a modal containing 'join-code-input'+'join-room-button'+'create-party-button'. Chat button and last-trick button are now in the bottom row next to the hand fan."
+
+agent_communication:
+  - agent: "main"
+    message: "Landscape design polish pass (user feedback: fix proportions/positions, use the FULL screen). Home: banners + 2x2 grid now flex to FILL the whole height (no scroll, View instead of ScrollView, invites capped at 2). Game: right bottom column is now vertical (turn pill no longer wraps), hand cards enlarged to 68px (width*0.62), trick offsets flattened (y34/x72). Profile: header card is now a row (avatar | name/email | 3 elo badges). Matchmaking: fits 390/360 heights, deco cards 40px, slots 96px wide. AdBanner placeholder 46->30px. Tutorial lesson footer button maxWidth 560. Verified visually at 844x390 and 780x360. Regression-test all main flows (same testIDs as iteration_19)."

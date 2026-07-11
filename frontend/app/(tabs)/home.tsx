@@ -266,11 +266,7 @@ export default function HomeScreen() {
         </View>
       </View>
 
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-      >
+      <View style={styles.content}>
         {currentGame && (
           <Animated.View entering={FadeInDown} exiting={FadeOut.duration(120)} style={styles.resumeBanner} testID="resume-game-banner">
             <Ionicons name="play-circle" size={26} color={C.brand} />
@@ -294,7 +290,7 @@ export default function HomeScreen() {
           </Animated.View>
         )}
 
-        {invites.map((inv) => (
+        {invites.slice(0, 2).map((inv) => (
           <Animated.View key={inv.invite_id} entering={FadeInDown} exiting={FadeOut.duration(120)} style={styles.inviteBanner}>
             <Avatar avatarId={inv.from_user.avatar_id} size={36} />
             <Text style={styles.inviteText} numberOfLines={2}>
@@ -317,7 +313,7 @@ export default function HomeScreen() {
           </Animated.View>
         ))}
 
-        {duoInvites.map((inv) => (
+        {duoInvites.slice(0, 2).map((inv) => (
           <Animated.View
             key={inv.invite_id}
             entering={FadeInDown}
@@ -347,104 +343,108 @@ export default function HomeScreen() {
           </Animated.View>
         ))}
 
-        {/* 2×2 landscape grid: the 4 game modes, all visible at once */}
+        {/* 2×2 landscape grid: the 4 game modes fill the whole screen */}
         <View style={styles.grid} testID="home-grid">
-          <Animated.View entering={FadeInUp.delay(40)} style={styles.gridItem}>
-            <Animated.View style={[styles.heroGlow, heroGlowStyle]}>
+          <View style={styles.gridRow}>
+            <Animated.View entering={FadeInUp.delay(40)} style={styles.gridItem}>
+              <Animated.View style={[styles.heroGlow, { flex: 1 }, heroGlowStyle]}>
+                <Pressable
+                  testID="play-online-card"
+                  onPress={() => setTypeModal("online")}
+                  style={({ pressed }) => [styles.gridCard, styles.onlineCard, pressed && styles.pressed]}
+                >
+                  <LinearGradient
+                    colors={[C.felt, C.feltDark]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={StyleSheet.absoluteFill}
+                  />
+                  <View style={styles.gridIcon}>
+                    <Ionicons name="globe" size={24} color={C.cream} />
+                  </View>
+                  <View style={styles.gridTextWrap}>
+                    <Text style={[styles.gridTitle, { color: C.cream }]} numberOfLines={1}>
+                      {t("playOnline")}
+                    </Text>
+                    <Text style={styles.gridDesc} numberOfLines={2}>
+                      {t("playOnlineDesc")}
+                    </Text>
+                  </View>
+                  <Text style={styles.cardSuits}>♠ ♥ ♦ ♣</Text>
+                </Pressable>
+              </Animated.View>
+            </Animated.View>
+
+            <Animated.View entering={FadeInUp.delay(70)} style={styles.gridItem}>
               <Pressable
-                testID="play-online-card"
-                onPress={() => setTypeModal("online")}
-                style={({ pressed }) => [styles.gridCard, styles.onlineCard, pressed && styles.pressed]}
+                testID="play-solo-card"
+                onPress={() => setTypeModal("solo")}
+                style={({ pressed }) => [styles.gridCard, styles.soloCard, pressed && styles.pressed]}
               >
-                <LinearGradient
-                  colors={[C.felt, C.feltDark]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={StyleSheet.absoluteFill}
-                />
-                <View style={styles.gridIcon}>
-                  <Ionicons name="globe" size={22} color={C.cream} />
+                <View style={[styles.gridIcon, { backgroundColor: C.brand2 }]}>
+                  <Ionicons name="game-controller" size={24} color={C.onBrand} />
                 </View>
                 <View style={styles.gridTextWrap}>
-                  <Text style={[styles.gridTitle, { color: C.cream }]} numberOfLines={1}>
-                    {t("playOnline")}
+                  <Text style={[styles.gridTitle, { color: C.ink }]} numberOfLines={1}>
+                    {t("playVsAI")}
                   </Text>
-                  <Text style={styles.gridDesc} numberOfLines={2}>
-                    {t("playOnlineDesc")}
+                  <Text style={[styles.gridDesc, { color: C.ink2 }]} numberOfLines={2}>
+                    {t("playVsAIDesc")}
                   </Text>
                 </View>
-                <Text style={styles.cardSuits}>♠ ♥ ♦ ♣</Text>
+                <View style={styles.trainingBadge}>
+                  <Text style={styles.trainingBadgeText}>{t("trainingBadge")}</Text>
+                </View>
               </Pressable>
             </Animated.View>
-          </Animated.View>
+          </View>
 
-          <Animated.View entering={FadeInUp.delay(70)} style={styles.gridItem}>
-            <Pressable
-              testID="play-solo-card"
-              onPress={() => setTypeModal("solo")}
-              style={({ pressed }) => [styles.gridCard, styles.soloCard, pressed && styles.pressed]}
-            >
-              <View style={[styles.gridIcon, { backgroundColor: C.brand2 }]}>
-                <Ionicons name="game-controller" size={22} color={C.onBrand} />
-              </View>
-              <View style={styles.gridTextWrap}>
-                <Text style={[styles.gridTitle, { color: C.ink }]} numberOfLines={1}>
-                  {t("playVsAI")}
-                </Text>
-                <Text style={[styles.gridDesc, { color: C.ink2 }]} numberOfLines={2}>
-                  {t("playVsAIDesc")}
-                </Text>
-              </View>
-              <View style={styles.trainingBadge}>
-                <Text style={styles.trainingBadgeText}>{t("trainingBadge")}</Text>
-              </View>
-            </Pressable>
-          </Animated.View>
+          <View style={styles.gridRow}>
+            <Animated.View entering={FadeInUp.delay(100)} style={styles.gridItem}>
+              <Pressable
+                testID="learn-card"
+                onPress={() => router.push("/tutorial")}
+                style={({ pressed }) => [styles.gridCard, styles.learnCard, pressed && styles.pressed]}
+              >
+                <View style={[styles.gridIcon, { backgroundColor: "rgba(255,190,60,0.14)" }]}>
+                  <Ionicons name="school" size={24} color={C.gold} />
+                </View>
+                <View style={styles.gridTextWrap}>
+                  <Text style={[styles.gridTitle, { color: C.ink }]} numberOfLines={1}>
+                    {t("tutorialTitle")}
+                  </Text>
+                  <Text style={[styles.gridDesc, { color: C.ink2 }]} numberOfLines={2}>
+                    {t("tutorialDesc")}
+                  </Text>
+                </View>
+              </Pressable>
+            </Animated.View>
 
-          <Animated.View entering={FadeInUp.delay(100)} style={styles.gridItem}>
-            <Pressable
-              testID="learn-card"
-              onPress={() => router.push("/tutorial")}
-              style={({ pressed }) => [styles.gridCard, styles.learnCard, pressed && styles.pressed]}
-            >
-              <View style={[styles.gridIcon, { backgroundColor: "rgba(255,190,60,0.14)" }]}>
-                <Ionicons name="school" size={22} color={C.gold} />
-              </View>
-              <View style={styles.gridTextWrap}>
-                <Text style={[styles.gridTitle, { color: C.ink }]} numberOfLines={1}>
-                  {t("tutorialTitle")}
-                </Text>
-                <Text style={[styles.gridDesc, { color: C.ink2 }]} numberOfLines={2}>
-                  {t("tutorialDesc")}
-                </Text>
-              </View>
-            </Pressable>
-          </Animated.View>
-
-          <Animated.View entering={FadeInUp.delay(130)} style={styles.gridItem}>
-            <Pressable
-              testID="private-game-card"
-              onPress={() => {
-                setJoinError(null);
-                setPrivateOpen(true);
-              }}
-              style={({ pressed }) => [styles.gridCard, styles.privateCard, pressed && styles.pressed]}
-            >
-              <View style={[styles.gridIcon, { backgroundColor: C.brand2 }]}>
-                <Ionicons name="people" size={22} color={C.onBrand} />
-              </View>
-              <View style={styles.gridTextWrap}>
-                <Text style={[styles.gridTitle, { color: C.ink }]} numberOfLines={1}>
-                  {t("privateParty")}
-                </Text>
-                <Text style={[styles.gridDesc, { color: C.ink2 }]} numberOfLines={2}>
-                  {t("privatePartyDesc")}
-                </Text>
-              </View>
-            </Pressable>
-          </Animated.View>
+            <Animated.View entering={FadeInUp.delay(130)} style={styles.gridItem}>
+              <Pressable
+                testID="private-game-card"
+                onPress={() => {
+                  setJoinError(null);
+                  setPrivateOpen(true);
+                }}
+                style={({ pressed }) => [styles.gridCard, styles.privateCard, pressed && styles.pressed]}
+              >
+                <View style={[styles.gridIcon, { backgroundColor: C.brand2 }]}>
+                  <Ionicons name="people" size={24} color={C.onBrand} />
+                </View>
+                <View style={styles.gridTextWrap}>
+                  <Text style={[styles.gridTitle, { color: C.ink }]} numberOfLines={1}>
+                    {t("privateParty")}
+                  </Text>
+                  <Text style={[styles.gridDesc, { color: C.ink2 }]} numberOfLines={2}>
+                    {t("privatePartyDesc")}
+                  </Text>
+                </View>
+              </Pressable>
+            </Animated.View>
+          </View>
         </View>
-      </ScrollView>
+      </View>
 
       {/* private game: join by code or create */}
       <Modal visible={privateOpen} transparent animationType="fade">
@@ -818,24 +818,23 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   inviteJoinText: { fontFamily: F.display, color: C.onBrand, fontSize: 13 },
-  scrollContent: {
+  content: {
+    flex: 1,
     paddingHorizontal: SP.lg,
     paddingTop: SP.sm,
     paddingBottom: SP.sm,
-    maxWidth: 860,
+    maxWidth: 900,
     width: "100%",
     alignSelf: "center",
   },
-  grid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: SP.sm,
-  },
-  gridItem: { flexBasis: "48%", flexGrow: 1 },
+  grid: { flex: 1, gap: SP.sm },
+  gridRow: { flex: 1, flexDirection: "row", gap: SP.sm },
+  gridItem: { flex: 1 },
   gridCard: {
+    flex: 1,
     borderRadius: R.lg,
     padding: SP.md,
-    minHeight: 88,
+    minHeight: 76,
     flexDirection: "row",
     alignItems: "center",
     gap: SP.md,
@@ -862,19 +861,19 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255,190,60,0.35)",
   },
   gridIcon: {
-    width: 42,
-    height: 42,
-    borderRadius: 14,
+    width: 46,
+    height: 46,
+    borderRadius: 15,
     backgroundColor: "rgba(255,255,255,0.18)",
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
   },
   gridTextWrap: { flex: 1, minWidth: 0 },
-  gridTitle: { fontFamily: F.display, fontSize: 16.5, color: C.onBrand },
+  gridTitle: { fontFamily: F.display, fontSize: 18, color: C.onBrand },
   gridDesc: {
     fontFamily: F.text,
-    fontSize: 11.5,
+    fontSize: 12.5,
     color: "rgba(255,255,255,0.85)",
     marginTop: 2,
   },

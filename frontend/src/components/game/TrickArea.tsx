@@ -18,10 +18,10 @@ const CARD_W = 56;
 // rel position offsets — CLOCKWISE play direction on screen:
 // 0 = me (bottom), 1 = next player (LEFT), 2 = partner (top), 3 = previous (RIGHT)
 const OFFSETS = [
-  { x: 0, y: 42 },
-  { x: -58, y: 0 },
-  { x: 0, y: -42 },
-  { x: 58, y: 0 },
+  { x: 0, y: 34 },
+  { x: -72, y: 0 },
+  { x: 0, y: -34 },
+  { x: 72, y: 0 },
 ];
 const ROTATIONS_DEG = [-2, -7, 3, 7];
 

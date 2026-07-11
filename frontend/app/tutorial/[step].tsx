@@ -137,7 +137,12 @@ export default function LessonScreen() {
       </ScrollView>
 
       <View style={[styles.footer, { paddingBottom: insets.bottom + SP.md }]}>
-        <ChunkyButton testID="lesson-ok-button" label={t("gotIt")} onPress={validate} />
+        <ChunkyButton
+          testID="lesson-ok-button"
+          label={t("gotIt")}
+          onPress={validate}
+          style={{ width: "100%", maxWidth: 560, alignSelf: "center" }}
+        />
       </View>
     </View>
   );

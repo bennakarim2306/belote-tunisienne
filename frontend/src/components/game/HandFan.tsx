@@ -56,8 +56,8 @@ export default function HandFan({ hand, legal, myTurn, trump, onPlay, coachCard 
   if (n === 0) return <View style={styles.row} />;
 
   const overlap = 0.55;
-  const maxW = Math.min(width * 0.55, 560);
-  const cardW = Math.min(60, maxW / (1 + (n - 1) * overlap));
+  const maxW = Math.min(width * 0.62, 620);
+  const cardW = Math.min(68, maxW / (1 + (n - 1) * overlap));
   const mid = (n - 1) / 2;
 
   const play = (card: string) => {
@@ -127,7 +127,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-end",
     justifyContent: "center",
-    minHeight: 92,
+    minHeight: 100,
     paddingTop: 6,
     paddingBottom: 4,
   },
