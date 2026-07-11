@@ -446,7 +446,7 @@ export default function HomeScreen() {
           <Pressable style={styles.modalSheet} onPress={() => {}} testID="notifications-panel">
             <View style={styles.sheetHandle} />
             <Text style={styles.modalTitle}>{t("notifications")}</Text>
-            <ScrollView style={{ maxHeight: 250 }}>
+            <ScrollView style={{ maxHeight: 170 }}>
               {notifCount === 0 && (
                 <Text style={styles.notifEmpty}>{t("noNotifications")}</Text>
               )}
