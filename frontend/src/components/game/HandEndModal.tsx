@@ -275,6 +275,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     padding: SP.xl,
+    zIndex: 1000,
+    elevation: 1000,
   },
   card: {
     width: "100%",

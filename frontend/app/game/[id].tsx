@@ -954,7 +954,7 @@ const styles = StyleSheet.create({
   contractText: { fontFamily: F.serif, fontSize: 15, color: C.cream },
   contractTeam: { fontFamily: F.text, fontSize: 10, color: "rgba(233,196,106,0.75)" },
   table: { flex: 1 },
-  partnerRow: { alignItems: "center", marginTop: -46, zIndex: 5 },
+  partnerRow: { alignItems: "center", marginTop: -46 },
   middleRow: {
     flex: 1,
     flexDirection: "row",
@@ -1007,6 +1007,8 @@ const styles = StyleSheet.create({
     position: "absolute",
     left: 0,
     right: 0,
+    zIndex: 30,
+    elevation: 30,
   },
   coachWrap: {
     paddingHorizontal: SP.md,
