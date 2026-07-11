@@ -244,3 +244,20 @@ backend:
 agent_communication:
   - agent: "main"
     message: "DB persistence refactor verified at backend level. Please run a FULL-STACK regression: frontend flows over the real preview URL - login, home, solo game (bidding+play a few cards), private room create/invite/start, duo vs AI invite flow between tester1 and tester2 (host must land in game - previous P0 bug), matchmaking queue UI, tutorial mode with coach hints, rejoin flow (/games/current). tester1@belote.tn / tester2@belote.tn / Belote123!."
+
+frontend:
+  - task: "Landscape orientation for the entire app (app.json landscape + expo-screen-orientation lock + web RotateGate overlay when portrait), home 2x2 grid (Play online / Play vs AI / Learn / Private game with join+create modal), landscape game table (bottom row: my seat + chat | hand fan | turn pill + last trick), compact bidding panel, 2-column room and auth screens, compacted matchmaking, centered list screens"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/app.json, app/_layout.tsx, src/components/RotateGate.tsx, app/(tabs)/home.tsx, app/game/[id].tsx, src/components/game/HandFan.tsx, BiddingPanel.tsx, HandEndModal.tsx, DealAnimation.tsx, TrickArea.tsx, app/room/[code].tsx, app/auth.tsx, app/matchmaking.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Full landscape refactor done. Main agent smoke-tested at 844x390: auth 2-col OK, home grid 2x2 all 4 boxes visible OK, private modal OK, solo game table with bidding OK (hand fan fully visible, card bottom=387.7<390), room 2-col OK, tutorial OK. Needs full flow regression."
+
+agent_communication:
+  - agent: "main"
+    message: "App switched to LANDSCAPE everywhere per user request. Test all frontend flows at 844x390 viewport (landscape phone). Note the web RotateGate overlay appears if viewport is portrait - always use landscape viewport. testIDs changed: private game box is 'private-game-card' opening a modal containing 'join-code-input'+'join-room-button'+'create-party-button'. Chat button and last-trick button are now in the bottom row next to the hand fan."

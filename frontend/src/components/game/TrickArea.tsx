@@ -26,11 +26,12 @@ const OFFSETS = [
 const ROTATIONS_DEG = [-2, -7, 3, 7];
 
 // where the collected pile flies to (toward the winner's seat, off the table)
+// landscape table: shorter vertical throws, longer horizontal ones
 const COLLECT_TARGETS = [
-  { x: 0, y: 260 },
-  { x: -280, y: 0 },
-  { x: 0, y: -250 },
-  { x: 280, y: 0 },
+  { x: 0, y: 150 },
+  { x: -320, y: 0 },
+  { x: 0, y: -150 },
+  { x: 320, y: 0 },
 ];
 
 const makeEnter = (dx: number, dy: number) => {

@@ -88,8 +88,11 @@ export default function ProfileScreen() {
     <View style={styles.container} testID="profile-screen">
       <ScrollView
         contentContainerStyle={{
-          paddingTop: insets.top + SP.lg,
-          paddingBottom: SP.xxl,
+          paddingTop: insets.top + SP.md,
+          paddingBottom: SP.xl,
+          maxWidth: 760,
+          width: "100%",
+          alignSelf: "center",
         }}
         showsVerticalScrollIndicator={false}
       >

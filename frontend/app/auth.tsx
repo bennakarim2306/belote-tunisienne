@@ -89,33 +89,37 @@ export default function AuthScreen() {
       <KeyboardAwareScrollView
         contentContainerStyle={[
           styles.scroll,
-          { paddingTop: insets.top + SP.xl, paddingBottom: insets.bottom + SP.xl },
+          { paddingTop: insets.top + SP.md, paddingBottom: insets.bottom + SP.lg },
         ]}
         bottomOffset={24}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.langRow}>
-          {(["fr", "ar", "en"] as const).map((l) => (
-            <Pressable
-              key={l}
-              testID={`lang-${l}-chip`}
-              onPress={() => setLang(l)}
-              style={[styles.langChip, lang === l && styles.langChipActive]}
-            >
-              <Text style={[styles.langText, lang === l && styles.langTextActive]}>
-                {l === "fr" ? "FR" : l === "ar" ? "عربي" : "EN"}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
+        <View style={styles.columns}>
+          <View style={styles.colLeft}>
+            <View style={styles.langRow}>
+              {(["fr", "ar", "en"] as const).map((l) => (
+                <Pressable
+                  key={l}
+                  testID={`lang-${l}-chip`}
+                  onPress={() => setLang(l)}
+                  style={[styles.langChip, lang === l && styles.langChipActive]}
+                >
+                  <Text style={[styles.langText, lang === l && styles.langTextActive]}>
+                    {l === "fr" ? "FR" : l === "ar" ? "عربي" : "EN"}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
 
-        <View style={styles.header}>
-          <Text style={styles.suits}>♠ ♥ ♦ ♣</Text>
-          <Text style={styles.title}>{t("appName")}</Text>
-          <Text style={styles.titleAr}>{t("appNameAr")}</Text>
-          <Text style={styles.tagline}>{t("tagline")}</Text>
-        </View>
+            <View style={styles.header}>
+              <Text style={styles.suits}>♠ ♥ ♦ ♣</Text>
+              <Text style={styles.title}>{t("appName")}</Text>
+              <Text style={styles.titleAr}>{t("appNameAr")}</Text>
+              <Text style={styles.tagline}>{t("tagline")}</Text>
+            </View>
+          </View>
 
+          <View style={styles.colRight}>
         <View style={styles.card}>
           <View style={styles.segment}>
             <Pressable
@@ -207,6 +211,8 @@ export default function AuthScreen() {
             )}
           </Pressable>
         </View>
+          </View>
+        </View>
       </KeyboardAwareScrollView>
     </ImageBackground>
   );
@@ -214,8 +220,18 @@ export default function AuthScreen() {
 
 const styles = StyleSheet.create({
   bg: { flex: 1, backgroundColor: C.bg },
-  scroll: { flexGrow: 1, paddingHorizontal: SP.xl },
-  langRow: { flexDirection: "row", justifyContent: "flex-end", gap: SP.sm },
+  scroll: { flexGrow: 1, paddingHorizontal: SP.xl, justifyContent: "center" },
+  columns: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: SP.xxl,
+    maxWidth: 880,
+    width: "100%",
+    alignSelf: "center",
+  },
+  colLeft: { flex: 1, alignItems: "center" },
+  colRight: { flex: 1.1, maxWidth: 440 },
+  langRow: { flexDirection: "row", justifyContent: "center", gap: SP.sm },
   langChip: {
     paddingHorizontal: SP.lg,
     height: 36,
@@ -230,9 +246,9 @@ const styles = StyleSheet.create({
   langChipActive: { backgroundColor: C.brand, borderColor: C.brand },
   langText: { fontFamily: F.bold, fontSize: 13, color: C.ink2 },
   langTextActive: { color: C.onBrand },
-  header: { alignItems: "center", marginTop: SP.xl, marginBottom: SP.xl },
-  suits: { fontSize: 26, color: C.brand, letterSpacing: 6, marginBottom: SP.sm },
-  title: { fontFamily: F.display, fontSize: 38, color: C.ink, textAlign: "center" },
+  header: { alignItems: "center", marginTop: SP.lg },
+  suits: { fontSize: 24, color: C.brand, letterSpacing: 6, marginBottom: SP.sm },
+  title: { fontFamily: F.display, fontSize: 34, color: C.ink, textAlign: "center" },
   titleAr: { fontFamily: F.bold, fontSize: 20, color: C.brand, marginTop: 2 },
   tagline: {
     fontFamily: F.text,

@@ -69,7 +69,7 @@ export default function TutorialIndexScreen() {
       </View>
 
       <ScrollView
-        contentContainerStyle={{ padding: SP.xl, paddingBottom: insets.bottom + SP.xxl }}
+        contentContainerStyle={{ padding: SP.xl, paddingBottom: insets.bottom + SP.xl, maxWidth: 760, width: "100%", alignSelf: "center" }}
         showsVerticalScrollIndicator={false}
       >
         {LESSONS.map((lesson, i) => {

@@ -12,13 +12,11 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { KeyboardEvents } from "react-native-keyboard-controller";
 import Animated, {
   Easing,
   FadeInDown,
   FadeInUp,
   FadeOut,
-  LinearTransition,
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
@@ -75,7 +73,7 @@ export default function HomeScreen() {
   const [joinError, setJoinError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
-  const [codeFocused, setCodeFocused] = useState(false);
+  const [privateOpen, setPrivateOpen] = useState(false);
   const [currentGame, setCurrentGame] = useState<CurrentGame | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -86,14 +84,6 @@ export default function HomeScreen() {
       setDuoPartner(null);
     }
   }, [typeModal]);
-
-  // when the keyboard closes (back button / done), restore the full layout
-  useEffect(() => {
-    const sub = KeyboardEvents.addListener("keyboardDidHide", () =>
-      setCodeFocused(false),
-    );
-    return () => sub.remove();
-  }, []);
 
   useFocusEffect(
     useCallback(() => {
@@ -189,6 +179,7 @@ export default function HomeScreen() {
     try {
       await api.post(`/rooms/${code}/join`);
       setJoinCode("");
+      setPrivateOpen(false);
       router.push({ pathname: "/room/[code]", params: { code } });
     } catch (e) {
       setJoinError(e instanceof ApiError && e.detail === "room_full"
@@ -246,7 +237,7 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container} testID="home-screen">
-      <View style={[styles.header, { paddingTop: insets.top + SP.md }]}>
+      <View style={[styles.header, { paddingTop: insets.top + SP.sm }]}>
         <View style={styles.headerRow}>
           <Avatar avatarId={user?.avatar_id} size={46} testID="home-user-avatar" />
           <View style={{ flex: 1, marginHorizontal: SP.md }}>
@@ -276,13 +267,13 @@ export default function HomeScreen() {
       </View>
 
       <ScrollView
-        contentContainerStyle={{ padding: SP.lg, paddingTop: SP.md, paddingBottom: SP.lg }}
+        contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        {currentGame && !codeFocused && (
+        {currentGame && (
           <Animated.View entering={FadeInDown} exiting={FadeOut.duration(120)} style={styles.resumeBanner} testID="resume-game-banner">
-            <Ionicons name="play-circle" size={32} color={C.brand} />
+            <Ionicons name="play-circle" size={26} color={C.brand} />
             <View style={{ flex: 1, minWidth: 0, marginLeft: SP.md }}>
               <Text style={styles.resumeTitle}>{t("resumeGame")}</Text>
               <Text style={styles.resumeDesc} numberOfLines={1}>
@@ -303,7 +294,7 @@ export default function HomeScreen() {
           </Animated.View>
         )}
 
-        {!codeFocused && invites.map((inv) => (
+        {invites.map((inv) => (
           <Animated.View key={inv.invite_id} entering={FadeInDown} exiting={FadeOut.duration(120)} style={styles.inviteBanner}>
             <Avatar avatarId={inv.from_user.avatar_id} size={36} />
             <Text style={styles.inviteText} numberOfLines={2}>
@@ -326,7 +317,7 @@ export default function HomeScreen() {
           </Animated.View>
         ))}
 
-        {!codeFocused && duoInvites.map((inv) => (
+        {duoInvites.map((inv) => (
           <Animated.View
             key={inv.invite_id}
             entering={FadeInDown}
@@ -356,13 +347,14 @@ export default function HomeScreen() {
           </Animated.View>
         ))}
 
-        {!codeFocused && (
-          <Animated.View entering={FadeInUp.delay(50)} exiting={FadeOut.duration(120)}>
+        {/* 2×2 landscape grid: the 4 game modes, all visible at once */}
+        <View style={styles.grid} testID="home-grid">
+          <Animated.View entering={FadeInUp.delay(40)} style={styles.gridItem}>
             <Animated.View style={[styles.heroGlow, heroGlowStyle]}>
               <Pressable
                 testID="play-online-card"
                 onPress={() => setTypeModal("online")}
-                style={({ pressed }) => [styles.bigCard, styles.onlineCard, pressed && styles.pressed]}
+                style={({ pressed }) => [styles.gridCard, styles.onlineCard, pressed && styles.pressed]}
               >
                 <LinearGradient
                   colors={[C.felt, C.feltDark]}
@@ -370,96 +362,96 @@ export default function HomeScreen() {
                   end={{ x: 1, y: 1 }}
                   style={StyleSheet.absoluteFill}
                 />
-                <View style={styles.cardRow}>
-                  <View style={styles.bigCardIcon}>
-                    <Ionicons name="globe" size={26} color={C.cream} />
-                  </View>
-                  <View style={styles.cardRowText}>
-                    <Text style={[styles.bigCardTitle, { color: C.cream }]}>{t("playOnline")}</Text>
-                    <Text style={styles.bigCardDesc} numberOfLines={2}>
-                      {t("playOnlineDesc")}
-                    </Text>
-                  </View>
+                <View style={styles.gridIcon}>
+                  <Ionicons name="globe" size={22} color={C.cream} />
+                </View>
+                <View style={styles.gridTextWrap}>
+                  <Text style={[styles.gridTitle, { color: C.cream }]} numberOfLines={1}>
+                    {t("playOnline")}
+                  </Text>
+                  <Text style={styles.gridDesc} numberOfLines={2}>
+                    {t("playOnlineDesc")}
+                  </Text>
                 </View>
                 <Text style={styles.cardSuits}>♠ ♥ ♦ ♣</Text>
               </Pressable>
             </Animated.View>
           </Animated.View>
-        )}
 
-        {!codeFocused && (
-          <Animated.View entering={FadeInUp.delay(85)} exiting={FadeOut.duration(120)}>
+          <Animated.View entering={FadeInUp.delay(70)} style={styles.gridItem}>
             <Pressable
               testID="play-solo-card"
               onPress={() => setTypeModal("solo")}
-              style={({ pressed }) => [styles.bigCard, styles.soloCard, pressed && styles.pressed]}
+              style={({ pressed }) => [styles.gridCard, styles.soloCard, pressed && styles.pressed]}
             >
-              <View style={styles.cardRow}>
-                <View style={[styles.bigCardIcon, { backgroundColor: C.brand2 }]}>
-                  <Ionicons name="game-controller" size={24} color={C.onBrand} />
-                </View>
-                <View style={styles.cardRowText}>
-                  <Text style={[styles.bigCardTitle, { color: C.ink }]}>
-                    {t("playVsAI")}
-                  </Text>
-                  <Text style={[styles.bigCardDesc, { color: C.ink2 }]} numberOfLines={2}>
-                    {t("playVsAIDesc")}
-                  </Text>
-                </View>
-                <View style={styles.trainingBadge}>
-                  <Text style={styles.trainingBadgeText}>{t("trainingBadge")}</Text>
-                </View>
+              <View style={[styles.gridIcon, { backgroundColor: C.brand2 }]}>
+                <Ionicons name="game-controller" size={22} color={C.onBrand} />
+              </View>
+              <View style={styles.gridTextWrap}>
+                <Text style={[styles.gridTitle, { color: C.ink }]} numberOfLines={1}>
+                  {t("playVsAI")}
+                </Text>
+                <Text style={[styles.gridDesc, { color: C.ink2 }]} numberOfLines={2}>
+                  {t("playVsAIDesc")}
+                </Text>
+              </View>
+              <View style={styles.trainingBadge}>
+                <Text style={styles.trainingBadgeText}>{t("trainingBadge")}</Text>
               </View>
             </Pressable>
           </Animated.View>
-        )}
 
-        {!codeFocused && (
-          <Animated.View entering={FadeInUp.delay(100)} exiting={FadeOut.duration(120)}>
+          <Animated.View entering={FadeInUp.delay(100)} style={styles.gridItem}>
             <Pressable
               testID="learn-card"
               onPress={() => router.push("/tutorial")}
-              style={({ pressed }) => [styles.learnCard, pressed && styles.pressed]}
+              style={({ pressed }) => [styles.gridCard, styles.learnCard, pressed && styles.pressed]}
             >
-              <View style={styles.learnIcon}>
+              <View style={[styles.gridIcon, { backgroundColor: "rgba(255,190,60,0.14)" }]}>
                 <Ionicons name="school" size={22} color={C.gold} />
               </View>
-              <View style={{ flex: 1, minWidth: 0 }}>
-                <Text style={styles.learnTitle}>{t("tutorialTitle")}</Text>
-                <Text style={styles.learnDesc} numberOfLines={1}>
+              <View style={styles.gridTextWrap}>
+                <Text style={[styles.gridTitle, { color: C.ink }]} numberOfLines={1}>
+                  {t("tutorialTitle")}
+                </Text>
+                <Text style={[styles.gridDesc, { color: C.ink2 }]} numberOfLines={2}>
                   {t("tutorialDesc")}
                 </Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color={C.ink3} />
             </Pressable>
           </Animated.View>
-        )}
 
-        <Animated.View
-          entering={FadeInUp.delay(120)}
-          layout={LinearTransition.duration(180)}
-        >
-          <View style={[styles.bigCard, styles.privateCard]}>
-            <View style={styles.cardRow}>
-              <View style={[styles.bigCardIcon, { backgroundColor: C.brand2 }]}>
-                <Ionicons name="people" size={24} color={C.onBrand} />
+          <Animated.View entering={FadeInUp.delay(130)} style={styles.gridItem}>
+            <Pressable
+              testID="private-game-card"
+              onPress={() => {
+                setJoinError(null);
+                setPrivateOpen(true);
+              }}
+              style={({ pressed }) => [styles.gridCard, styles.privateCard, pressed && styles.pressed]}
+            >
+              <View style={[styles.gridIcon, { backgroundColor: C.brand2 }]}>
+                <Ionicons name="people" size={22} color={C.onBrand} />
               </View>
-              <View style={styles.cardRowText}>
-                <Text style={[styles.bigCardTitle, { color: C.ink }]}>{t("privateParty")}</Text>
-                <Text style={[styles.bigCardDesc, { color: C.ink2 }]} numberOfLines={2}>
+              <View style={styles.gridTextWrap}>
+                <Text style={[styles.gridTitle, { color: C.ink }]} numberOfLines={1}>
+                  {t("privateParty")}
+                </Text>
+                <Text style={[styles.gridDesc, { color: C.ink2 }]} numberOfLines={2}>
                   {t("privatePartyDesc")}
                 </Text>
               </View>
-            </View>
+            </Pressable>
+          </Animated.View>
+        </View>
+      </ScrollView>
 
-            <ChunkyButton
-              testID="create-party-button"
-              label={t("createParty")}
-              onPress={() => setTypeModal("create")}
-              loading={busy}
-              style={{ marginTop: SP.md }}
-            />
-
+      {/* private game: join by code or create */}
+      <Modal visible={privateOpen} transparent animationType="fade">
+        <Pressable style={styles.modalScrim} onPress={() => setPrivateOpen(false)}>
+          <Pressable style={styles.modalSheet} onPress={() => {}} testID="private-game-modal">
+            <View style={styles.sheetHandle} />
+            <Text style={styles.modalTitle}>{t("privateParty")}</Text>
             <View style={styles.joinRow}>
               <TextInput
                 testID="join-code-input"
@@ -470,8 +462,6 @@ export default function HomeScreen() {
                 onChangeText={(v) => setJoinCode(v.toUpperCase())}
                 autoCapitalize="characters"
                 maxLength={6}
-                onFocus={() => setCodeFocused(true)}
-                onBlur={() => setCodeFocused(false)}
                 returnKeyType="go"
                 onSubmitEditing={joinRoom}
               />
@@ -488,16 +478,26 @@ export default function HomeScreen() {
                 {joinError}
               </Text>
             )}
-          </View>
-        </Animated.View>
-      </ScrollView>
+            <ChunkyButton
+              testID="create-party-button"
+              label={t("createParty")}
+              onPress={() => {
+                setPrivateOpen(false);
+                setTypeModal("create");
+              }}
+              loading={busy}
+              style={{ marginTop: SP.md }}
+            />
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       <Modal visible={notifOpen} transparent animationType="slide">
         <Pressable style={styles.modalScrim} onPress={() => setNotifOpen(false)}>
           <Pressable style={styles.modalSheet} onPress={() => {}} testID="notifications-panel">
             <View style={styles.sheetHandle} />
             <Text style={styles.modalTitle}>{t("notifications")}</Text>
-            <ScrollView style={{ maxHeight: 420 }}>
+            <ScrollView style={{ maxHeight: 250 }}>
               {notifCount === 0 && (
                 <Text style={styles.notifEmpty}>{t("noNotifications")}</Text>
               )}
@@ -703,7 +703,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: C.border,
     paddingHorizontal: SP.lg,
-    paddingBottom: SP.md,
+    paddingBottom: SP.sm,
   },
   headerRow: { flexDirection: "row", alignItems: "center" },
   hello: { fontFamily: F.text, fontSize: 13, color: C.ink3 },
@@ -793,7 +793,8 @@ const styles = StyleSheet.create({
     borderRadius: R.md,
     borderWidth: 1.5,
     borderColor: C.brand,
-    padding: SP.md,
+    paddingHorizontal: SP.md,
+    paddingVertical: SP.sm,
     marginBottom: SP.md,
   },
   resumeTitle: { fontFamily: F.display, fontSize: 15, color: C.ink },
@@ -817,84 +818,86 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   inviteJoinText: { fontFamily: F.display, color: C.onBrand, fontSize: 13 },
-  bigCard: {
+  scrollContent: {
+    paddingHorizontal: SP.lg,
+    paddingTop: SP.sm,
+    paddingBottom: SP.sm,
+    maxWidth: 860,
+    width: "100%",
+    alignSelf: "center",
+  },
+  grid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: SP.sm,
+  },
+  gridItem: { flexBasis: "48%", flexGrow: 1 },
+  gridCard: {
     borderRadius: R.lg,
-    padding: SP.lg,
-    marginBottom: SP.md,
+    padding: SP.md,
+    minHeight: 88,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: SP.md,
     ...shadow,
   },
   heroGlow: {
     borderRadius: R.lg,
     borderWidth: 1.5,
-    marginBottom: SP.md,
     shadowColor: C.brand,
     shadowOffset: { width: 0, height: 0 },
     shadowRadius: 18,
     elevation: 10,
   },
-  onlineCard: { backgroundColor: C.felt, overflow: "hidden", marginBottom: 0 },
+  onlineCard: { backgroundColor: C.felt, overflow: "hidden" },
   privateCard: { backgroundColor: C.card, borderWidth: 1, borderColor: C.border },
   soloCard: {
     backgroundColor: C.bg3,
     borderWidth: 1,
     borderColor: C.brand3,
   },
-  cardRow: { flexDirection: "row", alignItems: "center" },
-  cardRowText: { flex: 1, marginLeft: SP.md },
-  trainingBadge: {
-    backgroundColor: C.gold,
-    borderRadius: R.pill,
-    paddingHorizontal: SP.md,
-    paddingVertical: 4,
-    flexShrink: 0,
-  },
-  trainingBadgeText: { fontFamily: F.bold, fontSize: 11, color: "#1A1200" },
-  pressed: { transform: [{ scale: 0.98 }], opacity: 0.92 },
   learnCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: SP.md,
     backgroundColor: C.card,
-    borderRadius: R.md,
     borderWidth: 1,
     borderColor: "rgba(255,190,60,0.35)",
-    padding: SP.md,
-    marginBottom: SP.md,
   },
-  learnIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: "rgba(255,190,60,0.12)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  learnTitle: { fontFamily: F.display, fontSize: 16, color: C.ink },
-  learnDesc: { fontFamily: F.text, fontSize: 12.5, color: C.ink2, marginTop: 1 },
-  bigCardIcon: {
-    width: 46,
-    height: 46,
-    borderRadius: 15,
+  gridIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
     backgroundColor: "rgba(255,255,255,0.18)",
     alignItems: "center",
     justifyContent: "center",
+    flexShrink: 0,
   },
-  bigCardTitle: { fontFamily: F.display, fontSize: 19, color: C.onBrand },
-  bigCardDesc: {
+  gridTextWrap: { flex: 1, minWidth: 0 },
+  gridTitle: { fontFamily: F.display, fontSize: 16.5, color: C.onBrand },
+  gridDesc: {
     fontFamily: F.text,
-    fontSize: 12.5,
+    fontSize: 11.5,
     color: "rgba(255,255,255,0.85)",
     marginTop: 2,
   },
+  trainingBadge: {
+    position: "absolute",
+    top: SP.sm,
+    right: SP.sm,
+    backgroundColor: C.gold,
+    borderRadius: R.pill,
+    paddingHorizontal: SP.sm,
+    paddingVertical: 2,
+  },
+  trainingBadgeText: { fontFamily: F.bold, fontSize: 10, color: "#1A1200" },
+  pressed: { transform: [{ scale: 0.98 }], opacity: 0.92 },
   cardSuits: {
     position: "absolute",
     right: SP.md,
     top: SP.sm,
     color: "rgba(255,255,255,0.35)",
-    fontSize: 13,
+    fontSize: 12,
     letterSpacing: 2,
   },
-  joinRow: { flexDirection: "row", gap: SP.sm, marginTop: SP.md },
+  joinRow: { flexDirection: "row", gap: SP.sm },
   joinInput: {
     flex: 1,
     minWidth: 0,
@@ -946,7 +949,10 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: R.lg,
     borderTopRightRadius: R.lg,
     padding: SP.xl,
-    paddingBottom: SP.xxl,
+    paddingBottom: SP.xl,
+    width: "100%",
+    maxWidth: 560,
+    alignSelf: "center",
   },
   sheetHandle: {
     width: 44,

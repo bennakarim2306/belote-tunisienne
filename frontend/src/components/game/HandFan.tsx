@@ -56,8 +56,8 @@ export default function HandFan({ hand, legal, myTurn, trump, onPlay, coachCard 
   if (n === 0) return <View style={styles.row} />;
 
   const overlap = 0.55;
-  const maxW = Math.min(width - 24, 560);
-  const cardW = Math.min(76, maxW / (1 + (n - 1) * overlap));
+  const maxW = Math.min(width * 0.55, 560);
+  const cardW = Math.min(60, maxW / (1 + (n - 1) * overlap));
   const mid = (n - 1) / 2;
 
   const play = (card: string) => {
@@ -73,8 +73,8 @@ export default function HandFan({ hand, legal, myTurn, trump, onPlay, coachCard 
       {hand.map((card, i) => {
         const playable = myTurn && legal.includes(card);
         const isCoach = playable && coachCard === card;
-        const rot = (i - mid) * 2.5;
-        const lift = Math.abs(i - mid) * Math.abs(i - mid) * 1.1;
+        const rot = (i - mid) * 2.2;
+        const lift = Math.abs(i - mid) * Math.abs(i - mid) * 0.5;
         const cardEl = (
           <PlayingCard
             card={card}
@@ -127,8 +127,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-end",
     justifyContent: "center",
-    minHeight: 126,
-    paddingTop: 14,
-    paddingBottom: 10,
+    minHeight: 92,
+    paddingTop: 6,
+    paddingBottom: 4,
   },
 });

@@ -3,7 +3,7 @@
     "name": "Belote Tunisienne",
     "slug": "frontend",
     "version": "1.0.0",
-    "orientation": "portrait",
+    "orientation": "landscape",
     "icon": "./assets/images/icon.png",
     "scheme": "belotetn",
     "userInterfaceStyle": "automatic",

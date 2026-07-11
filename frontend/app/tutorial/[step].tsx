@@ -111,7 +111,7 @@ export default function LessonScreen() {
       </View>
 
       <ScrollView
-        contentContainerStyle={{ padding: SP.xl, paddingBottom: SP.xxl }}
+        contentContainerStyle={{ padding: SP.xl, paddingBottom: SP.xl, maxWidth: 760, width: "100%", alignSelf: "center" }}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.iconWrap}>

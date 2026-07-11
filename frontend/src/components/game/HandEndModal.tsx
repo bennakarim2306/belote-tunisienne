@@ -147,7 +147,8 @@ export function HandEndModal({
             testID="hand-continue-button"
             label={total > 1 ? `${t("continueBtn")} (${readyCount}/${total})` : t("continueBtn")}
             onPress={onReady}
-            style={{ marginTop: SP.lg }}
+            small
+            style={{ marginTop: SP.md }}
           />
         ) : total > 1 ? (
           <Text style={styles.waitingReady} testID="hand-waiting-others">
@@ -258,7 +259,8 @@ export function MatchEndOverlay({
           testID="back-home-button"
           label={t("backHome")}
           onPress={onHome}
-          style={{ marginTop: SP.lg }}
+          small
+          style={{ marginTop: SP.md }}
         />
       </Animated.View>
       {won && <VictoryCelebration />}
@@ -276,14 +278,15 @@ const styles = StyleSheet.create({
   },
   card: {
     width: "100%",
-    maxWidth: 420,
+    maxWidth: 460,
+    maxHeight: "96%",
     backgroundColor: C.bg,
     borderRadius: R.lg,
-    padding: SP.xl,
+    padding: SP.lg,
   },
   contractLine: {
     fontFamily: F.display,
-    fontSize: 17,
+    fontSize: 15,
     color: C.ink,
     textAlign: "center",
   },
@@ -295,12 +298,12 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     borderRadius: R.pill,
     paddingHorizontal: SP.lg,
-    height: 36,
-    marginTop: SP.md,
+    height: 30,
+    marginTop: SP.sm,
   },
-  resultBadgeText: { fontFamily: F.display, fontSize: 14, color: C.cream },
-  scoreTable: { marginTop: SP.lg },
-  scoreHeaderRow: { flexDirection: "row", marginBottom: SP.sm },
+  resultBadgeText: { fontFamily: F.display, fontSize: 13, color: C.cream },
+  scoreTable: { marginTop: SP.sm },
+  scoreHeaderRow: { flexDirection: "row", marginBottom: SP.xs },
   scoreHeaderCell: { flex: 1 },
   teamName: {
     fontFamily: F.display,
@@ -310,7 +313,7 @@ const styles = StyleSheet.create({
   },
   scoreRow: {
     flexDirection: "row",
-    paddingVertical: 7,
+    paddingVertical: 5,
     borderTopWidth: 1,
     borderTopColor: C.border,
     alignItems: "center",
@@ -327,28 +330,28 @@ const styles = StyleSheet.create({
   scoreCellFinal: { fontSize: 18, color: C.brand },
   countdown: {
     fontFamily: F.bold,
-    fontSize: 13,
+    fontSize: 12,
     color: C.ink3,
     textAlign: "center",
-    marginTop: SP.lg,
+    marginTop: SP.sm,
   },
   waitingReady: {
     fontFamily: F.display,
     fontSize: 14,
     color: C.brand,
     textAlign: "center",
-    marginTop: SP.lg,
+    marginTop: SP.md,
   },
   victoryText: {
     fontFamily: F.display,
-    fontSize: 32,
+    fontSize: 26,
     textAlign: "center",
-    marginTop: SP.sm,
+    marginTop: SP.xs,
   },
   trophyGlow: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
+    width: 76,
+    height: 76,
+    borderRadius: 38,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "rgba(0,229,122,0.10)",
@@ -362,14 +365,14 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: C.ink3,
     textAlign: "center",
-    marginTop: SP.md,
+    marginTop: SP.sm,
   },
   finalScore: {
     fontFamily: F.display,
-    fontSize: 22,
+    fontSize: 20,
     color: C.ink,
     textAlign: "center",
-    marginTop: 4,
+    marginTop: 2,
   },
   eloDelta: {
     flexDirection: "row",
@@ -379,8 +382,8 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     borderRadius: R.pill,
     paddingHorizontal: SP.lg,
-    height: 38,
-    marginTop: SP.md,
+    height: 34,
+    marginTop: SP.sm,
   },
-  eloDeltaText: { fontFamily: F.extra, fontSize: 16 },
+  eloDeltaText: { fontFamily: F.extra, fontSize: 15 },
 });

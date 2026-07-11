@@ -35,9 +35,9 @@ function TabsInner() {
           backgroundColor: C.card,
           borderTopWidth: 1,
           borderTopColor: C.border,
-          height: 60 + insets.bottom,
-          paddingTop: 6,
-          paddingBottom: Math.max(insets.bottom, 8),
+          height: 52 + insets.bottom,
+          paddingTop: 4,
+          paddingBottom: Math.max(insets.bottom, 4),
         },
         tabBarLabelStyle: { fontFamily: F.bold, fontSize: 11 },
         tabBarBadgeStyle: {

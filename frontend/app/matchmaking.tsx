@@ -264,8 +264,13 @@ export default function MatchmakingScreen() {
           testID="cancel-search-button"
           label={t("cancelSearch")}
           variant="secondary"
+          small
           onPress={cancel}
-          style={{ marginHorizontal: SP.xl, marginBottom: insets.bottom + SP.xl }}
+          style={{
+            alignSelf: "center",
+            minWidth: 260,
+            marginBottom: insets.bottom + SP.md,
+          }}
         />
       )}
     </View>
@@ -275,13 +280,13 @@ export default function MatchmakingScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.feltDark },
   center: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: SP.lg },
-  cardsRow: { flexDirection: "row", marginBottom: SP.lg },
-  title: { fontFamily: F.display, fontSize: 22, color: C.cream },
-  counter: { fontFamily: F.extra, fontSize: 30, color: C.gold, marginTop: SP.xs },
+  cardsRow: { flexDirection: "row", marginBottom: SP.sm },
+  title: { fontFamily: F.display, fontSize: 20, color: C.cream },
+  counter: { fontFamily: F.extra, fontSize: 24, color: C.gold, marginTop: 2 },
   slotsRow: {
     flexDirection: "row",
     gap: SP.md,
-    marginTop: SP.xl,
+    marginTop: SP.md,
     justifyContent: "center",
   },
   slot: { alignItems: "center", width: 74 },
@@ -324,15 +329,15 @@ const styles = StyleSheet.create({
     borderRadius: R.pill,
     paddingHorizontal: SP.lg,
     height: 32,
-    marginTop: SP.xl,
+    marginTop: SP.md,
   },
   rangeText: { fontFamily: F.bold, fontSize: 12.5, color: C.cream },
-  timer: { fontFamily: F.extra, fontSize: 26, color: C.cream, marginTop: SP.md, opacity: 0.85 },
+  timer: { fontFamily: F.extra, fontSize: 20, color: C.cream, marginTop: SP.sm, opacity: 0.85 },
   hint: {
     fontFamily: F.text,
-    fontSize: 13,
+    fontSize: 12,
     color: "rgba(255,255,255,0.7)",
-    marginTop: SP.sm,
+    marginTop: SP.xs,
     textAlign: "center",
     paddingHorizontal: SP.xl,
   },

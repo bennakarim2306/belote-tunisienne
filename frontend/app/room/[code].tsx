@@ -159,113 +159,119 @@ export default function RoomScreen() {
           <ChunkyButton label={t("backHome")} onPress={() => router.back()} />
         </View>
       ) : (
-        <ScrollView contentContainerStyle={{ padding: SP.lg, paddingBottom: SP.xxl }}>
-          <View style={styles.codeCard}>
-            <Text style={styles.codeLabel}>{t("roomCode")}</Text>
-            <Text style={styles.code} testID="room-code-text">
-              {code}
-            </Text>
-            <Pressable
-              onPress={() => setShareOpen(true)}
-              style={styles.shareBtn}
-              testID="share-code-button"
-            >
-              <Ionicons name="share-social" size={16} color={C.brand} />
-              <Text style={styles.shareText}>{t("shareCode")}</Text>
-            </Pressable>
-          </View>
-
-          <ShareSheet
-            visible={shareOpen}
-            onClose={() => setShareOpen(false)}
-            title={t("shareCode")}
-            message={t("shareRoomMsg", { code: code ?? "", link: roomLink(code ?? "") })}
-            url={roomLink(code ?? "")}
-          />
-
-          <View style={styles.matchTypeChip}>
-            <Ionicons
-              name={room?.match_type === "long" ? "hourglass" : "flash"}
-              size={14}
-              color={C.brand}
-            />
-            <Text style={styles.matchTypeText}>
-              {room?.match_type === "long" ? t("longMatch") : t("shortMatch")} ·{" "}
-              {t("pointsTarget", { n: room?.match_type === "long" ? 2000 : 1000 })}
-              {" · "}
-              {room?.turn_timer ? t("timerOn") : `${t("timerSetting")}: ${t("timerOff")}`}
-            </Text>
-          </View>
-
-          <Text style={styles.sectionTitle}>{t("players")}</Text>
-          <View style={styles.seatsGrid}>
-            {seats.map((p, i) => (
-              <Pressable
-                key={i}
-                style={[styles.seat, !p && styles.seatFree]}
-                testID={`room-seat-${i}`}
-                onPress={() => onSeatPress(i, !!p)}
-                disabled={!!p}
-              >
-                {p ? (
-                  <>
-                    <Avatar avatarId={p.avatar_id} size={52} />
-                    <Text style={styles.seatName} numberOfLines={1}>
-                      {p.username}
-                      {p.user_id === user?.user_id ? ` (${t("you")})` : ""}
-                    </Text>
-                    {p.user_id === room?.host_id && (
-                      <View style={styles.hostBadge}>
-                        <Ionicons name="star" size={10} color={C.gold} />
-                        <Text style={styles.hostText}>{t("host")}</Text>
-                      </View>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    <View style={styles.emptySeatCircle}>
-                      <Ionicons name="hand-left" size={22} color={C.brand} />
-                    </View>
-                    <Text style={styles.sitHereText}>{t("sitHere")}</Text>
-                  </>
-                )}
-                <View
-                  style={[
-                    styles.teamTag,
-                    { backgroundColor: i % 2 === 0 ? C.brand3 : C.bg3 },
-                  ]}
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          <View style={styles.columns}>
+            <View style={styles.colLeft}>
+              <View style={styles.codeCard}>
+                <Text style={styles.codeLabel}>{t("roomCode")}</Text>
+                <Text style={styles.code} testID="room-code-text">
+                  {code}
+                </Text>
+                <Pressable
+                  onPress={() => setShareOpen(true)}
+                  style={styles.shareBtn}
+                  testID="share-code-button"
                 >
-                  <Text style={styles.teamTagText}>
-                    {t("team")} {i % 2 === 0 ? "1" : "2"}
-                  </Text>
-                </View>
-              </Pressable>
-            ))}
+                  <Ionicons name="share-social" size={16} color={C.brand} />
+                  <Text style={styles.shareText}>{t("shareCode")}</Text>
+                </Pressable>
+              </View>
+
+              <View style={styles.matchTypeChip}>
+                <Ionicons
+                  name={room?.match_type === "long" ? "hourglass" : "flash"}
+                  size={14}
+                  color={C.brand}
+                />
+                <Text style={styles.matchTypeText}>
+                  {room?.match_type === "long" ? t("longMatch") : t("shortMatch")} ·{" "}
+                  {t("pointsTarget", { n: room?.match_type === "long" ? 2000 : 1000 })}
+                  {" · "}
+                  {room?.turn_timer ? t("timerOn") : `${t("timerSetting")}: ${t("timerOff")}`}
+                </Text>
+              </View>
+
+              <ChunkyButton
+                testID="invite-friends-button"
+                label={t("inviteFriends")}
+                variant="secondary"
+                onPress={() => openInvite(null)}
+                icon={<Ionicons name="person-add" size={18} color={C.ink} />}
+                style={{ marginTop: SP.lg }}
+              />
+
+              {isHost ? (
+                <ChunkyButton
+                  testID="start-game-button"
+                  label={t("startGame")}
+                  onPress={start}
+                  loading={starting}
+                  style={{ marginTop: SP.md }}
+                />
+              ) : (
+                <Text style={styles.waitingHost}>{t("waitingHost")}</Text>
+              )}
+            </View>
+
+            <View style={styles.colRight}>
+              <Text style={styles.sectionTitle}>{t("players")}</Text>
+              <View style={styles.seatsGrid}>
+                {seats.map((p, i) => (
+                  <Pressable
+                    key={i}
+                    style={[styles.seat, !p && styles.seatFree]}
+                    testID={`room-seat-${i}`}
+                    onPress={() => onSeatPress(i, !!p)}
+                    disabled={!!p}
+                  >
+                    {p ? (
+                      <>
+                        <Avatar avatarId={p.avatar_id} size={44} />
+                        <Text style={styles.seatName} numberOfLines={1}>
+                          {p.username}
+                          {p.user_id === user?.user_id ? ` (${t("you")})` : ""}
+                        </Text>
+                        {p.user_id === room?.host_id && (
+                          <View style={styles.hostBadge}>
+                            <Ionicons name="star" size={10} color={C.gold} />
+                            <Text style={styles.hostText}>{t("host")}</Text>
+                          </View>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <View style={styles.emptySeatCircle}>
+                          <Ionicons name="hand-left" size={20} color={C.brand} />
+                        </View>
+                        <Text style={styles.sitHereText}>{t("sitHere")}</Text>
+                      </>
+                    )}
+                    <View
+                      style={[
+                        styles.teamTag,
+                        { backgroundColor: i % 2 === 0 ? C.brand3 : C.bg3 },
+                      ]}
+                    >
+                      <Text style={styles.teamTagText}>
+                        {t("team")} {i % 2 === 0 ? "1" : "2"}
+                      </Text>
+                    </View>
+                  </Pressable>
+                ))}
+              </View>
+              <Text style={styles.botHint}>{t("botSeatHint")}</Text>
+            </View>
           </View>
-          <Text style={styles.botHint}>{t("botSeatHint")}</Text>
-
-          <ChunkyButton
-            testID="invite-friends-button"
-            label={t("inviteFriends")}
-            variant="secondary"
-            onPress={() => openInvite(null)}
-            icon={<Ionicons name="person-add" size={18} color={C.ink} />}
-            style={{ marginTop: SP.lg }}
-          />
-
-          {isHost ? (
-            <ChunkyButton
-              testID="start-game-button"
-              label={t("startGame")}
-              onPress={start}
-              loading={starting}
-              style={{ marginTop: SP.md }}
-            />
-          ) : (
-            <Text style={styles.waitingHost}>{t("waitingHost")}</Text>
-          )}
         </ScrollView>
       )}
+
+      <ShareSheet
+        visible={shareOpen}
+        onClose={() => setShareOpen(false)}
+        title={t("shareCode")}
+        message={t("shareRoomMsg", { code: code ?? "", link: roomLink(code ?? "") })}
+        url={roomLink(code ?? "")}
+      />
 
       <Modal visible={seatAction !== null} transparent animationType="fade">
         <Pressable style={styles.actionScrim} onPress={() => setSeatAction(null)}>
@@ -308,7 +314,7 @@ export default function RoomScreen() {
                 ? t("inviteToSeat", { n: inviteSeat + 1 })
                 : t("inviteFriends")}
             </Text>
-            <ScrollView style={{ maxHeight: 340 }}>
+            <ScrollView style={{ maxHeight: 220 }}>
               {friends.length === 0 && (
                 <Text style={styles.noFriends}>{t("noFriendsYet")}</Text>
               )}
@@ -355,19 +361,30 @@ const styles = StyleSheet.create({
   title: { fontFamily: F.display, fontSize: 20, color: C.ink },
   center: { flex: 1, alignItems: "center", justifyContent: "center", gap: SP.lg },
   goneText: { fontFamily: F.bold, fontSize: 15, color: C.ink2 },
+  scrollContent: {
+    padding: SP.lg,
+    paddingTop: SP.xs,
+    paddingBottom: SP.xl,
+    maxWidth: 900,
+    width: "100%",
+    alignSelf: "center",
+  },
+  columns: { flexDirection: "row", gap: SP.xl },
+  colLeft: { flex: 1 },
+  colRight: { flex: 1.2 },
   codeCard: {
     backgroundColor: C.felt,
     borderRadius: R.lg,
-    padding: SP.xl,
+    padding: SP.lg,
     alignItems: "center",
   },
   codeLabel: { fontFamily: F.text, fontSize: 13, color: "rgba(255,255,255,0.75)" },
   code: {
     fontFamily: F.display,
-    fontSize: 42,
+    fontSize: 34,
     color: C.cream,
-    letterSpacing: 10,
-    marginVertical: SP.sm,
+    letterSpacing: 8,
+    marginVertical: SP.xs,
   },
   shareBtn: {
     flexDirection: "row",
@@ -397,7 +414,6 @@ const styles = StyleSheet.create({
     fontFamily: F.display,
     fontSize: 18,
     color: C.ink,
-    marginTop: SP.xl,
     marginBottom: SP.md,
   },
   seatsGrid: {
@@ -413,7 +429,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: C.border,
     alignItems: "center",
-    padding: SP.lg,
+    padding: SP.md,
   },
   seatFree: {
     borderStyle: "dashed",
@@ -487,7 +503,10 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: R.lg,
     borderTopRightRadius: R.lg,
     padding: SP.xl,
-    paddingBottom: SP.xxl,
+    paddingBottom: SP.xl,
+    width: "100%",
+    maxWidth: 560,
+    alignSelf: "center",
   },
   sheetHandle: {
     width: 44,

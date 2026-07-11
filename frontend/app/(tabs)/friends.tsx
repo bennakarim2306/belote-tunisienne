@@ -139,7 +139,7 @@ export default function FriendsScreen() {
         <FlatList
           data={results}
           keyExtractor={(item) => item.user_id}
-          contentContainerStyle={{ padding: SP.lg }}
+          contentContainerStyle={{ padding: SP.lg, maxWidth: 760, width: "100%", alignSelf: "center" }}
           ListEmptyComponent={<Text style={styles.empty}>{t("noResults")}</Text>}
           renderItem={({ item }) => (
             <View style={styles.row} testID={`search-result-${item.username}`}>
@@ -171,7 +171,7 @@ export default function FriendsScreen() {
         <FlatList
           data={friends}
           keyExtractor={(item) => item.user_id}
-          contentContainerStyle={{ padding: SP.lg, paddingBottom: SP.xl }}
+          contentContainerStyle={{ padding: SP.lg, paddingBottom: SP.xl, maxWidth: 760, width: "100%", alignSelf: "center" }}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />
           }

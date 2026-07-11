@@ -1,0 +1,35 @@
+{
+  "summary": "LANDSCAPE refactor (844x390) validated end-to-end against the live preview URL. ALL 10 requested flows PASS: (1) Auth 2-column login works with tester1@belote.tn/Belote123!. (2) Home 2x2 grid: all four cards (play-online, play-solo, learn, private-game) render within y+h<=266px, well under the 390px viewport, no content clipped by the ad banner or tab bar. (3) Private modal exposes join-code-input, join-room-button, create-party-button; create->match-type-short lands on /room/{code}. (4) Room screen is a clean 2-col: room-code-text + share + Inviter/Lancer buttons on the left, 4-seat grid on the right; start-game-button transitions to /game/{id}. (5) Solo full loop: play-solo-card->Partie courte->/game/*, bidding-panel renders (suit chips, value pills 90-160, Passer/Capot/Annoncer/Contrer), pass-button works, hand-card-* click plays a card from the hand fan (bounds y=285 h=97 -> bottom=382, within 390). chat-button opens the quick chat panel; no vertical overflow (documentHeight==windowHeight==390). (6) RotateGate: [data-testid=rotate-gate] appears at 390x844 with 'Tourne ton téléphone…', disappears immediately at 844x390. (7) Matchmaking screen fits: cancel-search-button at y=336 h=42 bottom=378<=390, cancel returns to /home. (8) Tutorial: 14 lessons, Leçon 1 'Bienvenue!' content centered and readable. (9) Tabs Accueil/Classement/Amis/Profil all render correctly centered in landscape. (10) Rejoin: resume-game-banner + resume-game-button return to same /game/{id}. Only pre-existing cosmetic console error remains (transform-origin -> transformOrigin), unchanged from iteration_18.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": [
+      {"component": "react-dom (Reanimated shim)", "issue": "Console error still present in landscape build: 'Invalid DOM property `transform-origin`. Did you mean `transformOrigin`?' — same warning already flagged in iteration_18. Likely a kebab-case CSS key spread from a Reanimated web shim used on tutorial route / matchmaking ShufflingCard. Non-blocking, cosmetic. Reference: /app/frontend/app/matchmaking.tsx (ShufflingCard) and /app/frontend/app/tutorial/*"}
+    ]
+  },
+  "test_report_links": [
+    "Playwright inline scripts against https://card-table-orient.preview.emergentagent.com (viewport 844x390 + 390x844 for RotateGate)",
+    "screenshots: /tmp/land_02_home.png (2x2 grid), /tmp/land_03_private_modal.png, /tmp/land_04_room.png (2-col), /tmp/land_05_game_from_room.png, /tmp/land_08_solo_game.png, /tmp/land_09_bidding.png (compact bidding panel centered), /tmp/land_12_afterbid.png, /tmp/land_13_played2.png, /tmp/land_14_matchmaking.png, /tmp/land_15_tutorial.png, /tmp/land_16_lesson.png (Leçon 1), /tmp/land_18_rotate_gate.png, /tmp/land_tab_Classement.png, /tmp/land_tab_Amis.png, /tmp/land_tab_Profil.png"
+  ],
+  "action_items": [
+    "Optional cosmetic: fix `transform-origin` -> `transformOrigin` in the Reanimated animation styles (matchmaking.tsx ShufflingCard and/or tutorial screen intro). Same item as iteration_18, still unresolved but non-blocking.",
+    "Optional testability: room screen shows 'Inviter des amis' and 'Lancer la partie' but only start-game-button has a testID; consider adding testID=\"invite-friend-button\" for future automation (start-game-button works fine).",
+    "Optional: game-quit modal has 'Rester'/'Quitter' — the 'quit-continue-later' testID mentioned in prior context does not exist in the current UI (nothing wrong functionally: 'Rester' cancels, 'Quitter' ends). If the intended behavior is 'quit but keep resumable' you may want a separate action."
+  ],
+  "critical_code_review_comments": [
+    "Landscape layout looks solid across every screen: home.tsx grid gridItem flexBasis 48% + gap yields exactly 2x2 with card min-height 88 -> 2*88 + gap ~194 px, comfortably under 390 minus header (~80) and ad banner (~40). Numbers observed in DOM confirm (bottom row cards end at y=266).",
+    "RotateGate.tsx is correct: `portrait = Platform.OS==='web' && height > width` toggles the absolute-fill overlay via useWindowDimensions. Verified live: overlay z-index 9999 covers the app in portrait and removes cleanly on rotate.",
+    "BiddingPanel is compact and centered (~660px wide within 844 viewport, ~250px tall centered vertically over the felt). No overlap with hand fan (fan starts y~285, panel bottom at y~275 during bidding).",
+    "HandFan lives inside a bottom row that stays inside the 390px viewport (bottom edge at 382). Cards remain fully clickable (verified by playing a card successfully).",
+    "Matchmaking cancel button at y=336 h=42 fits — but the margin (12px above viewport bottom) is tight; if font scales up on other devices this could clip. Non-blocking."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (not retested per request)", "frontend": "100% (10/10 flows PASS)"},
+  "seed_data_creation": "Ran a small Mongo cleanup at start: marked live_games phase='finished' (1), cleared mm_queue/mm_matched/mm_duo_invites/live_rooms/invites so tests could create fresh sessions. Used existing tester1@belote.tn / Belote123!.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Landscape 844x390 flows all verified. Useful testIDs: home-screen, home-grid, play-online-card, play-solo-card, learn-card, private-game-card, private-game-modal, join-code-input, join-room-button, create-party-button, match-type-short, match-type-long, room-code-text, room-seat-0..3, start-game-button, game-quit-button, bidding-panel, bid-suit-{spades|hearts|clubs|diamonds}, bid-value-{90..160}, pass-button, capot-button, announce-bid-button, contre-button, hand-fan, hand-card-{XX}, chat-button, cancel-search-button, matchmaking-status-text, matchmaking-elo-range, matchmaking-players-count, lesson-row-{0..13}, resume-game-banner, resume-game-button, notifications-bell, rotate-gate. Tabs (Accueil/Classement/Amis/Profil) have NO testID — use get_by_text with exact=True. RotateGate check: page.set_viewport_size({'width':390,'height':844}) then wait 1s and query [data-testid=rotate-gate]. Only cosmetic console error is `transform-origin` DOM prop warning.",
+  "rca_of_issue": "N/A — landscape refactor fully functional; no new regressions detected. Every listed acceptance criterion verified on the live preview URL."
+}

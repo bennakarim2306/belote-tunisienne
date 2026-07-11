@@ -1,12 +1,14 @@
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
+import * as ScreenOrientation from "expo-screen-orientation";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
-import { LogBox } from "react-native";
+import { LogBox, Platform } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
+import RotateGate from "@/src/components/RotateGate";
 import { AuthProvider } from "@/src/context/AuthContext";
 import { useIconFonts } from "@/src/hooks/use-icon-fonts";
 import { LanguageProvider } from "@/src/i18n";
@@ -35,6 +37,15 @@ export default function RootLayout() {
   const iconsReady = iconsLoaded || !!iconsError;
   const fontsReady = fontsLoaded || !!fontsError;
 
+  // the whole app runs landscape-locked (card table layout)
+  useEffect(() => {
+    if (Platform.OS !== "web") {
+      ScreenOrientation.lockAsync(
+        ScreenOrientation.OrientationLock.LANDSCAPE,
+      ).catch(() => {});
+    }
+  }, []);
+
   useEffect(() => {
     if (iconsReady && fontsReady) {
       SplashScreen.hideAsync();
@@ -51,12 +62,14 @@ export default function RootLayout() {
         <SafeAreaProvider>
           <LanguageProvider>
             <AuthProvider>
-              <Stack
-                screenOptions={{
-                  headerShown: false,
-                  contentStyle: { backgroundColor: "#120F0D" },
-                }}
-              />
+              <RotateGate>
+                <Stack
+                  screenOptions={{
+                    headerShown: false,
+                    contentStyle: { backgroundColor: "#120F0D" },
+                  }}
+                />
+              </RotateGate>
             </AuthProvider>
           </LanguageProvider>
         </SafeAreaProvider>

@@ -13,12 +13,12 @@ import Animated, {
 const CARD_DELAY = 55;
 const CARD_DUR = 360;
 
-// rel targets (clockwise layout): 0 = me (bottom), 1 = left, 2 = top, 3 = right
+// rel targets (clockwise LANDSCAPE table): 0 = me (bottom), 1 = left, 2 = top, 3 = right
 const TARGETS = [
-  { x: 0, y: 250 },
-  { x: -180, y: 10 },
-  { x: 0, y: -215 },
-  { x: 180, y: 10 },
+  { x: 0, y: 130 },
+  { x: -300, y: 0 },
+  { x: 0, y: -125 },
+  { x: 300, y: 0 },
 ];
 
 function FlyingCard({ rel, index }: { rel: number; index: number }) {

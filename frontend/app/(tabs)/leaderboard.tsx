@@ -150,7 +150,7 @@ export default function LeaderboardScreen() {
         <FlatList
           data={players}
           keyExtractor={(item) => item.user_id}
-          contentContainerStyle={{ padding: SP.lg, paddingBottom: SP.xl }}
+          contentContainerStyle={{ padding: SP.lg, paddingBottom: SP.xl, maxWidth: 760, width: "100%", alignSelf: "center" }}
           showsVerticalScrollIndicator={false}
           onScroll={onScroll}
           scrollEventThrottle={16}

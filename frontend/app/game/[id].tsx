@@ -473,8 +473,19 @@ export default function GameScreen() {
           />
         </View>
 
-        {/* my info row */}
-        <View style={styles.myRow}>
+        {/* dealing animation overlay */}
+        {dealing && (
+          <DealAnimation
+            mySeat={mySeat}
+            dealer={state.dealer}
+            onDone={() => setDealing(false)}
+          />
+        )}
+      </View>
+
+      {/* bottom row: me + chat (left) · hand fan (center) · status (right) */}
+      <View style={[styles.bottomRow, { paddingBottom: Math.max(insets.bottom, SP.sm) }]}>
+        <View style={styles.bottomSide}>
           <PlayerSeat
             player={me}
             isTurn={myTurn}
@@ -488,6 +499,27 @@ export default function GameScreen() {
             isMe
             size={40}
           />
+          {state.phase !== "finished" && (
+            <Pressable
+              testID="chat-button"
+              onPress={() => setChatOpen(true)}
+              style={styles.sideBtn}
+            >
+              <Ionicons name="chatbubble-ellipses" size={20} color={C.cream} />
+            </Pressable>
+          )}
+        </View>
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <HandFan
+            hand={state.hand}
+            legal={state.legal}
+            myTurn={myTurn && state.phase === "playing"}
+            trump={state.trump}
+            onPlay={(card) => send({ action: "play", card })}
+            coachCard={coachCard}
+          />
+        </View>
+        <View style={[styles.bottomSide, { justifyContent: "flex-end" }]}>
           {myTurn && state.phase === "playing" && (
             <View style={styles.turnPill} testID="your-turn-pill">
               <Text style={styles.turnPillText}>{t("yourTurn")}</Text>
@@ -501,38 +533,26 @@ export default function GameScreen() {
               <Text style={[styles.turnPillText, { color: "#1A1200" }]}>{t("reconnecting")}</Text>
             </View>
           )}
+          {state.last_trick && state.phase === "playing" && (
+            <Pressable
+              testID="last-trick-button"
+              onPress={() => setLastTrickOpen(true)}
+              style={styles.sideBtn}
+            >
+              <Ionicons name="albums" size={20} color={C.cream} />
+            </Pressable>
+          )}
         </View>
-
-        {/* dealing animation overlay */}
-        {dealing && (
-          <DealAnimation
-            mySeat={mySeat}
-            dealer={state.dealer}
-            onDone={() => setDealing(false)}
-          />
-        )}
-      </View>
-
-      {/* my hand */}
-      <View style={{ paddingBottom: Math.max(insets.bottom, SP.sm) }}>
-        <HandFan
-          hand={state.hand}
-          legal={state.legal}
-          myTurn={myTurn && state.phase === "playing"}
-          trump={state.trump}
-          onPlay={(card) => send({ action: "play", card })}
-          coachCard={coachCard}
-        />
       </View>
 
       {/* bidding overlays (hidden while cards are being dealt) */}
       {!dealing && (
         <View
-          style={[styles.biddingWrap, { bottom: insets.bottom + 140 }]}
+          style={[styles.biddingWrap, { bottom: insets.bottom + 112 }]}
           pointerEvents="box-none"
         >
           {coachDisplay && (
-            <View style={{ paddingHorizontal: SP.md, marginBottom: SP.sm }}>
+            <View style={styles.coachWrap}>
               <CoachBubble text={coachDisplay} label={t("coachLabel")} />
             </View>
           )}
@@ -590,28 +610,7 @@ export default function GameScreen() {
         />
       )}
 
-      {/* quick chat button (left side, mirrors the last-trick button) */}
-      {state.phase !== "finished" && (
-        <Pressable
-          testID="chat-button"
-          onPress={() => setChatOpen(true)}
-          style={[styles.chatBtn, { bottom: insets.bottom + 148 }]}
-        >
-          <Ionicons name="chatbubble-ellipses" size={20} color={C.cream} />
-        </Pressable>
-      )}
-
-      {/* last trick viewer (available anytime once a trick was played) */}
-      {state.last_trick && state.phase === "playing" && (
-        <Pressable
-          testID="last-trick-button"
-          onPress={() => setLastTrickOpen(true)}
-          style={[styles.lastTrickBtn, { bottom: insets.bottom + 148 }]}
-        >
-          <Ionicons name="albums" size={20} color={C.cream} />
-        </Pressable>
-      )}
-
+      {/* quick chat modal */}
       <Modal visible={chatOpen} transparent animationType="slide">
         <Pressable style={styles.chatScrim} onPress={() => setChatOpen(false)}>
           <Pressable style={styles.chatSheet} onPress={() => {}} testID="chat-panel">
@@ -891,34 +890,59 @@ const styles = StyleSheet.create({
   contractText: { fontFamily: F.extra, fontSize: 15, color: C.cream },
   contractTeam: { fontFamily: F.text, fontSize: 10, color: "rgba(255,255,255,0.7)" },
   table: { flex: 1 },
-  partnerRow: { alignItems: "center", marginTop: SP.xs },
+  partnerRow: { alignItems: "center" },
   middleRow: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: SP.xs,
+    paddingHorizontal: SP.md,
   },
-  myRow: {
+  bottomRow: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    paddingHorizontal: SP.md,
+  },
+  bottomSide: {
+    width: 150,
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: SP.lg,
-    gap: SP.md,
+    justifyContent: "flex-start",
+    gap: SP.sm,
+    paddingBottom: SP.sm,
+  },
+  sideBtn: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.3)",
+    alignItems: "center",
+    justifyContent: "center",
   },
   turnPill: {
     backgroundColor: C.gold,
     borderRadius: R.pill,
-    paddingHorizontal: SP.lg,
-    height: 36,
+    paddingHorizontal: SP.md,
+    height: 34,
     flexDirection: "row",
     alignItems: "center",
-    gap: SP.sm,
+    gap: SP.xs,
+    flexShrink: 1,
   },
-  turnPillText: { fontFamily: F.display, fontSize: 13, color: "#1A1200" },
-  turnTimer: { fontFamily: F.extra, fontSize: 14, color: C.brand3 },
+  turnPillText: { fontFamily: F.display, fontSize: 12, color: "#1A1200" },
+  turnTimer: { fontFamily: F.extra, fontSize: 13, color: C.brand3 },
   biddingWrap: {
     position: "absolute",
     left: 0,
     right: 0,
+  },
+  coachWrap: {
+    paddingHorizontal: SP.md,
+    marginBottom: SP.sm,
+    width: "100%",
+    maxWidth: 600,
+    alignSelf: "center",
   },
   banner: {
     position: "absolute",
@@ -958,37 +982,16 @@ const styles = StyleSheet.create({
     marginTop: SP.sm,
   },
   quitRow: { flexDirection: "row", gap: SP.md, marginTop: SP.lg },
-  lastTrickBtn: {
-    position: "absolute",
-    right: SP.lg,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: "rgba(0,0,0,0.45)",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.3)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  chatBtn: {
-    position: "absolute",
-    left: SP.lg,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: "rgba(0,0,0,0.45)",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.3)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
   chatScrim: { flex: 1, backgroundColor: C.scrim, justifyContent: "flex-end" },
   chatSheet: {
     backgroundColor: C.bg,
     borderTopLeftRadius: R.lg,
     borderTopRightRadius: R.lg,
-    padding: SP.xl,
-    paddingBottom: SP.xxl,
+    padding: SP.lg,
+    paddingBottom: SP.xl,
+    width: "100%",
+    maxWidth: 560,
+    alignSelf: "center",
   },
   sheetHandle: {
     width: 44,
