@@ -378,6 +378,8 @@ export default function GameScreen() {
           )}
         </View>
 
+        <View style={{ flex: 1 }} />
+
         <Pressable
           style={styles.scoreBox}
           testID="match-score-header"
@@ -438,6 +440,8 @@ export default function GameScreen() {
             chatText={chatBubbles[partner.seat]?.text}
             deadline={state.turn_deadline}
             showTimer={seatTimerOn}
+            size={38}
+            bubbleSide="right"
           />
         </View>
 
@@ -498,16 +502,8 @@ export default function GameScreen() {
             showTimer={seatTimerOn}
             isMe
             size={40}
+            bubbleSide="right"
           />
-          {state.phase !== "finished" && (
-            <Pressable
-              testID="chat-button"
-              onPress={() => setChatOpen(true)}
-              style={styles.sideBtn}
-            >
-              <Ionicons name="chatbubble-ellipses" size={20} color={C.cream} />
-            </Pressable>
-          )}
         </View>
         <View style={{ flex: 1, minWidth: 0 }}>
           <HandFan
@@ -533,15 +529,26 @@ export default function GameScreen() {
               <Text style={[styles.turnPillText, { color: "#1A1200" }]}>{t("reconnecting")}</Text>
             </View>
           )}
-          {state.last_trick && state.phase === "playing" && (
-            <Pressable
-              testID="last-trick-button"
-              onPress={() => setLastTrickOpen(true)}
-              style={styles.sideBtn}
-            >
-              <Ionicons name="albums" size={20} color={C.cream} />
-            </Pressable>
-          )}
+          <View style={{ flexDirection: "row", gap: SP.sm }}>
+            {state.last_trick && state.phase === "playing" && (
+              <Pressable
+                testID="last-trick-button"
+                onPress={() => setLastTrickOpen(true)}
+                style={styles.sideBtn}
+              >
+                <Ionicons name="albums" size={20} color={C.cream} />
+              </Pressable>
+            )}
+            {state.phase !== "finished" && (
+              <Pressable
+                testID="chat-button"
+                onPress={() => setChatOpen(true)}
+                style={styles.sideBtn}
+              >
+                <Ionicons name="chatbubble-ellipses" size={20} color={C.cream} />
+              </Pressable>
+            )}
+          </View>
         </View>
       </View>
 
@@ -861,7 +868,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
+    gap: SP.sm,
     paddingHorizontal: SP.md,
     paddingBottom: SP.sm,
   },
@@ -874,7 +881,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  scoreBox: { alignItems: "center" },
+  scoreBox: {
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.35)",
+    borderRadius: R.md,
+    borderWidth: 1.5,
+    borderColor: "rgba(255,255,255,0.28)",
+    paddingHorizontal: SP.md,
+    paddingVertical: 3,
+  },
   scoreText: { fontFamily: F.text, fontSize: 13, color: "rgba(255,255,255,0.8)" },
   scoreNum: { fontFamily: F.extra, fontSize: 17, color: C.cream },
   targetText: { fontFamily: F.text, fontSize: 10.5, color: "rgba(255,255,255,0.55)" },

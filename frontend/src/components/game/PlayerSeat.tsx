@@ -47,6 +47,8 @@ interface Props {
   showTimer?: boolean;
   isMe?: boolean;
   size?: number;
+  /** where announce/contract/chat bubbles are anchored (default above avatar) */
+  bubbleSide?: "top" | "right";
 }
 
 export default function PlayerSeat({
@@ -61,6 +63,7 @@ export default function PlayerSeat({
   showTimer,
   isMe,
   size = 46,
+  bubbleSide = "top",
 }: Props) {
   const pulse = useSharedValue(0);
 
@@ -120,7 +123,11 @@ export default function PlayerSeat({
       {chatText ? (
         <Animated.View
           entering={ZoomIn.duration(180)}
-          style={[styles.bubble, styles.chatBubble]}
+          style={[
+            styles.bubble,
+            styles.chatBubble,
+            bubbleSide === "right" && [styles.bubbleRight, { top: ringSize / 2 - 16 }],
+          ]}
           testID={`chat-bubble-${player.seat}`}
         >
           <Text style={styles.chatText} numberOfLines={1}>
@@ -129,7 +136,14 @@ export default function PlayerSeat({
         </Animated.View>
       ) : null}
       {contractLabel ? (
-        <View style={[styles.bubble, styles.contractBubble]} testID={`contract-holder-${player.seat}`}>
+        <View
+          style={[
+            styles.bubble,
+            styles.contractBubble,
+            bubbleSide === "right" && [styles.bubbleRight, { top: ringSize / 2 - 12 }],
+          ]}
+          testID={`contract-holder-${player.seat}`}
+        >
           <Ionicons name="ribbon" size={11} color="#1A1200" />
           <Text style={[styles.bubbleText, { color: "#1A1200" }]}>
             {" "}
@@ -141,7 +155,13 @@ export default function PlayerSeat({
           </Text>
         </View>
       ) : bidLabel ? (
-        <Animated.View style={styles.bubble} entering={undefined}>
+        <Animated.View
+          style={[
+            styles.bubble,
+            bubbleSide === "right" && [styles.bubbleRight, { top: ringSize / 2 - 12 }],
+          ]}
+          entering={undefined}
+        >
           <Text style={styles.bubbleText}>
             {bidLabel}
             {bidSuit ? (
@@ -212,6 +232,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 3,
     elevation: 4,
+  },
+  bubbleRight: {
+    left: 82,
+    zIndex: 12,
+    maxWidth: 190,
   },
   bubbleText: { fontFamily: F.extra, fontSize: 12, color: C.ink },
   contractBubble: {
