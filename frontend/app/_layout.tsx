@@ -1,7 +1,9 @@
 import { useFonts } from "expo-font";
+import * as NavigationBar from "expo-navigation-bar";
 import { Stack } from "expo-router";
 import * as ScreenOrientation from "expo-screen-orientation";
 import * as SplashScreen from "expo-splash-screen";
+import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import { LogBox, Platform } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -37,12 +39,17 @@ export default function RootLayout() {
   const iconsReady = iconsLoaded || !!iconsError;
   const fontsReady = fontsLoaded || !!fontsError;
 
-  // the whole app runs landscape-locked (card table layout)
+  // the whole app runs landscape-locked (card table layout), fullscreen
+  // immersive: status bar + Android navigation bar hidden (swipe to reveal)
   useEffect(() => {
     if (Platform.OS !== "web") {
       ScreenOrientation.lockAsync(
         ScreenOrientation.OrientationLock.LANDSCAPE,
       ).catch(() => {});
+    }
+    if (Platform.OS === "android") {
+      NavigationBar.setVisibilityAsync("hidden").catch(() => {});
+      NavigationBar.setBehaviorAsync("overlay-swipe").catch(() => {});
     }
   }, []);
 
@@ -58,6 +65,7 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
+      <StatusBar hidden />
       <KeyboardProvider>
         <SafeAreaProvider>
           <LanguageProvider>
