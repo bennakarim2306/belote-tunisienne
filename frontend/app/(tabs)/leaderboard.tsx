@@ -22,6 +22,7 @@ import { api } from "@/src/api";
 import Avatar from "@/src/components/Avatar";
 import MenuButton from "@/src/components/MenuButton";
 import { useAuth } from "@/src/context/AuthContext";
+import { useCollapsibleHeader } from "@/src/hooks/use-collapsible-header";
 import { useI18n } from "@/src/i18n";
 import { C, F, R, SP } from "@/src/theme";
 
@@ -48,6 +49,10 @@ export default function LeaderboardScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [mode, setMode] = useState<LbMode>("solo");
 
+  // top header hides on scroll down, reappears on scroll up
+  const { headerH, headerStyle, onHeaderLayout, onScrollDirection } =
+    useCollapsibleHeader();
+
   // custom slim scroll indicator: visible only while scrolling, fades out after
   const scrollY = useSharedValue(0);
   const contentH = useSharedValue(1);
@@ -56,6 +61,7 @@ export default function LeaderboardScreen() {
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    onScrollDirection(e);
     scrollY.value = e.nativeEvent.contentOffset.y;
     indicatorOn.value = withTiming(1, { duration: 120 });
     if (hideTimer.current) clearTimeout(hideTimer.current);
@@ -99,7 +105,10 @@ export default function LeaderboardScreen() {
 
   return (
     <View style={styles.container} testID="leaderboard-screen">
-      <View style={[styles.header, { paddingTop: insets.top + SP.md }]}>
+      <Animated.View
+        style={[styles.header, { paddingTop: insets.top + SP.md }, headerStyle]}
+        onLayout={onHeaderLayout}
+      >
         <View style={styles.titleRow}>
           <View style={{ marginRight: SP.md }}>
             <MenuButton />
@@ -148,13 +157,13 @@ export default function LeaderboardScreen() {
           </View>
           <Ionicons name="trophy" size={28} color={C.gold} />
         </View>
-      </View>
+      </Animated.View>
 
       <View style={styles.listWrap}>
         <FlatList
           data={players}
           keyExtractor={(item) => item.user_id}
-          contentContainerStyle={{ padding: SP.lg, paddingBottom: SP.xl, maxWidth: 760, width: "100%", alignSelf: "center" }}
+          contentContainerStyle={{ padding: SP.lg, paddingTop: headerH + SP.md, paddingBottom: SP.xl, maxWidth: 760, width: "100%", alignSelf: "center" }}
           showsVerticalScrollIndicator={false}
           onScroll={onScroll}
           scrollEventThrottle={16}
@@ -165,7 +174,7 @@ export default function LeaderboardScreen() {
             viewH.value = e.nativeEvent.layout.height;
           }}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} progressViewOffset={headerH} />
           }
           ListEmptyComponent={
             <Text style={styles.empty}>{t("noPlayers")}</Text>
@@ -217,6 +226,11 @@ export default function LeaderboardScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.bg },
   header: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 20,
     backgroundColor: C.card,
     borderBottomWidth: 1,
     borderBottomColor: C.border,

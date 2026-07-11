@@ -10,12 +10,14 @@ import {
   TextInput,
   View,
 } from "react-native";
+import Animated from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { api } from "@/src/api";
 import Avatar from "@/src/components/Avatar";
 import MenuButton from "@/src/components/MenuButton";
 import ShareSheet from "@/src/components/ShareSheet";
+import { useCollapsibleHeader } from "@/src/hooks/use-collapsible-header";
 import { useI18n } from "@/src/i18n";
 import { APP_INSTALL_URL } from "@/src/share";
 import { C, F, R, SP } from "@/src/theme";
@@ -40,6 +42,10 @@ export default function FriendsScreen() {
   const [toast, setToast] = useState<string | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // top header hides on scroll down, reappears on scroll up
+  const { headerH, headerStyle, onHeaderLayout, onScrollDirection } =
+    useCollapsibleHeader();
 
   const load = useCallback(async () => {
     try {
@@ -102,7 +108,10 @@ export default function FriendsScreen() {
 
   return (
     <View style={styles.container} testID="friends-screen">
-      <View style={[styles.header, { paddingTop: insets.top + SP.md }]}>
+      <Animated.View
+        style={[styles.header, { paddingTop: insets.top + SP.md }, headerStyle]}
+        onLayout={onHeaderLayout}
+      >
         <View style={styles.titleRow}>
           <View style={{ marginRight: SP.md }}>
             <MenuButton />
@@ -137,13 +146,15 @@ export default function FriendsScreen() {
             </Pressable>
           )}
         </View>
-      </View>
+      </Animated.View>
 
       {results !== null ? (
         <FlatList
           data={results}
           keyExtractor={(item) => item.user_id}
-          contentContainerStyle={{ padding: SP.lg, maxWidth: 760, width: "100%", alignSelf: "center" }}
+          contentContainerStyle={{ padding: SP.lg, paddingTop: headerH + SP.md, maxWidth: 760, width: "100%", alignSelf: "center" }}
+          onScroll={onScrollDirection}
+          scrollEventThrottle={16}
           ListEmptyComponent={<Text style={styles.empty}>{t("noResults")}</Text>}
           renderItem={({ item }) => (
             <View style={styles.row} testID={`search-result-${item.username}`}>
@@ -175,9 +186,11 @@ export default function FriendsScreen() {
         <FlatList
           data={friends}
           keyExtractor={(item) => item.user_id}
-          contentContainerStyle={{ padding: SP.lg, paddingBottom: SP.xl, maxWidth: 760, width: "100%", alignSelf: "center" }}
+          contentContainerStyle={{ padding: SP.lg, paddingTop: headerH + SP.md, paddingBottom: SP.xl, maxWidth: 760, width: "100%", alignSelf: "center" }}
+          onScroll={onScrollDirection}
+          scrollEventThrottle={16}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} progressViewOffset={headerH} />
           }
           ListHeaderComponent={
             received.length > 0 ? (
@@ -250,6 +263,11 @@ export default function FriendsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.bg },
   header: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 20,
     backgroundColor: C.card,
     borderBottomWidth: 1,
     borderBottomColor: C.border,
