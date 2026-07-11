@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { api } from "@/src/api";
 import { AVATARS, avatarUrl } from "@/src/avatars";
 import Avatar from "@/src/components/Avatar";
+import MenuButton from "@/src/components/MenuButton";
 import ChunkyButton from "@/src/components/ChunkyButton";
 import { useAuth } from "@/src/context/AuthContext";
 import { useI18n } from "@/src/i18n";
@@ -86,9 +87,24 @@ export default function ProfileScreen() {
 
   return (
     <View style={styles.container} testID="profile-screen">
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          gap: SP.md,
+          paddingTop: insets.top + SP.sm,
+          paddingHorizontal: SP.lg,
+          paddingBottom: SP.xs,
+        }}
+      >
+        <MenuButton />
+        <Text style={{ fontFamily: F.display, fontSize: 20, color: C.ink }}>
+          {t("tabProfile")}
+        </Text>
+      </View>
       <ScrollView
         contentContainerStyle={{
-          paddingTop: insets.top + SP.md,
+          paddingTop: SP.xs,
           paddingBottom: SP.xl,
           maxWidth: 760,
           width: "100%",

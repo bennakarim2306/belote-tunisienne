@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { api } from "@/src/api";
 import Avatar from "@/src/components/Avatar";
+import MenuButton from "@/src/components/MenuButton";
 import ShareSheet from "@/src/components/ShareSheet";
 import { useI18n } from "@/src/i18n";
 import { APP_INSTALL_URL } from "@/src/share";
@@ -103,6 +104,9 @@ export default function FriendsScreen() {
     <View style={styles.container} testID="friends-screen">
       <View style={[styles.header, { paddingTop: insets.top + SP.md }]}>
         <View style={styles.titleRow}>
+          <View style={{ marginRight: SP.md }}>
+            <MenuButton />
+          </View>
           <Text style={styles.title}>{t("friends")}</Text>
           <Pressable
             testID="invite-friends-button"

@@ -14,9 +14,7 @@ import {
 } from "react-native";
 import Animated, {
   Easing,
-  FadeInDown,
   FadeInUp,
-  FadeOut,
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
@@ -28,6 +26,7 @@ import { api, ApiError } from "@/src/api";
 import Avatar from "@/src/components/Avatar";
 import ChunkyButton from "@/src/components/ChunkyButton";
 import DuoSetup, { DuoCandidate } from "@/src/components/DuoSetup";
+import MenuButton from "@/src/components/MenuButton";
 import { useAuth } from "@/src/context/AuthContext";
 import {
   DuoInviteNotif,
@@ -239,12 +238,37 @@ export default function HomeScreen() {
     <View style={styles.container} testID="home-screen">
       <View style={[styles.header, { paddingTop: insets.top + SP.sm }]}>
         <View style={styles.headerRow}>
-          <Avatar avatarId={user?.avatar_id} size={46} testID="home-user-avatar" />
-          <View style={{ flex: 1, marginHorizontal: SP.md }}>
+          <MenuButton />
+          <Avatar avatarId={user?.avatar_id} size={44} testID="home-user-avatar" />
+          <View style={{ marginHorizontal: SP.md, flexShrink: 1, minWidth: 0 }}>
             <Text style={styles.hello}>{t("hello")},</Text>
             <Text style={styles.username} numberOfLines={1}>
               {user?.username}
             </Text>
+          </View>
+          <View style={styles.headerMiddle}>
+            {currentGame && (
+              <Pressable
+                testID="resume-game-button"
+                onPress={() =>
+                  router.push({ pathname: "/game/[id]", params: { id: currentGame.game_id } })
+                }
+                style={({ pressed }) => [styles.resumePill, pressed && { opacity: 0.85 }]}
+              >
+                <Ionicons name="play-circle" size={20} color={C.onBrand} />
+                <View style={{ minWidth: 0, flexShrink: 1 }}>
+                  <Text style={styles.resumePillTitle} numberOfLines={1}>
+                    {t("resumeGame")}
+                  </Text>
+                  <Text style={styles.resumePillDesc} numberOfLines={1}>
+                    {t("us")} {currentGame.match_scores[currentGame.my_team]}
+                    {" · "}
+                    {currentGame.match_scores[1 - currentGame.my_team]} {t("them")}
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color={C.onBrand} />
+              </Pressable>
+            )}
           </View>
           <View style={styles.eloPill} testID="home-elo-pill">
             <Ionicons name="flame" size={14} color={C.gold} />
@@ -266,83 +290,8 @@ export default function HomeScreen() {
         </View>
       </View>
 
+      {/* the content area is reserved for the 4 mode boxes only */}
       <View style={styles.content}>
-        {currentGame && (
-          <Animated.View entering={FadeInDown} exiting={FadeOut.duration(120)} style={styles.resumeBanner} testID="resume-game-banner">
-            <Ionicons name="play-circle" size={26} color={C.brand} />
-            <View style={{ flex: 1, minWidth: 0, marginLeft: SP.md }}>
-              <Text style={styles.resumeTitle}>{t("resumeGame")}</Text>
-              <Text style={styles.resumeDesc} numberOfLines={1}>
-                {t("us")} {currentGame.match_scores[currentGame.my_team]}
-                {" · "}
-                {currentGame.match_scores[1 - currentGame.my_team]} {t("them")} — {currentGame.target} pts
-              </Text>
-            </View>
-            <Pressable
-              testID="resume-game-button"
-              onPress={() =>
-                router.push({ pathname: "/game/[id]", params: { id: currentGame.game_id } })
-              }
-              style={styles.resumeBtn}
-            >
-              <Text style={styles.resumeBtnText}>{t("resumeGameBtn")}</Text>
-            </Pressable>
-          </Animated.View>
-        )}
-
-        {invites.slice(0, 2).map((inv) => (
-          <Animated.View key={inv.invite_id} entering={FadeInDown} exiting={FadeOut.duration(120)} style={styles.inviteBanner}>
-            <Avatar avatarId={inv.from_user.avatar_id} size={36} />
-            <Text style={styles.inviteText} numberOfLines={2}>
-              {t("invitedYou", { name: inv.from_user.username })}
-            </Text>
-            <Pressable
-              testID={`invite-join-${inv.room_code}`}
-              onPress={() => acceptInvite(inv)}
-              style={styles.inviteJoin}
-            >
-              <Text style={styles.inviteJoinText}>{t("join")}</Text>
-            </Pressable>
-            <Pressable
-              testID={`invite-dismiss-${inv.room_code}`}
-              onPress={() => dismissInvite(inv)}
-              hitSlop={8}
-            >
-              <Ionicons name="close" size={20} color={C.ink3} />
-            </Pressable>
-          </Animated.View>
-        ))}
-
-        {duoInvites.slice(0, 2).map((inv) => (
-          <Animated.View
-            key={inv.invite_id}
-            entering={FadeInDown}
-            exiting={FadeOut.duration(120)}
-            style={[styles.inviteBanner, { borderColor: C.brand3 }]}
-          >
-            <Avatar avatarId={inv.from_user.avatar_id} size={36} />
-            <Text style={styles.inviteText} numberOfLines={2}>
-              {t(inv.mode === "vs_ai" ? "duoInvitedYouAI" : "duoInvitedYou", {
-                name: inv.from_user.username,
-              })}
-            </Text>
-            <Pressable
-              testID={`duo-invite-accept-${inv.invite_id}`}
-              onPress={() => acceptDuoInvite(inv)}
-              style={styles.inviteJoin}
-            >
-              <Text style={styles.inviteJoinText}>{t("accept")}</Text>
-            </Pressable>
-            <Pressable
-              testID={`duo-invite-decline-${inv.invite_id}`}
-              onPress={() => declineDuoInvite(inv)}
-              hitSlop={8}
-            >
-              <Ionicons name="close" size={20} color={C.ink3} />
-            </Pressable>
-          </Animated.View>
-        ))}
-
         {/* 2×2 landscape grid: the 4 game modes fill the whole screen */}
         <View style={styles.grid} testID="home-grid">
           <View style={styles.gridRow}>
@@ -775,49 +724,23 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   notifPrimaryText: { fontFamily: F.display, fontSize: 12.5, color: C.onBrand },
-  inviteBanner: {
+  headerMiddle: {
+    flex: 1,
+    alignItems: "center",
+    paddingHorizontal: SP.sm,
+  },
+  resumePill: {
     flexDirection: "row",
     alignItems: "center",
     gap: SP.sm,
-    backgroundColor: C.bg3,
-    borderRadius: R.md,
-    borderWidth: 1,
-    borderColor: C.brand3,
-    padding: SP.md,
-    marginBottom: SP.md,
-  },
-  resumeBanner: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: C.card,
-    borderRadius: R.md,
-    borderWidth: 1.5,
-    borderColor: C.brand,
-    paddingHorizontal: SP.md,
-    paddingVertical: SP.sm,
-    marginBottom: SP.md,
-  },
-  resumeTitle: { fontFamily: F.display, fontSize: 15, color: C.ink },
-  resumeDesc: { fontFamily: F.text, fontSize: 12, color: C.ink3, marginTop: 1 },
-  resumeBtn: {
-    backgroundColor: C.brand,
-    borderRadius: R.pill,
-    paddingHorizontal: SP.lg,
-    height: 40,
-    alignItems: "center",
-    justifyContent: "center",
-    marginLeft: SP.sm,
-  },
-  resumeBtnText: { fontFamily: F.display, fontSize: 13, color: C.onBrand },
-  inviteText: { flex: 1, fontFamily: F.bold, fontSize: 13, color: C.ink },
-  inviteJoin: {
     backgroundColor: C.brand,
     borderRadius: R.pill,
     paddingHorizontal: SP.md,
-    height: 34,
-    justifyContent: "center",
+    height: 42,
+    maxWidth: 340,
   },
-  inviteJoinText: { fontFamily: F.display, color: C.onBrand, fontSize: 13 },
+  resumePillTitle: { fontFamily: F.display, fontSize: 12.5, color: C.onBrand },
+  resumePillDesc: { fontFamily: F.bold, fontSize: 10.5, color: "rgba(10,40,25,0.8)", marginTop: 1 },
   content: {
     flex: 1,
     paddingHorizontal: SP.lg,

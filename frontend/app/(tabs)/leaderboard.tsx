@@ -20,6 +20,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { api } from "@/src/api";
 import Avatar from "@/src/components/Avatar";
+import MenuButton from "@/src/components/MenuButton";
 import { useAuth } from "@/src/context/AuthContext";
 import { useI18n } from "@/src/i18n";
 import { C, F, R, SP } from "@/src/theme";
@@ -100,6 +101,9 @@ export default function LeaderboardScreen() {
     <View style={styles.container} testID="leaderboard-screen">
       <View style={[styles.header, { paddingTop: insets.top + SP.md }]}>
         <View style={styles.titleRow}>
+          <View style={{ marginRight: SP.md }}>
+            <MenuButton />
+          </View>
           <Text style={styles.title}>{t("ranking")}</Text>
           <View style={styles.modeToggle} testID="leaderboard-mode-toggle">
             <Pressable
