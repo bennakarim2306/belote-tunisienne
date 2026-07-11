@@ -3,9 +3,9 @@ import * as NavigationBar from "expo-navigation-bar";
 import { Stack } from "expo-router";
 import * as ScreenOrientation from "expo-screen-orientation";
 import * as SplashScreen from "expo-splash-screen";
-import { StatusBar } from "expo-status-bar";
+import { StatusBar, setStatusBarHidden } from "expo-status-bar";
 import { useEffect } from "react";
-import { LogBox, Platform } from "react-native";
+import { AppState, LogBox, Platform } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -42,17 +42,26 @@ export default function RootLayout() {
   const fontsReady = fontsLoaded || !!fontsError;
 
   // the whole app runs landscape-locked (card table layout), fullscreen
-  // immersive: status bar + Android navigation bar hidden (swipe to reveal)
+  // immersive: status bar + Android navigation bar hidden (swipe to reveal).
+  // Android restores the system bars when the app is backgrounded/resumed,
+  // so immersive mode is re-applied on every return to the foreground.
   useEffect(() => {
     if (Platform.OS !== "web") {
       ScreenOrientation.lockAsync(
         ScreenOrientation.OrientationLock.LANDSCAPE,
       ).catch(() => {});
     }
-    if (Platform.OS === "android") {
+    if (Platform.OS !== "android") return;
+    const applyImmersive = () => {
+      setStatusBarHidden(true, "none");
       NavigationBar.setVisibilityAsync("hidden").catch(() => {});
       NavigationBar.setBehaviorAsync("overlay-swipe").catch(() => {});
-    }
+    };
+    applyImmersive();
+    const sub = AppState.addEventListener("change", (state) => {
+      if (state === "active") applyImmersive();
+    });
+    return () => sub.remove();
   }, []);
 
   useEffect(() => {
