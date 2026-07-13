@@ -301,19 +301,27 @@ async def search_users(q: str, request: Request):
          "user_id": {"$ne": user["user_id"]}},
         {"_id": 0, "user_id": 1, "username": 1, "avatar_id": 1, "elo": 1}
     ).to_list(10)
-    for r in results:
-        fr = await db.friendships.find_one({
-            "$or": [{"requester_id": user["user_id"], "recipient_id": r["user_id"]},
-                    {"requester_id": r["user_id"], "recipient_id": user["user_id"]}]
-        }, {"_id": 0})
-        if not fr:
-            r["friend_status"] = "none"
-        elif fr["status"] == "accepted":
-            r["friend_status"] = "friends"
-        elif fr["requester_id"] == user["user_id"]:
-            r["friend_status"] = "pending_sent"
-        else:
-            r["friend_status"] = "pending_received"
+    if results:
+        ids = [r["user_id"] for r in results]
+        uid = user["user_id"]
+        frs = await db.friendships.find({
+            "$or": [{"requester_id": uid, "recipient_id": {"$in": ids}},
+                    {"requester_id": {"$in": ids}, "recipient_id": uid}]
+        }, {"_id": 0}).to_list(len(ids) * 2)
+        by_other = {}
+        for fr in frs:
+            other = fr["recipient_id"] if fr["requester_id"] == uid else fr["requester_id"]
+            by_other[other] = fr
+        for r in results:
+            fr = by_other.get(r["user_id"])
+            if not fr:
+                r["friend_status"] = "none"
+            elif fr["status"] == "accepted":
+                r["friend_status"] = "friends"
+            elif fr["requester_id"] == uid:
+                r["friend_status"] = "pending_sent"
+            else:
+                r["friend_status"] = "pending_received"
     return {"results": results}
 
 
@@ -348,10 +356,21 @@ async def list_friends(request: Request):
     uid = user["user_id"]
     rows = await db.friendships.find(
         {"$or": [{"requester_id": uid}, {"recipient_id": uid}]}, {"_id": 0}).to_list(200)
+    other_ids = [fr["recipient_id"] if fr["requester_id"] == uid else fr["requester_id"]
+                 for fr in rows]
+    briefs = await db.users.find(
+        {"user_id": {"$in": other_ids}},
+        {"_id": 0, "user_id": 1, "username": 1, "avatar_id": 1, "elo": 1,
+         "elo_duo": 1, "last_active": 1}).to_list(len(other_ids) or 1)
+    now_ts = time.time()
+    by_id = {}
+    for b in briefs:
+        b["elo_duo"] = b.get("elo_duo") or 1000
+        b["online"] = (now_ts - b.pop("last_active", 0)) < ONLINE_WINDOW_SECONDS
+        by_id[b["user_id"]] = b
     friends, received, sent = [], [], []
-    for fr in rows:
-        other_id = fr["recipient_id"] if fr["requester_id"] == uid else fr["requester_id"]
-        other = await user_brief(other_id)
+    for fr, other_id in zip(rows, other_ids):
+        other = by_id.get(other_id)
         if not other:
             continue
         entry = {"friendship_id": fr["friendship_id"], **other}
