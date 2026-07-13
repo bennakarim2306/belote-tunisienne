@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
     width: 250,
     backgroundColor: C.bg2,
     borderRightWidth: 1,
-    borderRightColor: C.border,
+    borderRightColor: "rgba(233,196,106,0.3)",
     paddingHorizontal: SP.md,
   },
   brand: {

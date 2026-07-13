@@ -123,7 +123,7 @@ export default function LeaderboardScreen() {
               <Ionicons
                 name="person"
                 size={13}
-                color={mode === "solo" ? C.onBrand : C.ink3}
+                color={mode === "solo" ? "#1A1200" : C.ink3}
               />
               <Text style={[styles.modeText, mode === "solo" && styles.modeTextActive]}>
                 {t("lbSolo")}
@@ -137,7 +137,7 @@ export default function LeaderboardScreen() {
               <Ionicons
                 name="people"
                 size={13}
-                color={mode === "duo" ? C.onBrand : C.ink3}
+                color={mode === "duo" ? "#1A1200" : C.ink3}
               />
               <Text style={[styles.modeText, mode === "duo" && styles.modeTextActive]}>
                 {t("lbDuo")}
@@ -196,7 +196,7 @@ export default function LeaderboardScreen() {
                     {index + 1}
                   </Text>
                 </View>
-                <Avatar avatarId={item.avatar_id} size={38} />
+                <Avatar avatarId={item.avatar_id} size={38} ringColor="rgba(233,196,106,0.55)" />
                 <View style={{ flex: 1, marginLeft: SP.md }}>
                   <Text style={styles.name} numberOfLines={1}>
                     {item.username}
@@ -231,9 +231,9 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 20,
-    backgroundColor: C.card,
+    backgroundColor: C.bg,
     borderBottomWidth: 1,
-    borderBottomColor: C.border,
+    borderBottomColor: "rgba(233,196,106,0.25)",
     paddingHorizontal: SP.lg,
     paddingBottom: SP.lg,
   },
@@ -243,13 +243,13 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginBottom: SP.md,
   },
-  title: { fontFamily: F.display, fontSize: 26, color: C.ink },
+  title: { fontFamily: F.serif, fontSize: 24, color: C.ink },
   modeToggle: {
     flexDirection: "row",
-    backgroundColor: C.bg2,
+    backgroundColor: "rgba(28,23,20,0.9)",
     borderRadius: R.pill,
     borderWidth: 1,
-    borderColor: C.border,
+    borderColor: "rgba(233,196,106,0.35)",
     padding: 3,
   },
   modeBtn: {
@@ -260,20 +260,20 @@ const styles = StyleSheet.create({
     height: 32,
     borderRadius: R.pill,
   },
-  modeBtnActive: { backgroundColor: C.brand },
+  modeBtnActive: { backgroundColor: C.gold },
   modeText: { fontFamily: F.bold, fontSize: 13, color: C.ink3 },
-  modeTextActive: { color: C.onBrand },
+  modeTextActive: { color: "#1A1200" },
   myRankCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: C.bg2,
+    backgroundColor: "rgba(28,23,20,0.9)",
     borderRadius: R.md,
     padding: SP.md,
-    borderWidth: 1,
-    borderColor: C.border,
+    borderWidth: 1.5,
+    borderColor: "rgba(233,196,106,0.45)",
   },
   myRankLabel: { fontFamily: F.text, fontSize: 12, color: C.ink3 },
-  myRankValue: { fontFamily: F.display, fontSize: 18, color: C.ink },
+  myRankValue: { fontFamily: F.serif, fontSize: 18, color: C.ink },
   listWrap: { flex: 1 },
   scrollIndicator: {
     position: "absolute",
@@ -281,8 +281,8 @@ const styles = StyleSheet.create({
     top: 0,
     width: 4,
     borderRadius: 2,
-    backgroundColor: C.brand,
-    shadowColor: C.brand,
+    backgroundColor: C.goldSoft,
+    shadowColor: C.goldSoft,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.6,
     shadowRadius: 4,
@@ -294,15 +294,19 @@ const styles = StyleSheet.create({
     borderRadius: R.md,
     padding: SP.md,
     marginBottom: SP.sm,
+    borderWidth: 1,
+    borderColor: "rgba(233,196,106,0.14)",
     borderLeftWidth: 4,
-    borderLeftColor: C.bg3,
+    borderLeftColor: "rgba(233,196,106,0.3)",
   },
-  rowMe: { borderLeftColor: C.brand, backgroundColor: "rgba(0,229,122,0.08)" },
+  rowMe: { borderLeftColor: C.gold, backgroundColor: "rgba(233,196,106,0.08)" },
   rankBadge: {
     width: 32,
     height: 32,
     borderRadius: 16,
     backgroundColor: C.bg2,
+    borderWidth: 1,
+    borderColor: "rgba(233,196,106,0.3)",
     alignItems: "center",
     justifyContent: "center",
     marginRight: SP.md,
@@ -310,7 +314,7 @@ const styles = StyleSheet.create({
   rankText: { fontFamily: F.extra, fontSize: 14, color: C.ink2 },
   name: { fontFamily: F.bold, fontSize: 15, color: C.ink },
   games: { fontFamily: F.text, fontSize: 12, color: C.ink3 },
-  elo: { fontFamily: F.extra, fontSize: 18, color: C.brand },
+  elo: { fontFamily: F.serif, fontSize: 18, color: C.goldSoft },
   empty: {
     fontFamily: F.text,
     fontSize: 14,

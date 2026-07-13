@@ -123,7 +123,7 @@ export default function FriendsScreen() {
             style={({ pressed }) => [styles.inviteBtn, pressed && { opacity: 0.8 }]}
             hitSlop={6}
           >
-            <Ionicons name="share-social" size={15} color={C.brand} />
+            <Ionicons name="share-social" size={15} color={C.goldSoft} />
             <Text style={styles.inviteBtnText} numberOfLines={1}>
               {t("inviteFriends")}
             </Text>
@@ -158,7 +158,7 @@ export default function FriendsScreen() {
           ListEmptyComponent={<Text style={styles.empty}>{t("noResults")}</Text>}
           renderItem={({ item }) => (
             <View style={styles.row} testID={`search-result-${item.username}`}>
-              <Avatar avatarId={item.avatar_id} size={40} />
+              <Avatar avatarId={item.avatar_id} size={40} ringColor="rgba(233,196,106,0.55)" />
               <View style={{ flex: 1, marginLeft: SP.md }}>
                 <Text style={styles.name}>{item.username}</Text>
                 <Text style={styles.sub}>{item.elo} {t("elo")}</Text>
@@ -198,7 +198,7 @@ export default function FriendsScreen() {
                 <Text style={styles.sectionTitle}>{t("requests")}</Text>
                 {received.map((r) => (
                   <View key={r.friendship_id} style={styles.row} testID={`request-row-${r.username}`}>
-                    <Avatar avatarId={r.avatar_id} size={40} />
+                    <Avatar avatarId={r.avatar_id} size={40} ringColor="rgba(233,196,106,0.55)" />
                     <View style={{ flex: 1, marginLeft: SP.md }}>
                       <Text style={styles.name}>{r.username}</Text>
                       <Text style={styles.sub}>{r.elo} {t("elo")}</Text>
@@ -225,14 +225,14 @@ export default function FriendsScreen() {
           }
           ListEmptyComponent={
             <View style={styles.emptyBox} testID="friends-empty-state">
-              <Ionicons name="people-circle" size={72} color={C.brand3} />
+              <Ionicons name="people-circle" size={72} color={C.goldSoft} />
               <Text style={styles.emptyTitle}>{t("noFriends")}</Text>
               <Text style={styles.empty}>{t("noFriendsDesc")}</Text>
             </View>
           }
           renderItem={({ item }) => (
             <View style={styles.row} testID={`friend-row-${item.username}`}>
-              <Avatar avatarId={item.avatar_id} size={40} />
+              <Avatar avatarId={item.avatar_id} size={40} ringColor="rgba(233,196,106,0.55)" />
               <View style={{ flex: 1, marginLeft: SP.md }}>
                 <Text style={styles.name}>{item.username}</Text>
                 <Text style={styles.sub}>{item.elo} {t("elo")}</Text>
@@ -268,9 +268,9 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 20,
-    backgroundColor: C.card,
+    backgroundColor: C.bg,
     borderBottomWidth: 1,
-    borderBottomColor: C.border,
+    borderBottomColor: "rgba(233,196,106,0.25)",
     paddingHorizontal: SP.lg,
     paddingBottom: SP.md,
   },
@@ -280,35 +280,35 @@ const styles = StyleSheet.create({
     gap: SP.md,
     marginBottom: SP.md,
   },
-  title: { fontFamily: F.display, fontSize: 26, color: C.ink },
+  title: { fontFamily: F.serif, fontSize: 24, color: C.ink },
   inviteBtn: {
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
-    backgroundColor: "rgba(0,229,122,0.10)",
+    backgroundColor: "rgba(233,196,106,0.10)",
     borderWidth: 1,
-    borderColor: C.brand3,
+    borderColor: "rgba(233,196,106,0.5)",
     borderRadius: R.pill,
     paddingHorizontal: SP.md,
     height: 32,
   },
-  inviteBtnText: { fontFamily: F.bold, fontSize: 12.5, color: C.brand },
+  inviteBtnText: { fontFamily: F.bold, fontSize: 12.5, color: C.goldSoft },
   searchBox: {
     flexDirection: "row",
     alignItems: "center",
     gap: SP.sm,
-    backgroundColor: C.bg,
+    backgroundColor: "rgba(28,23,20,0.9)",
     borderRadius: R.pill,
     borderWidth: 1,
-    borderColor: C.border,
+    borderColor: "rgba(233,196,106,0.3)",
     paddingHorizontal: SP.lg,
     height: 46,
   },
   searchInput: { flex: 1, fontFamily: F.text, fontSize: 15, color: C.ink },
   sectionTitle: {
-    fontFamily: F.display,
+    fontFamily: F.serif,
     fontSize: 16,
-    color: C.ink2,
+    color: C.goldSoft,
     marginBottom: SP.sm,
     marginTop: SP.sm,
   },
@@ -320,7 +320,7 @@ const styles = StyleSheet.create({
     padding: SP.md,
     marginBottom: SP.sm,
     borderWidth: 1,
-    borderColor: C.border,
+    borderColor: "rgba(233,196,106,0.16)",
   },
   name: { fontFamily: F.bold, fontSize: 15, color: C.ink },
   sub: { fontFamily: F.text, fontSize: 12, color: C.ink3 },

@@ -98,7 +98,7 @@ export default function ProfileScreen() {
         }}
       >
         <MenuButton />
-        <Text style={{ fontFamily: F.display, fontSize: 20, color: C.ink }}>
+        <Text style={{ fontFamily: F.serif, fontSize: 20, color: C.ink }}>
           {t("tabProfile")}
         </Text>
       </View>
@@ -113,7 +113,7 @@ export default function ProfileScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.headerCard}>
-          <Avatar avatarId={user?.avatar_id} size={72} ringColor={C.brand} ringWidth={3} testID="profile-avatar" />
+          <Avatar avatarId={user?.avatar_id} size={72} ringColor={C.goldSoft} ringWidth={3} testID="profile-avatar" />
           <View style={styles.headerInfo}>
             <Text style={styles.username} testID="profile-username" numberOfLines={1}>{user?.username}</Text>
             <Text style={styles.email} numberOfLines={1}>{user?.email}</Text>
@@ -135,7 +135,7 @@ export default function ProfileScreen() {
             </View>
             <View style={styles.eloBadge}>
               <View style={styles.eloValueRow}>
-                <Ionicons name="podium" size={14} color={C.brand2} />
+                <Ionicons name="podium" size={14} color={C.goldSoft} />
                 <Text style={styles.eloValue}>#{rank ?? "—"}</Text>
               </View>
               <Text style={styles.eloLabel} numberOfLines={1}>{t("rank")}</Text>
@@ -148,7 +148,7 @@ export default function ProfileScreen() {
           onPress={() => setShowAvatars((v) => !v)}
           style={styles.sectionToggle}
         >
-          <Ionicons name="color-palette" size={18} color={C.brand2} />
+          <Ionicons name="color-palette" size={18} color={C.goldSoft} />
           <Text style={styles.sectionToggleText}>{t("chooseAvatar")}</Text>
           <Ionicons
             name={showAvatars ? "chevron-up" : "chevron-down"}
@@ -193,7 +193,7 @@ export default function ProfileScreen() {
           onPress={() => setShowStats((v) => !v)}
           style={styles.sectionToggle}
         >
-          <Ionicons name="stats-chart" size={18} color={C.brand2} />
+          <Ionicons name="stats-chart" size={18} color={C.goldSoft} />
           <Text style={styles.sectionToggleText}>{t("statistics")}</Text>
           <Ionicons
             name={showStats ? "chevron-up" : "chevron-down"}
@@ -206,7 +206,7 @@ export default function ProfileScreen() {
             <View style={[styles.statsGrid, { marginTop: SP.md }]} testID="stats-grid">
               {statBlocks.map((s) => (
                 <View key={s.key} style={styles.statBlock} testID={`stat-${s.key}`}>
-                  <Ionicons name={s.icon as never} size={20} color={C.brand2} />
+                  <Ionicons name={s.icon as never} size={20} color={C.goldSoft} />
                   <Text style={styles.statValue}>{s.value}</Text>
                   <Text style={styles.statLabel} numberOfLines={1}>
                     {s.label}
@@ -238,7 +238,7 @@ export default function ProfileScreen() {
           <Ionicons
             name={soundOn ? "volume-high" : "volume-mute"}
             size={18}
-            color={C.brand2}
+            color={C.goldSoft}
           />
           <Text style={styles.sectionToggleText}>{t("soundEffects")}</Text>
           <Switch
@@ -297,11 +297,11 @@ const styles = StyleSheet.create({
     marginHorizontal: SP.lg,
     borderRadius: R.lg,
     padding: SP.lg,
-    borderWidth: 1,
-    borderColor: C.border,
+    borderWidth: 1.5,
+    borderColor: "rgba(233,196,106,0.35)",
   },
   headerInfo: { flexShrink: 1, minWidth: 0 },
-  username: { fontFamily: F.display, fontSize: 20, color: C.ink },
+  username: { fontFamily: F.serif, fontSize: 20, color: C.ink },
   email: { fontFamily: F.text, fontSize: 13, color: C.ink3, marginTop: 2 },
   eloRow: {
     flex: 1,
@@ -312,19 +312,19 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: C.bg2,
+    backgroundColor: "rgba(28,23,20,0.9)",
     borderRadius: R.md,
     paddingVertical: SP.sm,
     paddingHorizontal: 4,
     borderWidth: 1,
-    borderColor: C.border,
+    borderColor: "rgba(233,196,106,0.25)",
     minWidth: 0,
   },
   eloValueRow: { flexDirection: "row", alignItems: "center", gap: 4 },
-  eloValue: { fontFamily: F.extra, fontSize: 16, color: C.ink },
+  eloValue: { fontFamily: F.serif, fontSize: 16, color: C.ink },
   eloLabel: { fontFamily: F.text, fontSize: 10.5, color: C.ink3, marginTop: 2 },
   sectionTitle: {
-    fontFamily: F.display,
+    fontFamily: F.serif,
     fontSize: 18,
     color: C.ink,
     marginTop: SP.xl,
@@ -337,7 +337,7 @@ const styles = StyleSheet.create({
     gap: SP.sm,
     backgroundColor: C.card,
     borderWidth: 1,
-    borderColor: C.border,
+    borderColor: "rgba(233,196,106,0.25)",
     borderRadius: R.md,
     paddingHorizontal: SP.lg,
     height: 52,
@@ -371,9 +371,9 @@ const styles = StyleSheet.create({
     padding: SP.md,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: C.border,
+    borderColor: "rgba(233,196,106,0.16)",
   },
-  statValue: { fontFamily: F.extra, fontSize: 20, color: C.ink, marginTop: 4 },
+  statValue: { fontFamily: F.serif, fontSize: 20, color: C.ink, marginTop: 4 },
   statLabel: { fontFamily: F.text, fontSize: 10.5, color: C.ink3, marginTop: 2 },
   chart: {
     flexDirection: "row",
@@ -383,7 +383,7 @@ const styles = StyleSheet.create({
     backgroundColor: C.card,
     borderRadius: R.md,
     borderWidth: 1,
-    borderColor: C.border,
+    borderColor: "rgba(233,196,106,0.2)",
     padding: SP.md,
     gap: 5,
   },
