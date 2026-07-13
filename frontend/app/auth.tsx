@@ -152,6 +152,7 @@ export default function AuthScreen() {
               onChangeText={setUsername}
               autoCapitalize="none"
               maxLength={20}
+              disableFullscreenUI
             />
           )}
           <TextInput
@@ -164,6 +165,7 @@ export default function AuthScreen() {
             autoCapitalize="none"
             keyboardType="email-address"
             autoComplete="email"
+            disableFullscreenUI
           />
           <TextInput
             testID="auth-password-input"
@@ -173,6 +175,7 @@ export default function AuthScreen() {
             value={password}
             onChangeText={setPassword}
             secureTextEntry
+            disableFullscreenUI
           />
 
           {error && (
@@ -186,7 +189,8 @@ export default function AuthScreen() {
             label={mode === "login" ? t("loginBtn") : t("registerBtn")}
             onPress={submit}
             loading={busy}
-            style={{ marginTop: SP.md }}
+            small
+            style={{ marginTop: SP.sm }}
           />
 
           <View style={styles.orRow}>
@@ -230,7 +234,7 @@ const styles = StyleSheet.create({
     alignSelf: "center",
   },
   colLeft: { flex: 1, alignItems: "center" },
-  colRight: { flex: 1.1, maxWidth: 440 },
+  colRight: { flex: 1.1, maxWidth: 400 },
   langRow: { flexDirection: "row", justifyContent: "center", gap: SP.sm },
   langChip: {
     paddingHorizontal: SP.lg,
@@ -260,7 +264,7 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: C.card,
     borderRadius: R.lg,
-    padding: SP.xl,
+    padding: SP.lg,
     borderWidth: 1,
     borderColor: C.border,
   },
@@ -268,30 +272,31 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     backgroundColor: C.bg2,
     borderRadius: R.pill,
-    padding: 4,
-    marginBottom: SP.lg,
+    padding: 3,
+    marginBottom: SP.md,
   },
   segmentBtn: {
     flex: 1,
-    height: 40,
+    height: 34,
     borderRadius: R.pill,
     alignItems: "center",
     justifyContent: "center",
   },
   segmentActive: { backgroundColor: C.brand },
-  segmentText: { fontFamily: F.display, fontSize: 15, color: C.ink2 },
+  segmentText: { fontFamily: F.display, fontSize: 13.5, color: C.ink2 },
   segmentTextActive: { color: C.onBrand },
   input: {
-    height: 52,
+    height: 42,
     borderRadius: R.md,
     backgroundColor: C.bg,
     borderWidth: 1,
     borderColor: C.border,
-    paddingHorizontal: SP.lg,
+    paddingHorizontal: SP.md,
+    paddingVertical: 0,
     fontFamily: F.text,
-    fontSize: 16,
+    fontSize: 14.5,
     color: C.ink,
-    marginBottom: SP.md,
+    marginBottom: SP.sm,
   },
   error: {
     fontFamily: F.bold,
@@ -303,12 +308,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: SP.md,
-    marginVertical: SP.lg,
+    marginVertical: SP.md,
   },
   orLine: { flex: 1, height: 1, backgroundColor: C.border },
-  orText: { fontFamily: F.text, color: C.ink3, fontSize: 13 },
+  orText: { fontFamily: F.text, color: C.ink3, fontSize: 12.5 },
   googleBtn: {
-    height: 54,
+    height: 42,
     borderRadius: R.pill,
     borderWidth: 1.5,
     borderColor: C.borderStrong,
@@ -318,5 +323,5 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: SP.sm,
   },
-  googleText: { fontFamily: F.display, fontSize: 15, color: C.ink },
+  googleText: { fontFamily: F.display, fontSize: 13.5, color: C.ink },
 });

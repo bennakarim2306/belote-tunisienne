@@ -139,6 +139,7 @@ export default function FriendsScreen() {
             value={query}
             onChangeText={onSearch}
             autoCapitalize="none"
+            disableFullscreenUI
           />
           {query.length > 0 && (
             <Pressable onPress={() => onSearch("")} hitSlop={8} testID="friend-search-clear">

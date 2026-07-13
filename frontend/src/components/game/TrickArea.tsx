@@ -24,7 +24,7 @@ const HOLD_MS = 900;
 const OFFSETS = [
   { x: 0, y: 22 },
   { x: -72, y: 0 },
-  { x: 0, y: -22 },
+  { x: 0, y: -18 },
   { x: 72, y: 0 },
 ];
 const ROTATIONS_DEG = [-2, -7, 3, 7];

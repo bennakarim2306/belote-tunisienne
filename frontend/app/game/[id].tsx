@@ -460,6 +460,28 @@ export default function GameScreen() {
         )}
       </View>
 
+      {/* partner seat: pinned to the very top screen edge (max ~14px) — its
+          position must never shift; rendered BEFORE the table so trick cards
+          pass ABOVE the avatar */}
+      <View
+        style={[styles.partnerRow, { top: Math.min(insets.top, 12) + 2 }]}
+        pointerEvents="box-none"
+      >
+        <PlayerSeat
+          player={partner}
+          isTurn={state.turn === partner.seat}
+          isDealer={state.dealer === partner.seat}
+          bidLabel={bidLabels[partner.seat]?.text}
+          bidSuit={bidLabels[partner.seat]?.suit}
+          contractLabel={contractLabelFor(partner.seat)}
+          chatText={chatBubbles[partner.seat]?.text}
+          deadline={state.turn_deadline}
+          showTimer={seatTimerOn}
+          size={38}
+          bubbleSide="right"
+        />
+      </View>
+
       {/* table */}
       <View style={styles.table}>
         <View style={styles.middleRow}>
@@ -502,27 +524,6 @@ export default function GameScreen() {
             onDone={() => setDealing(false)}
           />
         )}
-      </View>
-
-      {/* partner seat: pinned to the top screen edge — its position must never
-          shift when the header grows (contract chip) or the bidding evolves */}
-      <View
-        style={[styles.partnerRow, { top: insets.top + 2 }]}
-        pointerEvents="box-none"
-      >
-        <PlayerSeat
-          player={partner}
-          isTurn={state.turn === partner.seat}
-          isDealer={state.dealer === partner.seat}
-          bidLabel={bidLabels[partner.seat]?.text}
-          bidSuit={bidLabels[partner.seat]?.suit}
-          contractLabel={contractLabelFor(partner.seat)}
-          chatText={chatBubbles[partner.seat]?.text}
-          deadline={state.turn_deadline}
-          showTimer={seatTimerOn}
-          size={38}
-          bubbleSide="right"
-        />
       </View>
 
       {/* bottom row: me + chat (left) · hand fan (center) · status (right) */}

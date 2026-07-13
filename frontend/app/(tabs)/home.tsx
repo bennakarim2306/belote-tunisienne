@@ -462,6 +462,7 @@ export default function HomeScreen() {
                 maxLength={6}
                 returnKeyType="go"
                 onSubmitEditing={joinRoom}
+                disableFullscreenUI
               />
               <Pressable
                 testID="join-room-button"
