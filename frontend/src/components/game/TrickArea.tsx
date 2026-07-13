@@ -6,6 +6,7 @@ import Animated, {
   interpolate,
   useAnimatedStyle,
   useSharedValue,
+  withDelay,
   withTiming,
 } from "react-native-reanimated";
 
@@ -14,6 +15,9 @@ import { TrickCard } from "@/src/game/useGameSocket";
 import { C, F } from "@/src/theme";
 
 const CARD_W = 56;
+// the completed trick rests on the table before being collected, so the
+// 4th (last-played) card is clearly visible — keep in sync with [id].tsx
+const HOLD_MS = 900;
 
 // rel position offsets — CLOCKWISE play direction on screen:
 // 0 = me (bottom), 1 = next player (LEFT), 2 = partner (top), 3 = previous (RIGHT)
@@ -67,9 +71,11 @@ interface CollectingProps {
   index: number;
   trump: string | null;
   progress: Animated.SharedValue<number>;
+  /** true for the last-played card: it flies in from its seat during the hold */
+  isNewest: boolean;
 }
 
-function CollectingCard({ tc, rel, winnerRel, index, trump, progress }: CollectingProps) {
+function CollectingCard({ tc, rel, winnerRel, index, trump, progress, isNewest }: CollectingProps) {
   const style = useAnimatedStyle(() => {
     const p = progress.value;
     const gather = interpolate(p, [0, 0.38], [0, 1], Extrapolation.CLAMP);
@@ -88,7 +94,10 @@ function CollectingCard({ tc, rel, winnerRel, index, trump, progress }: Collecti
     };
   });
   return (
-    <Animated.View style={[styles.cardPos, style]}>
+    <Animated.View
+      entering={isNewest ? ENTER_FROM[rel] : undefined}
+      style={[styles.cardPos, style]}
+    >
       <PlayingCard card={tc.card} width={CARD_W} trumpSuit={trump} />
     </Animated.View>
   );
@@ -136,11 +145,15 @@ export default function TrickArea({ trick, lastTrick, showLastTrick, mySeat, tru
 
   useEffect(() => {
     if (showLastTrick && lastTrick) {
+      // rest phase (progress stays at 0: trick lies on the table), then collect
       progress.value = 0;
-      progress.value = withTiming(1, {
-        duration: 1000,
-        easing: Easing.inOut(Easing.cubic),
-      });
+      progress.value = withDelay(
+        HOLD_MS,
+        withTiming(1, {
+          duration: 1000,
+          easing: Easing.inOut(Easing.cubic),
+        }),
+      );
     }
   }, [showLastTrick, lastTrick, progress]);
 
@@ -157,6 +170,7 @@ export default function TrickArea({ trick, lastTrick, showLastTrick, mySeat, tru
             index={i}
             trump={trump}
             progress={progress}
+            isNewest={i === lastTrick.cards.length - 1}
           />
         ))}
         <PointsFly winnerRel={wr} points={lastTrick.points} progress={progress} />
@@ -197,8 +211,8 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    // bias upward so the bottom card never slides under the player's hand fan
-    transform: [{ translateY: -16 }],
+    // slight upward bias so the bottom card never slides under the hand fan
+    transform: [{ translateY: -6 }],
   },
   cardPos: {
     position: "absolute",

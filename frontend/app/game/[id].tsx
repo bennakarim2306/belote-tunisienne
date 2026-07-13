@@ -120,6 +120,8 @@ export default function GameScreen() {
   const chatTimers = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
   const [coachMsg, setCoachMsg] = useState<{ text: string; key: number } | null>(null);
   const coachMsgTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [handEndReady, setHandEndReady] = useState(false);
+  const prevPhaseRef = useRef<string | null>(null);
   const lastEventId = useRef(0);
   const prevHandRef = useRef<number | null>(null);
 
@@ -197,12 +199,16 @@ export default function GameScreen() {
       } else if (ev.e === "pause_declined") {
         setBanner({ text: t("pauseDeclined"), key: Date.now() });
       } else if (ev.e === "trick_end") {
-        playSound("trick", 0.7);
+        // the completed trick rests ~0.9s (so the 4th card is clearly seen),
+        // then the collect animation plays (~1s) — see TrickArea HOLD_MS
         setShowLast(true);
-        setTimeout(() => setShowLast(false), 1150);
+        setTimeout(() => playSound("trick", 0.7), 850);
+        setTimeout(() => setShowLast(false), 2050);
         if (Platform.OS !== "web" && state && ev.winner_seat !== undefined &&
             ev.winner_seat % 2 === state.my_seat % 2) {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          setTimeout(() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          }, 850);
         }
       } else if (ev.e === "match_end" && Platform.OS !== "web") {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -232,6 +238,26 @@ export default function GameScreen() {
     const iv = setInterval(update, 1000);
     return () => clearInterval(iv);
   }, [state]);
+
+  // the hand-end recap waits for the final trick's rest + collect animation
+  // (fresh transition from "playing" only — rejoins show it immediately)
+  useEffect(() => {
+    const phase = state?.phase;
+    if (phase !== "hand_end") {
+      setHandEndReady(false);
+      prevPhaseRef.current = phase ?? null;
+      return;
+    }
+    const fresh = prevPhaseRef.current === "playing";
+    prevPhaseRef.current = phase;
+    if (!fresh) {
+      setHandEndReady(true);
+      return;
+    }
+    const tm = setTimeout(() => setHandEndReady(true), 2150);
+    return () => clearTimeout(tm);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state?.phase]);
 
   const quit = () => {
     leave();
@@ -436,22 +462,6 @@ export default function GameScreen() {
 
       {/* table */}
       <View style={styles.table}>
-        <View style={styles.partnerRow} pointerEvents="box-none">
-          <PlayerSeat
-            player={partner}
-            isTurn={state.turn === partner.seat}
-            isDealer={state.dealer === partner.seat}
-            bidLabel={bidLabels[partner.seat]?.text}
-            bidSuit={bidLabels[partner.seat]?.suit}
-            contractLabel={contractLabelFor(partner.seat)}
-            chatText={chatBubbles[partner.seat]?.text}
-            deadline={state.turn_deadline}
-            showTimer={seatTimerOn}
-            size={38}
-            bubbleSide="right"
-          />
-        </View>
-
         <View style={styles.middleRow}>
           <PlayerSeat
             player={leftP}
@@ -492,6 +502,27 @@ export default function GameScreen() {
             onDone={() => setDealing(false)}
           />
         )}
+      </View>
+
+      {/* partner seat: pinned to the top screen edge — its position must never
+          shift when the header grows (contract chip) or the bidding evolves */}
+      <View
+        style={[styles.partnerRow, { top: insets.top + 2 }]}
+        pointerEvents="box-none"
+      >
+        <PlayerSeat
+          player={partner}
+          isTurn={state.turn === partner.seat}
+          isDealer={state.dealer === partner.seat}
+          bidLabel={bidLabels[partner.seat]?.text}
+          bidSuit={bidLabels[partner.seat]?.suit}
+          contractLabel={contractLabelFor(partner.seat)}
+          chatText={chatBubbles[partner.seat]?.text}
+          deadline={state.turn_deadline}
+          showTimer={seatTimerOn}
+          size={38}
+          bubbleSide="right"
+        />
       </View>
 
       {/* bottom row: me + chat (left) · hand fan (center) · status (right) */}
@@ -590,7 +621,7 @@ export default function GameScreen() {
       )}
 
       {/* hand end */}
-      {state.phase === "hand_end" && state.hand_result && (
+      {state.phase === "hand_end" && state.hand_result && handEndReady && (
         <HandEndModal
           result={state.hand_result}
           mySeat={mySeat}
@@ -954,7 +985,12 @@ const styles = StyleSheet.create({
   contractText: { fontFamily: F.serif, fontSize: 15, color: C.cream },
   contractTeam: { fontFamily: F.text, fontSize: 10, color: "rgba(233,196,106,0.75)" },
   table: { flex: 1 },
-  partnerRow: { alignItems: "center", marginTop: -46 },
+  partnerRow: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    alignItems: "center",
+  },
   middleRow: {
     flex: 1,
     flexDirection: "row",
