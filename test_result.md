@@ -269,3 +269,7 @@ agent_communication:
 agent_communication:
   - agent: "main"
     message: "NAV REDESIGN (user request): bottom tab bar REMOVED, replaced by hamburger MenuButton (testID menu-button) top-left on each tab screen opening a left side-menu (testID side-menu, items menu-item-home/leaderboard/friends/profile with badges). Ad banner stays anchored bottom (inside custom tabBar). Home: 'Partie en cours' resume pill moved INTO the header between username and ELO (testID resume-game-button, no more resume-game-banner); inline invite banners REMOVED from the content area (grid zone reserved for the 4 boxes only) - invites/duo invites/friend requests remain accessible via the notifications bell modal. IMPORTANT for Playwright: multiple tab screens stay mounted, so scope menu-button clicks with the screen testID, e.g. get_by_test_id('home-screen').get_by_test_id('menu-button')."
+
+agent_communication:
+  - agent: "main"
+    message: "iter22 feature pack complete and verified: replay button (match-end), +10% cards, presence system (ping/online), duo setup search+online filter+dots, friends online filter + invite-to-game modal (online duo / duo vs AI). Testing agent iteration_22: backend 9/9, frontend all pass. Main agent additionally verified match-end replay E2E via WS bot script + browser (new game remounts via key={id} wrapper)."
