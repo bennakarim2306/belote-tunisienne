@@ -169,11 +169,13 @@ export function MatchEndOverlay({
   myUserId,
   t,
   onHome,
+  onReplay,
 }: {
   state: GameState;
   myUserId: string;
   t: TFunc;
   onHome: () => void;
+  onReplay?: () => void;
 }) {
   const myTeam = state.my_seat % 2;
   const won = state.winner_team === myTeam;
@@ -255,12 +257,22 @@ export function MatchEndOverlay({
             </Text>
           </View>
         )}
+        {onReplay && (
+          <ChunkyButton
+            testID="replay-button"
+            label={t("replay")}
+            onPress={onReplay}
+            small
+            style={{ marginTop: SP.md }}
+          />
+        )}
         <ChunkyButton
           testID="back-home-button"
           label={t("backHome")}
           onPress={onHome}
           small
-          style={{ marginTop: SP.md }}
+          variant={onReplay ? "secondary" : undefined}
+          style={{ marginTop: onReplay ? SP.sm : SP.md }}
         />
       </Animated.View>
       {won && <VictoryCelebration />}

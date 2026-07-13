@@ -6,6 +6,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
 
@@ -21,6 +22,7 @@ export interface DuoCandidate {
   elo: number;
   elo_duo?: number;
   friend_status?: "friends" | "pending" | "none";
+  online?: boolean;
 }
 
 interface Props {
@@ -38,6 +40,8 @@ export default function DuoSetup({ partner, onPartner, showDuoElo = false }: Pro
   const [friends, setFriends] = useState<DuoCandidate[]>([]);
   const [recent, setRecent] = useState<DuoCandidate[]>([]);
   const [requested, setRequested] = useState<Record<string, boolean>>({});
+  const [query, setQuery] = useState("");
+  const [onlyOnline, setOnlyOnline] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -55,6 +59,12 @@ export default function DuoSetup({ partner, onPartner, showDuoElo = false }: Pro
     await api.post("/friends/request", { user_id: c.user_id }).catch(() => {});
   };
 
+  const matches = (c: DuoCandidate) =>
+    c.username.toLowerCase().includes(query.trim().toLowerCase()) &&
+    (!onlyOnline || !!c.online);
+  const fList = friends.filter(matches);
+  const rList = recent.filter(matches);
+
   const renderChip = (c: DuoCandidate, showAdd: boolean) => {
     const selected = partner?.user_id === c.user_id;
     return (
@@ -64,7 +74,13 @@ export default function DuoSetup({ partner, onPartner, showDuoElo = false }: Pro
         onPress={() => onPartner(selected ? null : c)}
         style={[styles.chip, selected && styles.chipSelected]}
       >
-        <Avatar avatarId={c.avatar_id} size={40} ringColor={selected ? C.brand : undefined} />
+        <View>
+          <Avatar avatarId={c.avatar_id} size={40} ringColor={selected ? C.brand : undefined} />
+          <View
+            style={[styles.presenceDot, { backgroundColor: c.online ? C.green : C.ink3 }]}
+            testID={`duo-presence-${c.username}-${c.online ? "on" : "off"}`}
+          />
+        </View>
         <Text style={[styles.chipName, selected && { color: C.brand }]} numberOfLines={1}>
           {c.username}
         </Text>
@@ -93,23 +109,50 @@ export default function DuoSetup({ partner, onPartner, showDuoElo = false }: Pro
   return (
     <View testID="duo-setup">
       <Text style={styles.label}>{t("duoChoosePartner")}</Text>
+      <View style={styles.filterRow}>
+        <View style={styles.searchBox}>
+          <Ionicons name="search" size={14} color={C.ink3} />
+          <TextInput
+            testID="duo-search-input"
+            style={styles.searchInput}
+            placeholder={t("duoSearchFriend")}
+            placeholderTextColor={C.ink3}
+            value={query}
+            onChangeText={setQuery}
+            autoCapitalize="none"
+            disableFullscreenUI
+          />
+        </View>
+        <Pressable
+          testID="duo-online-filter"
+          onPress={() => setOnlyOnline((v) => !v)}
+          style={[styles.onlineChip, onlyOnline && styles.onlineChipActive]}
+        >
+          <View style={styles.presenceDotInline} />
+          <Text style={[styles.onlineChipText, onlyOnline && { color: C.onBrand }]}>
+            {t("onlineFilter")}
+          </Text>
+        </Pressable>
+      </View>
       {loading ? (
         <ActivityIndicator color={C.brand} style={{ marginVertical: SP.lg }} />
       ) : friends.length === 0 && recent.length === 0 ? (
         <Text style={styles.empty}>{t("duoNoCandidates")}</Text>
+      ) : fList.length === 0 && rList.length === 0 ? (
+        <Text style={styles.empty}>{t("noResults")}</Text>
       ) : (
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={{ gap: SP.sm, paddingVertical: SP.xs }}
         >
-          {friends.map((c) => renderChip(c, false))}
-          {recent.length > 0 && (
+          {fList.map((c) => renderChip(c, false))}
+          {rList.length > 0 && (
             <View style={styles.recentDivider}>
               <Text style={styles.recentDividerText}>{t("duoRecentSection")}</Text>
             </View>
           )}
-          {recent.map((c) => renderChip(c, true))}
+          {rList.map((c) => renderChip(c, true))}
         </ScrollView>
       )}
 
@@ -130,6 +173,55 @@ const styles = StyleSheet.create({
     color: C.ink2,
     marginTop: SP.md,
     marginBottom: SP.xs,
+  },
+  filterRow: { flexDirection: "row", gap: SP.sm, marginBottom: SP.xs },
+  searchBox: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: C.bg,
+    borderRadius: R.pill,
+    borderWidth: 1,
+    borderColor: C.border,
+    paddingHorizontal: SP.md,
+    height: 34,
+  },
+  searchInput: {
+    flex: 1,
+    fontFamily: F.text,
+    fontSize: 13,
+    color: C.ink,
+    paddingVertical: 0,
+  },
+  onlineChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    borderRadius: R.pill,
+    borderWidth: 1,
+    borderColor: C.border,
+    backgroundColor: C.bg2,
+    paddingHorizontal: SP.md,
+    height: 34,
+  },
+  onlineChipActive: { backgroundColor: C.brand, borderColor: C.brand },
+  onlineChipText: { fontFamily: F.bold, fontSize: 12, color: C.ink2 },
+  presenceDot: {
+    position: "absolute",
+    bottom: -1,
+    right: -1,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: C.bg2,
+  },
+  presenceDotInline: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: C.green,
   },
   empty: {
     fontFamily: F.text,

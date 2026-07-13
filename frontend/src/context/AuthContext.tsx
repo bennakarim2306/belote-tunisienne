@@ -9,7 +9,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { Platform } from "react-native";
+import { AppState, Platform } from "react-native";
 
 import { api, setApiToken } from "@/src/api";
 import { storage } from "@/src/utils/storage";
@@ -119,6 +119,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     })();
   }, [processSessionId]);
+
+  // Presence heartbeat — lets friends see us as "online" (green dot)
+  useEffect(() => {
+    if (!token) return;
+    const ping = () => {
+      api.post("/presence/ping", {}).catch(() => {});
+    };
+    ping();
+    const iv = setInterval(ping, 30000);
+    const sub = AppState.addEventListener("change", (s) => {
+      if (s === "active") ping();
+    });
+    return () => {
+      clearInterval(iv);
+      sub.remove();
+    };
+  }, [token]);
 
   // Hot deep links (mobile)
   useEffect(() => {

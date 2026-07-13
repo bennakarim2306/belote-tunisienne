@@ -30,6 +30,7 @@ import HandFan from "@/src/components/game/HandFan";
 import PlayerSeat from "@/src/components/game/PlayerSeat";
 import TrickArea from "@/src/components/game/TrickArea";
 import PlayingCard, { SUIT_COLOR_ON_DARK, SUIT_SYMBOL, rankLabel } from "@/src/components/PlayingCard";
+import { api } from "@/src/api";
 import { useAuth } from "@/src/context/AuthContext";
 import { useGameSocket } from "@/src/game/useGameSocket";
 import { TKey, useI18n } from "@/src/i18n";
@@ -270,6 +271,20 @@ export default function GameScreen() {
   }, []);
   const quitAfterMatch = () => {
     maybeShowInterstitialAfterMatch(state?.origin ?? "online").finally(quit);
+  };
+
+  // "Rejouer": solo -> a fresh vs-AI game right away; online -> back to the
+  // matchmaking queue with the same match type
+  const replay = async () => {
+    const mt = state?.match_type === "long" ? "long" : "short";
+    if (state?.origin === "solo") {
+      try {
+        const res = await api.post("/solo", { match_type: mt });
+        router.replace({ pathname: "/game/[id]", params: { id: res.game_id } });
+      } catch {}
+    } else {
+      router.replace({ pathname: "/matchmaking", params: { type: mt } });
+    }
   };
 
   const sendChat = (kind: "msg" | "emoji", value: string) => {
@@ -653,6 +668,7 @@ export default function GameScreen() {
           myUserId={user?.user_id ?? ""}
           t={t}
           onHome={quitAfterMatch}
+          onReplay={state.origin !== "private" ? replay : undefined}
         />
       )}
 

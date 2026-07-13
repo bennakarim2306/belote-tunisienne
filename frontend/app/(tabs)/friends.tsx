@@ -1,8 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useFocusEffect } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useRef, useState } from "react";
 import {
   FlatList,
+  Modal,
   Pressable,
   RefreshControl,
   StyleSheet,
@@ -17,6 +18,7 @@ import { api } from "@/src/api";
 import Avatar from "@/src/components/Avatar";
 import MenuButton from "@/src/components/MenuButton";
 import ShareSheet from "@/src/components/ShareSheet";
+import { useAuth } from "@/src/context/AuthContext";
 import { useCollapsibleHeader } from "@/src/hooks/use-collapsible-header";
 import { useI18n } from "@/src/i18n";
 import { APP_INSTALL_URL } from "@/src/share";
@@ -29,11 +31,13 @@ interface FriendRow {
   avatar_id: string;
   elo: number;
   friend_status?: string;
+  online?: boolean;
 }
 
 export default function FriendsScreen() {
   const insets = useSafeAreaInsets();
   const { t } = useI18n();
+  const { token } = useAuth();
   const [friends, setFriends] = useState<FriendRow[]>([]);
   const [received, setReceived] = useState<FriendRow[]>([]);
   const [query, setQuery] = useState("");
@@ -41,6 +45,10 @@ export default function FriendsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
+  const [onlyOnline, setOnlyOnline] = useState(false);
+  const [inviteFor, setInviteFor] = useState<FriendRow | null>(null);
+  const [inviteMatchType, setInviteMatchType] = useState<"short" | "long">("short");
+  const router = useRouter();
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // top header hides on scroll down, reappears on scroll up
@@ -48,12 +56,13 @@ export default function FriendsScreen() {
     useCollapsibleHeader();
 
   const load = useCallback(async () => {
+    if (!token) return; // wait for the session bootstrap (direct URL loads)
     try {
       const res = await api.get("/friends");
       setFriends(res.friends);
       setReceived(res.pending_received);
     } catch {}
-  }, []);
+  }, [token]);
 
   useFocusEffect(
     useCallback(() => {
@@ -100,6 +109,26 @@ export default function FriendsScreen() {
     } catch {}
   };
 
+  // invite an online friend to a duo game (online duo-vs-duo or duo vs AI)
+  const sendGameInvite = async (mode: "online" | "vs_ai") => {
+    if (!inviteFor) return;
+    const target = inviteFor;
+    setInviteFor(null);
+    try {
+      await api.post("/matchmaking/duo/invite", {
+        to_user_id: target.user_id,
+        match_type: inviteMatchType,
+        mode,
+      });
+      router.push({
+        pathname: "/matchmaking",
+        params: { type: inviteMatchType, duo: "1" },
+      });
+    } catch {
+      showToast(t("error_generic"));
+    }
+  };
+
   const onRefresh = async () => {
     setRefreshing(true);
     await load();
@@ -117,6 +146,21 @@ export default function FriendsScreen() {
             <MenuButton />
           </View>
           <Text style={styles.title}>{t("friends")}</Text>
+          <Pressable
+            testID="friends-online-filter"
+            onPress={() => setOnlyOnline((v) => !v)}
+            style={[styles.onlineChip, onlyOnline && styles.onlineChipActive]}
+            hitSlop={6}
+          >
+            <View style={styles.presenceDotInline} />
+            <Text
+              style={[styles.onlineChipText, onlyOnline && { color: C.onBrand }]}
+              numberOfLines={1}
+            >
+              {t("onlineFilter")}
+            </Text>
+          </Pressable>
+          <View style={{ flex: 1 }} />
           <Pressable
             testID="invite-friends-button"
             onPress={() => setShareOpen(true)}
@@ -185,7 +229,7 @@ export default function FriendsScreen() {
         />
       ) : (
         <FlatList
-          data={friends}
+          data={onlyOnline ? friends.filter((f) => f.online) : friends}
           keyExtractor={(item) => item.user_id}
           contentContainerStyle={{ padding: SP.lg, paddingTop: headerH + SP.md, paddingBottom: SP.xl, maxWidth: 760, width: "100%", alignSelf: "center" }}
           onScroll={onScrollDirection}
@@ -233,12 +277,37 @@ export default function FriendsScreen() {
           }
           renderItem={({ item }) => (
             <View style={styles.row} testID={`friend-row-${item.username}`}>
-              <Avatar avatarId={item.avatar_id} size={40} ringColor="rgba(233,196,106,0.55)" />
+              <View>
+                <Avatar avatarId={item.avatar_id} size={40} ringColor="rgba(233,196,106,0.55)" />
+                <View
+                  style={[
+                    styles.presenceDot,
+                    { backgroundColor: item.online ? C.green : C.ink3 },
+                  ]}
+                  testID={`presence-${item.username}-${item.online ? "on" : "off"}`}
+                />
+              </View>
               <View style={{ flex: 1, marginLeft: SP.md }}>
                 <Text style={styles.name}>{item.username}</Text>
                 <Text style={styles.sub}>{item.elo} {t("elo")}</Text>
               </View>
-              <Ionicons name="heart" size={18} color={C.brand3} />
+              {item.online ? (
+                <Pressable
+                  testID={`invite-game-${item.username}`}
+                  onPress={() => {
+                    setInviteMatchType("short");
+                    setInviteFor(item);
+                  }}
+                  style={({ pressed }) => [styles.inviteGameBtn, pressed && { opacity: 0.85 }]}
+                >
+                  <Ionicons name="game-controller" size={15} color={C.onBrand} />
+                  <Text style={styles.inviteGameText} numberOfLines={1}>
+                    {t("inviteToGame")}
+                  </Text>
+                </Pressable>
+              ) : (
+                <Ionicons name="heart" size={18} color={C.brand3} />
+              )}
             </View>
           )}
         />
@@ -249,6 +318,56 @@ export default function FriendsScreen() {
           <Text style={styles.toastText}>{toast}</Text>
         </View>
       )}
+
+      {/* invite an online friend to a duo game */}
+      <Modal visible={inviteFor !== null} transparent animationType="fade">
+        <Pressable style={styles.inviteScrim} onPress={() => setInviteFor(null)}>
+          <Pressable style={styles.inviteCard} onPress={() => {}} testID="invite-game-modal">
+            <Text style={styles.inviteTitle}>{t("inviteToGame")}</Text>
+            <Text style={styles.inviteName}>{inviteFor?.username}</Text>
+            <View style={styles.mtRow}>
+              {(["short", "long"] as const).map((mt) => (
+                <Pressable
+                  key={mt}
+                  testID={`invite-mt-${mt}`}
+                  onPress={() => setInviteMatchType(mt)}
+                  style={[styles.mtChip, inviteMatchType === mt && styles.mtChipActive]}
+                >
+                  <Text
+                    style={[styles.mtChipText, inviteMatchType === mt && { color: C.onBrand }]}
+                  >
+                    {t(mt === "short" ? "shortMatch" : "longMatch")}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+            <Pressable
+              testID="invite-mode-online"
+              onPress={() => sendGameInvite("online")}
+              style={({ pressed }) => [styles.modeRow, pressed && { opacity: 0.85 }]}
+            >
+              <Ionicons name="globe-outline" size={22} color={C.brand} />
+              <View style={{ flex: 1, marginLeft: SP.md }}>
+                <Text style={styles.modeTitle}>{t("playOnline")}</Text>
+                <Text style={styles.modeDesc}>{t("playOnlineDesc")}</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={C.ink3} />
+            </Pressable>
+            <Pressable
+              testID="invite-mode-ai"
+              onPress={() => sendGameInvite("vs_ai")}
+              style={({ pressed }) => [styles.modeRow, pressed && { opacity: 0.85 }]}
+            >
+              <Ionicons name="game-controller" size={22} color={C.brand2} />
+              <View style={{ flex: 1, marginLeft: SP.md }}>
+                <Text style={styles.modeTitle}>{t("playVsAI")}</Text>
+                <Text style={styles.modeDesc}>{t("playVsAIDesc")}</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={C.ink3} />
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       <ShareSheet
         visible={shareOpen}
@@ -362,4 +481,94 @@ const styles = StyleSheet.create({
     paddingVertical: SP.md,
   },
   toastText: { fontFamily: F.bold, color: C.cream, fontSize: 13 },
+  onlineChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    borderRadius: R.pill,
+    borderWidth: 1,
+    borderColor: "rgba(233,196,106,0.35)",
+    backgroundColor: "rgba(28,23,20,0.9)",
+    paddingHorizontal: SP.md,
+    height: 32,
+  },
+  onlineChipActive: { backgroundColor: C.brand, borderColor: C.brand },
+  onlineChipText: { fontFamily: F.bold, fontSize: 12, color: C.ink2 },
+  presenceDotInline: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: C.green,
+  },
+  presenceDot: {
+    position: "absolute",
+    bottom: -1,
+    right: -1,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: C.card,
+  },
+  inviteGameBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: C.brand,
+    borderRadius: R.pill,
+    paddingHorizontal: SP.md,
+    height: 34,
+    maxWidth: 190,
+  },
+  inviteGameText: { fontFamily: F.bold, fontSize: 12, color: C.onBrand },
+  inviteScrim: {
+    flex: 1,
+    backgroundColor: C.scrim,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: SP.lg,
+  },
+  inviteCard: {
+    width: "100%",
+    maxWidth: 430,
+    backgroundColor: C.card,
+    borderRadius: R.lg,
+    borderWidth: 1.5,
+    borderColor: "rgba(233,196,106,0.35)",
+    padding: SP.lg,
+  },
+  inviteTitle: { fontFamily: F.serif, fontSize: 18, color: C.ink, textAlign: "center" },
+  inviteName: {
+    fontFamily: F.text,
+    fontSize: 13,
+    color: C.goldSoft,
+    textAlign: "center",
+    marginTop: 2,
+    marginBottom: SP.md,
+  },
+  mtRow: { flexDirection: "row", gap: SP.sm, marginBottom: SP.md },
+  mtChip: {
+    flex: 1,
+    height: 34,
+    borderRadius: R.pill,
+    borderWidth: 1,
+    borderColor: C.borderStrong,
+    backgroundColor: C.bg2,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  mtChipActive: { backgroundColor: C.brand, borderColor: C.brand },
+  mtChipText: { fontFamily: F.bold, fontSize: 12.5, color: C.ink2 },
+  modeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: C.bg2,
+    borderRadius: R.md,
+    borderWidth: 1,
+    borderColor: C.border,
+    padding: SP.md,
+    marginBottom: SP.sm,
+  },
+  modeTitle: { fontFamily: F.display, fontSize: 15, color: C.ink },
+  modeDesc: { fontFamily: F.text, fontSize: 11.5, color: C.ink3 },
 });

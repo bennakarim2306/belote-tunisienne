@@ -3,6 +3,7 @@ import asyncio
 import logging
 import os
 import re
+import time
 import uuid
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -318,14 +319,27 @@ async def search_users(q: str, request: Request):
 
 # ---------------- friends ----------------
 
+ONLINE_WINDOW_SECONDS = 90  # a user pinging within this window shows "online"
+
+
 async def user_brief(user_id):
     b = await db.users.find_one(
         {"user_id": user_id},
         {"_id": 0, "user_id": 1, "username": 1, "avatar_id": 1, "elo": 1,
-         "elo_duo": 1})
+         "elo_duo": 1, "last_active": 1})
     if b:
         b["elo_duo"] = b.get("elo_duo") or 1000
+        b["online"] = (time.time() - b.pop("last_active", 0)) < ONLINE_WINDOW_SECONDS
     return b
+
+
+@api.post("/presence/ping")
+async def presence_ping(request: Request):
+    user = await get_current_user(request)
+    await db.users.update_one(
+        {"user_id": user["user_id"]},
+        {"$set": {"last_active": time.time()}})
+    return {"ok": True}
 
 
 @api.get("/friends")
