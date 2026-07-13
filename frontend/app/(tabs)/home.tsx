@@ -85,6 +85,10 @@ export default function HomeScreen() {
   const [typeModal, setTypeModal] = useState<null | "online" | "create" | "solo">(null);
   const [onlineMode, setOnlineMode] = useState<"solo" | "duo">("solo");
   const [duoPartner, setDuoPartner] = useState<DuoCandidate | null>(null);
+  const duoNeedsPartner =
+    (typeModal === "online" || typeModal === "solo") &&
+    onlineMode === "duo" &&
+    !duoPartner;
   const [timerOn, setTimerOn] = useState(false);
   const [joinCode, setJoinCode] = useState("");
   const [joinError, setJoinError] = useState<string | null>(null);
@@ -593,7 +597,11 @@ export default function HomeScreen() {
           <Pressable style={[styles.modalSheet, { maxHeight: "88%" }]} onPress={() => {}}>
             <View style={styles.sheetHandle} />
             <Text style={styles.modalTitle}>{t("chooseMatchType")}</Text>
-            <ScrollView showsVerticalScrollIndicator={false}>
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              nestedScrollEnabled
+              keyboardShouldPersistTaps="handled"
+            >
             {(typeModal === "online" || typeModal === "solo") && (
               <View style={styles.segmentRow}>
                 <Pressable
@@ -655,12 +663,17 @@ export default function HomeScreen() {
             )}
             <Pressable
               testID="match-type-short"
-              onPress={() => chooseType("short")}
-              disabled={busy || ((typeModal === "online" || typeModal === "solo") && onlineMode === "duo" && !duoPartner)}
+              // NOTE: no `disabled` prop — on Android a disabled Pressable
+              // swallows touches and blocks the parent ScrollView from
+              // scrolling; guard inside onPress instead
+              onPress={() => {
+                if (busy || duoNeedsPartner) return;
+                chooseType("short");
+              }}
               style={({ pressed }) => [
                 styles.typeOption,
                 pressed && styles.pressed,
-                (typeModal === "online" || typeModal === "solo") && onlineMode === "duo" && !duoPartner && { opacity: 0.45 },
+                duoNeedsPartner && { opacity: 0.45 },
               ]}
             >
               <Ionicons name="flash" size={26} color={C.brand} />
@@ -672,12 +685,14 @@ export default function HomeScreen() {
             </Pressable>
             <Pressable
               testID="match-type-long"
-              onPress={() => chooseType("long")}
-              disabled={busy || ((typeModal === "online" || typeModal === "solo") && onlineMode === "duo" && !duoPartner)}
+              onPress={() => {
+                if (busy || duoNeedsPartner) return;
+                chooseType("long");
+              }}
               style={({ pressed }) => [
                 styles.typeOption,
                 pressed && styles.pressed,
-                (typeModal === "online" || typeModal === "solo") && onlineMode === "duo" && !duoPartner && { opacity: 0.45 },
+                duoNeedsPartner && { opacity: 0.45 },
               ]}
             >
               <Ionicons name="hourglass" size={26} color={C.brand2} />

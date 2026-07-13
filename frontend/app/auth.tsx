@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   ImageBackground,
@@ -23,7 +23,7 @@ import { C, F, PATTERN_BG, R, SP } from "@/src/theme";
 export default function AuthScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { login, register, loginWithGoogle } = useAuth();
+  const { login, register, loginWithGoogle, user } = useAuth();
   const { t, lang, setLang } = useI18n();
 
   const [mode, setMode] = useState<"login" | "register">("login");
@@ -33,6 +33,13 @@ export default function AuthScreen() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [googleBusy, setGoogleBusy] = useState(false);
+
+  // Google login lands here with a session processed by AuthContext (either
+  // via openAuthSessionAsync result or a deep link) — leave once authenticated
+  useEffect(() => {
+    if (user) router.replace("/(tabs)/home");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   const mapError = (e: unknown): string => {
     if (e instanceof ApiError) {

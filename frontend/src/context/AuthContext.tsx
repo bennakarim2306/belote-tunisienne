@@ -169,10 +169,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const loginWithGoogle = useCallback(async () => {
+    // per Emergent Auth playbook: root redirect on mobile (exp:// in Expo Go)
     const redirectUrl =
       Platform.OS === "web"
         ? `${window.location.origin}/`
-        : Linking.createURL("auth");
+        : Linking.createURL("");
     const authUrl = `https://auth.emergentagent.com/?redirect=${encodeURIComponent(redirectUrl)}`;
     if (Platform.OS === "web") {
       window.location.href = authUrl;
