@@ -123,7 +123,7 @@ export interface GameEvent {
   requester?: number;
 }
 
-interface EventBatch {
+export interface EventBatch {
   id: number;
   list: GameEvent[];
 }

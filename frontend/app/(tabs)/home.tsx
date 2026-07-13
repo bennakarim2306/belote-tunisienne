@@ -28,6 +28,7 @@ import ChunkyButton from "@/src/components/ChunkyButton";
 import DuoSetup, { DuoCandidate } from "@/src/components/DuoSetup";
 import MenuButton from "@/src/components/MenuButton";
 import { useAuth } from "@/src/context/AuthContext";
+import { getSavedLocalGame, newLocalGameId } from "@/src/game/useLocalGame";
 import {
   DuoInviteNotif,
   InviteNotif,
@@ -111,6 +112,12 @@ export default function HomeScreen() {
       refreshUser();
       refresh();
       const poll = async () => {
+        // an unfinished offline solo game takes precedence over server games
+        const local = user ? await getSavedLocalGame(user.user_id) : null;
+        if (local) {
+          setCurrentGame(local);
+          return;
+        }
         try {
           const cur = await api.get("/games/current");
           setCurrentGame(cur.game_id ? cur : null);
@@ -155,17 +162,11 @@ export default function HomeScreen() {
         router.push({ pathname: "/matchmaking", params: { type: matchType } });
       }, 150);
     } else if (mode === "solo") {
-      setBusy(true);
-      try {
-        const res = await api.post("/solo", { match_type: matchType });
-        setTimeout(() => {
-          router.push({ pathname: "/game/[id]", params: { id: res.game_id } });
-        }, 150);
-      } catch {
-        setJoinError(t("error_generic"));
-      } finally {
-        setBusy(false);
-      }
+      // fully offline: the game runs on the local TS engine, no backend call
+      const gid = newLocalGameId(matchType);
+      setTimeout(() => {
+        router.push({ pathname: "/game/[id]", params: { id: gid } });
+      }, 150);
     } else if (mode === "create") {
       setBusy(true);
       try {

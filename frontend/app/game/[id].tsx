@@ -30,9 +30,9 @@ import HandFan from "@/src/components/game/HandFan";
 import PlayerSeat from "@/src/components/game/PlayerSeat";
 import TrickArea from "@/src/components/game/TrickArea";
 import PlayingCard, { SUIT_COLOR_ON_DARK, SUIT_SYMBOL, rankLabel } from "@/src/components/PlayingCard";
-import { api } from "@/src/api";
 import { useAuth } from "@/src/context/AuthContext";
 import { useGameSocket } from "@/src/game/useGameSocket";
+import { isLocalGameId, newLocalGameId, useLocalGame } from "@/src/game/useLocalGame";
 import { TKey, useI18n } from "@/src/i18n";
 import { playSound } from "@/src/sound";
 import { C, F, PATTERN_BG, R, SP } from "@/src/theme";
@@ -107,7 +107,13 @@ export default function GameScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user } = useAuth();
   const { t } = useI18n();
-  const { state, events, connected, fatalError, send, leave } = useGameSocket(id);
+  // offline solo games (local_*) run on the local TS engine; others use the WS
+  const isLocal = isLocalGameId(id);
+  const socketGame = useGameSocket(isLocal ? undefined : id);
+  const localGame = useLocalGame(isLocal ? id : undefined);
+  const { state, events, connected, fatalError, send, leave } = isLocal
+    ? localGame
+    : socketGame;
 
   const [banner, setBanner] = useState<{ text: string; key: number } | null>(null);
   const [showLast, setShowLast] = useState(false);
@@ -273,15 +279,12 @@ export default function GameScreen() {
     maybeShowInterstitialAfterMatch(state?.origin ?? "online").finally(quit);
   };
 
-  // "Rejouer": solo -> a fresh vs-AI game right away; online -> back to the
-  // matchmaking queue with the same match type
-  const replay = async () => {
-    const mt = state?.match_type === "long" ? "long" : "short";
+  // "Rejouer": solo -> a fresh offline vs-AI game right away; online -> back
+  // to the matchmaking queue with the same match type
+  const replay = () => {
+    const mt: "short" | "long" = state?.match_type === "long" ? "long" : "short";
     if (state?.origin === "solo") {
-      try {
-        const res = await api.post("/solo", { match_type: mt });
-        router.replace({ pathname: "/game/[id]", params: { id: res.game_id } });
-      } catch {}
+      router.replace({ pathname: "/game/[id]", params: { id: newLocalGameId(mt) } });
     } else {
       router.replace({ pathname: "/matchmaking", params: { type: mt } });
     }

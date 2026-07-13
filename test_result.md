@@ -273,3 +273,20 @@ agent_communication:
 agent_communication:
   - agent: "main"
     message: "iter22 feature pack complete and verified: replay button (match-end), +10% cards, presence system (ping/online), duo setup search+online filter+dots, friends online filter + invite-to-game modal (online duo / duo vs AI). Testing agent iteration_22: backend 9/9, frontend all pass. Main agent additionally verified match-end replay E2E via WS bot script + browser (new game remounts via key={id} wrapper)."
+
+frontend:
+  - task: "OFFLINE Solo vs AI (Phase 1): TypeScript port of the Python game engine (src/game/engine.ts mirrors game_logic.py) + bot AI (src/game/ai.ts mirrors bot_ai.py) + useLocalGame hook driving the local engine with the exact same API as useGameSocket. Solo games now use local ids (local_short_*/local_long_*), never touch the backend, persist to AsyncStorage (key local_solo_game) for resume from home pill, replay creates a fresh local game."
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/game/engine.ts, src/game/ai.ts, src/game/useLocalGame.ts, app/game/[id].tsx, app/(tabs)/home.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Engine+AI validated offline: 70 simulated full matches (~43k assertions, contre/surcontre/capot/belote branches), 3000-case legal_moves/trick_winner parity fuzz vs Python (100% identical incl. Tfaskira), 6000-case bot AI decision parity (100% identical). Smoke test: home -> Jouer Solo -> short lands on /game/local_short_* with dealt cards and bidding panel."
+
+agent_communication:
+  - agent: "main"
+    message: "Offline solo implemented. Test the full offline flow at 1920x800 (landscape): login tester1, Jouer Solo -> Rapide, URL must be /game/local_*. Verify NO /api/ws/game websocket is opened for that game (offline proof). Bid (e.g. 90 coeur via Annoncer), bots answer within ~2s, play several tricks (only legal cards tappable), trick collects, hand-end modal appears with scores, Continuer advances immediately to next hand. Quit button ends the game (no resume). For resume: while mid-game navigate the browser directly to the home URL (no quit) -> resume pill in header -> tap -> game restores with same score. Also regression: tutorial final game (coach) and private rooms still use the backend WS."
