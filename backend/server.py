@@ -341,6 +341,23 @@ async def user_brief(user_id):
     return b
 
 
+async def user_briefs(user_ids):
+    """Batched user_brief: one query for many ids, returns {user_id: brief}."""
+    if not user_ids:
+        return {}
+    rows = await db.users.find(
+        {"user_id": {"$in": list(user_ids)}},
+        {"_id": 0, "user_id": 1, "username": 1, "avatar_id": 1, "elo": 1,
+         "elo_duo": 1, "last_active": 1}).to_list(len(user_ids))
+    now_ts = time.time()
+    out = {}
+    for b in rows:
+        b["elo_duo"] = b.get("elo_duo") or 1000
+        b["online"] = (now_ts - b.pop("last_active", 0)) < ONLINE_WINDOW_SECONDS
+        out[b["user_id"]] = b
+    return out
+
+
 @api.post("/presence/ping")
 async def presence_ping(request: Request):
     user = await get_current_user(request)
@@ -425,9 +442,10 @@ async def notifications(request: Request):
     uid = user["user_id"]
     fr_rows = await db.friendships.find(
         {"recipient_id": uid, "status": "pending"}, {"_id": 0}).to_list(20)
+    briefs = await user_briefs([fr["requester_id"] for fr in fr_rows])
     friend_requests = []
     for fr in fr_rows:
-        other = await user_brief(fr["requester_id"])
+        other = briefs.get(fr["requester_id"])
         if other:
             friend_requests.append({"friendship_id": fr["friendship_id"], **other})
     inv_rows = await db.invites.find(
@@ -502,21 +520,25 @@ async def duo_candidates(request: Request):
     user = await get_current_user(request)
     uid = user["user_id"]
     fids = await _friend_ids(uid)
-    friends = []
-    for fid in fids:
-        b = await user_brief(fid)
-        if b:
-            friends.append({**b, "friend_status": "friends"})
+    rids = [r for r in await _recent_coplayer_ids(uid) if r not in fids]
+    briefs = await user_briefs(fids + rids)
+    friends = [{**briefs[fid], "friend_status": "friends"}
+               for fid in fids if fid in briefs]
+    # friendship status (e.g. pending request) for recent co-players, batched
+    frs = await db.friendships.find({
+        "$or": [{"requester_id": uid, "recipient_id": {"$in": rids}},
+                {"requester_id": {"$in": rids}, "recipient_id": uid}]
+    }, {"_id": 0}).to_list(len(rids) * 2 or 1) if rids else []
+    fr_by_other = {}
+    for fr in frs:
+        other = fr["recipient_id"] if fr["requester_id"] == uid else fr["requester_id"]
+        fr_by_other[other] = fr
     recent = []
-    for rid in await _recent_coplayer_ids(uid):
-        if rid in fids:
-            continue
-        b = await user_brief(rid)
+    for rid in rids:
+        b = briefs.get(rid)
         if not b:
             continue
-        fr = await db.friendships.find_one({
-            "$or": [{"requester_id": uid, "recipient_id": rid},
-                    {"requester_id": rid, "recipient_id": uid}]}, {"_id": 0})
+        fr = fr_by_other.get(rid)
         b["friend_status"] = "none" if not fr else (
             "friends" if fr["status"] == "accepted" else "pending")
         recent.append(b)
