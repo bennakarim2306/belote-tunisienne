@@ -497,7 +497,8 @@ class GameRuntimeMixin:
         if g.phase == "bidding":
             if forced_human:
                 return g.apply_pass(seat)
-            act = bot_ai.bot_bidding_action(g.hands[seat], g.current_bid, seat)
+            act = bot_ai.bot_bidding_action(g.hands[seat], g.current_bid, seat,
+                                            g.bids)
             if act["type"] == "bid":
                 try:
                     return g.apply_bid(seat, act["value"], act["suit"])
@@ -514,7 +515,10 @@ class GameRuntimeMixin:
             legal = gl.legal_moves(g.hands[seat], g.trick, g.trump, seat)
             card = min(legal, key=lambda c: gl.card_points(c, g.trump))
         else:
-            card = bot_ai.bot_play(g.hands[seat], g.trick, g.trump, seat)
+            card = bot_ai.bot_play(g.hands[seat], g.trick, g.trump, seat,
+                                   getattr(g, "play_history", None),
+                                   g.current_bid["seat"] % 2
+                                   if g.current_bid else None)
         return g.apply_play(seat, card)
 
     async def _delayed_remove(self, game_id, delay):

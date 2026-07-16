@@ -236,7 +236,9 @@ def test_no_trump_lead_when_defending():
     hand = ["JH", "9H", "7S", "8S", "QS", "8D", "QD", "7C"]
     h = coach._play_hint(_gp(hand, "H", contract_seat=1), 0)
     assert gl.suit_of(h["card"]) != "H"
-    assert h["reason"] == "lead_low_def"
+    # the new charter bot never even suggests a trump lead in defence, so the
+    # hint may come straight from the bot ("lead_low") instead of the guard
+    assert h["reason"] in ("lead_low_def", "lead_low")
 
 
 def test_trump_lead_ok_when_attacking():

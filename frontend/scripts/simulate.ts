@@ -49,7 +49,7 @@ function playMatch(matchType: "short" | "long", humanRandom: boolean): void {
             /* illegal (too low): fall through to bot action */
           }
         }
-        const act = botBiddingAction(g.hands[seat], g.current_bid, seat);
+        const act = botBiddingAction(g.hands[seat], g.current_bid, seat, g.bids);
         if (act.type === "bid") {
           try {
             g.applyBid(seat, act.value!, act.suit!);
@@ -73,10 +73,10 @@ function playMatch(matchType: "short" | "long", humanRandom: boolean): void {
         let card: string;
         if (humanRandom && seat === 0) {
           const l = g.hands[seat].filter(() => true);
-          card = botPlay(g.hands[seat], g.trick, g.trump!, seat);
+          card = botPlay(g.hands[seat], g.trick, g.trump!, seat, g.play_history, g.current_bid ? g.current_bid.seat % 2 : null);
           assert(l.includes(card), "bot card from hand");
         } else {
-          card = botPlay(g.hands[seat], g.trick, g.trump!, seat);
+          card = botPlay(g.hands[seat], g.trick, g.trump!, seat, g.play_history, g.current_bid ? g.current_bid.seat % 2 : null);
         }
         assert(legal.includes(card), "botPlay returns a legal card", { card, legal });
         const evs = g.applyPlay(seat, card);
@@ -139,7 +139,7 @@ function playMatch(matchType: "short" | "long", humanRandom: boolean): void {
         break;
       }
       g.nextHand();
-      assert(g.phase === "bidding" && g.hands.every((h) => h.length === 8), "fresh deal");
+      assert((g.phase as string) === "bidding" && g.hands.every((h) => h.length === 8), "fresh deal");
     }
   }
   assert(g.match_over, "match over");

@@ -65,7 +65,7 @@ function makeBots(takenName: string): EnginePlayerInfo[] {
 
 function botMove(g: BeloteEngine, seat: number): GameEvent[] {
   if (g.phase === "bidding") {
-    const act = botBiddingAction(g.hands[seat], g.current_bid, seat);
+    const act = botBiddingAction(g.hands[seat], g.current_bid, seat, g.bids);
     if (act.type === "bid") {
       try {
         return g.applyBid(seat, act.value!, act.suit!);
@@ -82,7 +82,11 @@ function botMove(g: BeloteEngine, seat: number): GameEvent[] {
     }
     return g.applyPass(seat);
   }
-  return g.applyPlay(seat, botPlay(g.hands[seat], g.trick, g.trump!, seat));
+  return g.applyPlay(
+    seat,
+    botPlay(g.hands[seat], g.trick, g.trump!, seat, g.play_history,
+      g.current_bid ? g.current_bid.seat % 2 : null),
+  );
 }
 
 const PLAY_ACTIONS = ["bid", "pass", "capot", "contre", "surcontre", "decline_surcontre", "play"];

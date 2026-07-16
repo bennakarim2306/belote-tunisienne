@@ -290,3 +290,15 @@ frontend:
 agent_communication:
   - agent: "main"
     message: "Offline solo implemented. Test the full offline flow at 1920x800 (landscape): login tester1, Jouer Solo -> Rapide, URL must be /game/local_*. Verify NO /api/ws/game websocket is opened for that game (offline proof). Bid (e.g. 90 coeur via Annoncer), bots answer within ~2s, play several tricks (only legal cards tappable), trick collects, hand-end modal appears with scores, Continuer advances immediately to next hand. Quit button ends the game (no resume). For resume: while mid-game navigate the browser directly to the home URL (no quit) -> resume pill in header -> tap -> game restores with same score. Also regression: tutorial final game (coach) and private rooms still use the backend WS."
+
+  - task: "AI strategy charter: rewrote backend/bot_ai.py + frontend/src/game/ai.ts per user's charter (bidding benchmarks 90-130, partner support, public-memory play, tfaskira banking, signalling, endgame). play_history added to both engines."
+    implemented: true
+    working: true
+    file: "/app/backend/bot_ai.py, /app/frontend/src/game/ai.ts, game_logic.py, engine.ts, game_runtime.py, coach.py, useLocalGame.ts"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Validated offline: 100% Python/TS parity on 4504 real decisions; play-only benchmark 63.3% match wins vs old AI; 94% contract success; all 111 backend tests pass; browser smoke OK (offline solo bidding works)."

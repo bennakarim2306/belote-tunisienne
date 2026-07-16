@@ -194,6 +194,7 @@ export class BeloteEngine {
   surcontre!: { seat: number } | null;
   trump!: string | null;
   trick!: TrickCard[];
+  play_history!: TrickCard[];
   last_trick!: { winner_seat: number; cards: TrickCard[]; points: number } | null;
   tricks_played!: number;
   trick_counts!: [number, number];
@@ -265,6 +266,7 @@ export class BeloteEngine {
     this.surcontre = null;
     this.trump = null;
     this.trick = [];
+    this.play_history = []; // flat play order of the hand (bot memory)
     this.last_trick = null;
     this.tricks_played = 0;
     this.trick_counts = [0, 0];
@@ -402,6 +404,7 @@ export class BeloteEngine {
     }
     this.hands[seat] = this.hands[seat].filter((c) => c !== card);
     this.trick.push({ seat, card });
+    this.play_history.push({ seat, card });
     events.push({ e: "play", seat, card });
     this.version += 1;
 
@@ -594,7 +597,9 @@ export class BeloteEngine {
   }
 
   static fromDoc(doc: Record<string, unknown>): BeloteEngine {
-    return Object.assign(Object.create(BeloteEngine.prototype), doc) as BeloteEngine;
+    const g = Object.assign(Object.create(BeloteEngine.prototype), doc) as BeloteEngine;
+    if (!g.play_history) g.play_history = []; // docs saved before this field
+    return g;
   }
 
   // ---------- serialization ----------

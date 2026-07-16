@@ -154,6 +154,7 @@ class BeloteGame:
         self.surcontre = None
         self.trump = None
         self.trick = []
+        self.play_history = []  # flat play order of the hand (bot memory)
         self.last_trick = None
         self.tricks_played = 0
         self.trick_counts = [0, 0]
@@ -299,6 +300,7 @@ class BeloteGame:
             events.append({"e": "belote", "seat": seat, "word": word})
         self.hands[seat].remove(card)
         self.trick.append({"seat": seat, "card": card})
+        self.play_history.append({"seat": seat, "card": card})
         events.append({"e": "play", "seat": seat, "card": card})
         self.version += 1
 
@@ -526,6 +528,8 @@ class BeloteGame:
             if k in cls._INT_KEY_FIELDS:
                 v = {int(i): s for i, s in v.items()}
             setattr(g, k, v)
+        if "play_history" not in doc:  # docs saved before the bot-memory field
+            g.play_history = []
         return g
 
     # ---------- serialization ----------

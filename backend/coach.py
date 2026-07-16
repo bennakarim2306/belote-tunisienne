@@ -122,7 +122,9 @@ def _evaluate_hand_bid(hand):
 def _play_hint(g, seat):
     hand = g.hands[seat]
     legal = gl.legal_moves(hand, g.trick, g.trump, seat)
-    card = bot_ai.bot_play(hand, g.trick, g.trump, seat)
+    card = bot_ai.bot_play(hand, g.trick, g.trump, seat,
+                           getattr(g, "play_history", None),
+                           g.current_bid["seat"] % 2 if g.current_bid else None)
     if card not in legal:
         card = legal[0]
     if len(legal) == 1:
