@@ -302,3 +302,12 @@ agent_communication:
       - working: true
         agent: "main"
         comment: "Validated offline: 100% Python/TS parity on 4504 real decisions; play-only benchmark 63.3% match wins vs old AI; 94% contract success; all 111 backend tests pass; browser smoke OK (offline solo bidding works)."
+
+  - task: "P1 Coach comments on other players' announcements: added contre(partner)/surcontre/capot commentary (5 i18n keys FR/AR/EN) in coach_mode; opponent+partner variants."
+    implemented: true
+    working: true
+    file: "/app/frontend/app/game/[id].tsx, /app/frontend/src/i18n.tsx"
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "E2E browser check in tutorial coach game (unlock: localStorage tutorial_progress=14): partner announcement commentary displayed; existing bid hints unaffected."

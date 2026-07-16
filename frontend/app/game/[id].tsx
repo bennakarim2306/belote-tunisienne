@@ -192,15 +192,32 @@ export default function GameScreen() {
         showCoachMsg(t(key as TKey, { name, value: String(ev.value ?? ""), suit: suitSym }));
       } else if (ev.e === "contre") {
         setBanner({ text: t("contreBang"), key: Date.now() });
-        if (state?.coach_mode && ev.seat !== undefined &&
-            ev.seat % 2 !== state.my_seat % 2) {
+        if (state?.coach_mode && ev.seat !== undefined && ev.seat !== state.my_seat) {
           const name = state.players.find((p) => p.seat === ev.seat)?.username ?? "";
-          showCoachMsg(t("coach_opp_contre", { name }));
+          showCoachMsg(t(
+            ev.seat % 2 !== state.my_seat % 2 ? "coach_opp_contre" : "coach_partner_contre",
+            { name },
+          ));
         }
       } else if (ev.e === "surcontre") {
         setBanner({ text: t("surcontreBang"), key: Date.now() });
+        if (state?.coach_mode && ev.seat !== undefined && ev.seat !== state.my_seat) {
+          const name = state.players.find((p) => p.seat === ev.seat)?.username ?? "";
+          showCoachMsg(t(
+            ev.seat % 2 !== state.my_seat % 2 ? "coach_opp_surcontre" : "coach_partner_surcontre",
+            { name },
+          ));
+        }
       } else if (ev.e === "capot") {
         setBanner({ text: t("capotBang"), key: Date.now() });
+        if (state?.coach_mode && ev.seat !== undefined && ev.seat !== state.my_seat) {
+          const name = state.players.find((p) => p.seat === ev.seat)?.username ?? "";
+          const suitSym = SUIT_SYMBOL[ev.suit ?? ""] ?? "";
+          showCoachMsg(t(
+            ev.seat % 2 !== state.my_seat % 2 ? "coach_opp_capot" : "coach_partner_capot",
+            { name, suit: suitSym },
+          ));
+        }
       } else if (ev.e === "redeal") {
         setBanner({ text: t("allPassed"), key: Date.now() });
       } else if (ev.e === "pause_declined") {
