@@ -1,6 +1,16 @@
 import React, { useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
+import Animated, {
+  cancelAnimation,
+  Easing,
+  FadeInDown,
+  FadeInUp,
+  interpolateColor,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+} from "react-native-reanimated";
 
 import { SUIT_COLOR_ON_DARK, SUIT_SYMBOL } from "@/src/components/PlayingCard";
 import { GameState } from "@/src/game/useGameSocket";
@@ -23,6 +33,31 @@ export default function BiddingPanel({ state, t, onAction }: Props) {
 
   const myTurn = state.phase === "bidding" && state.turn === state.my_seat;
   const minValue = state.contract?.value ? state.contract.value + 10 : 90;
+
+  // pulsing golden border = "it's your turn" indicator (replaces the old text)
+  const pulse = useSharedValue(0);
+  useEffect(() => {
+    if (myTurn) {
+      pulse.value = 0;
+      pulse.value = withRepeat(
+        withTiming(1, { duration: 850, easing: Easing.inOut(Easing.ease) }),
+        -1,
+        true,
+      );
+    } else {
+      cancelAnimation(pulse);
+      pulse.value = 0;
+    }
+  }, [myTurn, pulse]);
+  const glowStyle = useAnimatedStyle(() => ({
+    borderColor: interpolateColor(
+      pulse.value,
+      [0, 1],
+      ["rgba(255,184,0,0.35)", "#FFD34D"],
+    ),
+    shadowOpacity: 0.25 + pulse.value * 0.55,
+    shadowRadius: 6 + pulse.value * 8,
+  }));
 
   // a previously selected value that fell below the new minimum (e.g. after the
   // partner raised) must be cleared, otherwise it silently blocks "Annoncer"
@@ -122,45 +157,49 @@ export default function BiddingPanel({ state, t, onAction }: Props) {
   const canAnnounce = suit !== null && value !== null && value >= minValue;
 
   return (
-    <Animated.View entering={FadeInUp} style={styles.panel} testID="bidding-panel">
-      <Text style={styles.panelTitle}>{t("yourTurn")}</Text>
-
-      <View style={styles.suitRow}>
-        {SUITS.map((s) => (
-          <Pressable
-            key={s}
-            testID={`bid-suit-${s}`}
-            onPress={() => setSuit(s)}
-            style={[styles.suitBtn, suit === s && styles.suitBtnActive]}
-          >
-            <Text style={[styles.suitText, { color: SUIT_COLOR_ON_DARK[s] }]}>
-              {SUIT_SYMBOL[s]}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-
-      <View style={styles.valueGrid}>
-        {BID_VALUES.map((v) => {
-          const disabled = v < minValue;
-          return (
+    <Animated.View
+      entering={FadeInUp}
+      style={[styles.panel, styles.panelTurn, glowStyle]}
+      testID="bidding-panel"
+    >
+      <View style={styles.mainRow}>
+        <View style={styles.suitGrid}>
+          {SUITS.map((s) => (
             <Pressable
-              key={v}
-              testID={`bid-value-${v}`}
-              onPress={() => !disabled && setValue(v)}
-              style={[
-                styles.valueChip,
-                value === v && styles.valueChipActive,
-                disabled && { opacity: 0.3 },
-              ]}
-              disabled={disabled}
+              key={s}
+              testID={`bid-suit-${s}`}
+              onPress={() => setSuit(s)}
+              style={[styles.suitBtn, suit === s && styles.suitBtnActive]}
             >
-              <Text style={[styles.valueText, value === v && { color: C.onBrand }]}>
-                {v}
+              <Text style={[styles.suitText, { color: SUIT_COLOR_ON_DARK[s] }]}>
+                {SUIT_SYMBOL[s]}
               </Text>
             </Pressable>
-          );
-        })}
+          ))}
+        </View>
+
+        <View style={styles.valueGrid}>
+          {BID_VALUES.map((v) => {
+            const disabled = v < minValue;
+            return (
+              <Pressable
+                key={v}
+                testID={`bid-value-${v}`}
+                onPress={() => !disabled && setValue(v)}
+                style={[
+                  styles.valueChip,
+                  value === v && styles.valueChipActive,
+                  disabled && { opacity: 0.3 },
+                ]}
+                disabled={disabled}
+              >
+                <Text style={[styles.valueText, value === v && { color: C.onBrand }]}>
+                  {v}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
       </View>
 
       <View style={styles.actionRow}>
@@ -179,6 +218,15 @@ export default function BiddingPanel({ state, t, onAction }: Props) {
         >
           <Text style={[styles.bigActionText, { color: "#1A1200" }]}>{t("capot")}</Text>
         </Pressable>
+        {state.can_contre && (
+          <Pressable
+            testID="contre-button"
+            onPress={() => onAction({ action: "contre" })}
+            style={[styles.bigAction, { backgroundColor: C.error }]}
+          >
+            <Text style={styles.bigActionText}>{t("contre")}</Text>
+          </Pressable>
+        )}
         <Pressable
           testID="announce-bid-button"
           onPress={() =>
@@ -196,15 +244,6 @@ export default function BiddingPanel({ state, t, onAction }: Props) {
           </Text>
         </Pressable>
       </View>
-      {state.can_contre && (
-        <Pressable
-          testID="contre-button"
-          onPress={() => onAction({ action: "contre" })}
-          style={[styles.contreBtn, { alignSelf: "center", marginTop: SP.xs }]}
-        >
-          <Text style={styles.contreBtnText}>{t("contre")}</Text>
-        </Pressable>
-      )}
     </Animated.View>
   );
 }
@@ -226,6 +265,11 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 8,
   },
+  panelTurn: {
+    borderWidth: 2,
+    shadowColor: C.gold,
+    shadowOffset: { width: 0, height: 0 },
+  },
   panelTitle: {
     fontFamily: F.display,
     fontSize: 11,
@@ -233,15 +277,20 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 4,
   },
-  suitRow: {
+  mainRow: {
     flexDirection: "row",
     justifyContent: "center",
-    gap: SP.sm,
-    marginBottom: 6,
+    gap: 10,
+  },
+  suitGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    width: 44 * 2 + 6,
+    gap: 6,
   },
   suitBtn: {
-    width: 34,
-    height: 34,
+    width: 44,
+    height: 36,
     borderRadius: R.sm,
     backgroundColor: C.card,
     borderWidth: 2,
@@ -250,17 +299,17 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   suitBtnActive: { borderColor: C.brand, backgroundColor: "rgba(0,229,122,0.12)" },
-  suitText: { fontSize: 18 },
+  suitText: { fontSize: 19 },
   valueGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    justifyContent: "center",
-    gap: SP.xs,
+    width: 44 * 4 + 6 * 3,
+    gap: 6,
   },
   valueChip: {
-    height: 28,
+    height: 36,
     width: 44,
-    borderRadius: R.pill,
+    borderRadius: R.sm,
     backgroundColor: C.card,
     borderWidth: 1.5,
     borderColor: C.borderStrong,
@@ -269,7 +318,7 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   valueChipActive: { backgroundColor: C.brand, borderColor: C.brand },
-  valueText: { fontFamily: F.extra, fontSize: 12.5, color: C.ink },
+  valueText: { fontFamily: F.extra, fontSize: 13, color: C.ink },
   actionRow: {
     flexDirection: "row",
     gap: SP.xs,
