@@ -1,3 +1,4 @@
+import React, { useState } from "react";
 import { StyleSheet, View } from "react-native";
 
 import { AD_UNITS, ADS_ENABLED } from "@/src/ads/config";
@@ -10,13 +11,22 @@ export default function AdBanner() {
   if (!ADS_ENABLED || !adsNativeSupported) return null;
   const mod = getAdsModule();
   if (!mod) return null;
+  return <NativeBanner mod={mod} />;
+}
+
+// Collapsed to 0 height until an ad is actually loaded, so the screen uses
+// the full height (like Expo Go) whenever there is no fill / ad not ready.
+function NativeBanner({ mod }: { mod: any }) {
+  const [loaded, setLoaded] = useState(false);
   const { BannerAd, BannerAdSize } = mod;
   return (
-    <View style={styles.native} testID="ad-banner-native">
+    <View style={loaded ? styles.native : styles.collapsed} testID="ad-banner-native">
       <BannerAd
         unitId={AD_UNITS.banner}
         size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
         requestOptions={{ requestNonPersonalizedAdsOnly: true }}
+        onAdLoaded={() => setLoaded(true)}
+        onAdFailedToLoad={() => setLoaded(false)}
       />
     </View>
   );
@@ -29,4 +39,5 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: C.border,
   },
+  collapsed: { height: 0, overflow: "hidden" },
 });
