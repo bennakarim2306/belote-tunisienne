@@ -608,9 +608,9 @@ export default function GameScreen() {
               <Pressable
                 testID="last-trick-button"
                 onPress={() => setLastTrickOpen(true)}
-                style={styles.sideBtn}
+                style={styles.sideTextBtn}
               >
-                <Ionicons name="albums" size={20} color={C.cream} />
+                <Text style={styles.sideTextBtnLabel}>{t("lastTrick")}</Text>
               </Pressable>
             )}
             {state.phase !== "finished" && (
@@ -1064,6 +1064,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  sideTextBtn: {
+    height: 42,
+    borderRadius: 21,
+    paddingHorizontal: SP.md,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    borderWidth: 1,
+    borderColor: "rgba(233,196,106,0.4)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  sideTextBtnLabel: { fontFamily: F.display, fontSize: 12, color: C.cream },
   turnPill: {
     backgroundColor: C.gold,
     borderRadius: R.pill,
