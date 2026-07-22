@@ -28,6 +28,16 @@
     "plugins": [
       "expo-router",
       [
+        "expo-build-properties",
+        {
+          "android": {
+            "enableProguardInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true,
+            "extraProguardRules": "# Keep JNI bridge classes (React Native native calls)\n-keep class com.facebook.jni.** { *; }\n# Google Mobile Ads — safety net on top of the SDK's own consumer rules\n-keep public class com.google.android.gms.ads.** { public *; }"
+          }
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "image": "./assets/images/splash-image.png",
@@ -43,7 +53,8 @@
           "iosAppId": "ca-app-pub-5073907506851296~2491413453"
         }
       ],
-      "expo-audio"
+      "expo-audio",
+      "expo-build-properties"
     ],
     "experiments": {
       "typedRoutes": true
