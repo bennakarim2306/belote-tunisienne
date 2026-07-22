@@ -130,6 +130,11 @@ export function legalMoves(
   return [...hand];
 }
 
+/** True if the hand holds 7+ cards of the same suit — such a deal is void. */
+export function sevenOfASuit(hand: string[]): boolean {
+  return SUITS.some((s) => hand.filter((c) => suitOf(c) === s).length >= 7);
+}
+
 function shuffle<T>(a: T[]): void {
   for (let i = a.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -259,7 +264,14 @@ export class BeloteEngine {
     const deck: string[] = [];
     for (const s of SUITS) for (const r of RANKS) deck.push(r + s);
     shuffle(deck);
-    this.hands = [0, 1, 2, 3].map((i) => deck.slice(i * 8, (i + 1) * 8));
+    let hands = [0, 1, 2, 3].map((i) => deck.slice(i * 8, (i + 1) * 8));
+    // Rule: if a player receives 7+ cards of the same suit, the deal is
+    // void — reshuffle and redeal, SAME dealer (no rotation).
+    while (hands.some(sevenOfASuit)) {
+      shuffle(deck);
+      hands = [0, 1, 2, 3].map((i) => deck.slice(i * 8, (i + 1) * 8));
+    }
+    this.hands = hands;
     this.phase = "bidding";
     this.turn = (this.dealer + 1) % 4;
     this.bids = [];

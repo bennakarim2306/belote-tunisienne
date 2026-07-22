@@ -125,6 +125,11 @@ export const LESSONS: Lesson[] = [
         en: "The player sitting after the dealer speaks first in the bidding, then everyone speaks in turn following the direction of play.",
         ar: "اللاعب اللي بعد الموزّع هو اللي يبدا يحكي في الآنونصات، وبعد كل واحد يحكي في دوره.",
       },
+      {
+        fr: "Si un joueur reçoit 7 cartes ou plus de la même couleur, la donne est annulée : les cartes sont remélangées et redistribuées par le même donneur.",
+        en: "If a player receives 7 or more cards of the same suit, the deal is void: the cards are reshuffled and redealt by the same dealer.",
+        ar: "كان لاعب يجيه 7 كروط ولا أكثر من نفس اللون، التوزيعة تتفسخ : الكروط يتخلطو ويتوزعو من جديد من نفس الموزّع.",
+      },
     ],
   },
   {

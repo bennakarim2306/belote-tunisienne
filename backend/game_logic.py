@@ -106,6 +106,11 @@ def legal_moves(hand, trick, trump, seat=None):
     return list(hand)
 
 
+def seven_of_a_suit(hand) -> bool:
+    """True if the hand holds 7+ cards of the same suit — such a deal is void."""
+    return any(sum(1 for c in hand if suit_of(c) == s) >= 7 for s in SUITS)
+
+
 class BeloteGame:
     """Authoritative state machine for one match (multiple hands to target score)."""
 
@@ -148,7 +153,13 @@ class BeloteGame:
         self.hand_number += 1
         deck = [r + s for s in SUITS for r in RANKS]
         random.shuffle(deck)
-        self.hands = [deck[i * 8:(i + 1) * 8] for i in range(4)]
+        hands = [deck[i * 8:(i + 1) * 8] for i in range(4)]
+        # Rule: if a player receives 7+ cards of the same suit, the deal is
+        # void — reshuffle and redeal, SAME dealer (no rotation).
+        while any(seven_of_a_suit(h) for h in hands):
+            random.shuffle(deck)
+            hands = [deck[i * 8:(i + 1) * 8] for i in range(4)]
+        self.hands = hands
         self.phase = "bidding"
         self.turn = (self.dealer + 1) % 4
         self.bids = []
