@@ -629,7 +629,7 @@ export default function GameScreen() {
       {/* bidding overlays (hidden while cards are being dealt) */}
       {!dealing && (
         <View
-          style={[styles.biddingWrap, { bottom: insets.bottom + 112 }]}
+          style={[styles.biddingWrap, { bottom: insets.bottom + 134 }]}
           pointerEvents="box-none"
         >
           {coachDisplay && (

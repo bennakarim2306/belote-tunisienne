@@ -51,13 +51,15 @@ function CoachPulse({ children, radius }: { children: React.ReactNode; radius: n
 }
 
 export default function HandFan({ hand, legal, myTurn, trump, onPlay, coachCard }: Props) {
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
   const n = hand.length;
   if (n === 0) return <View style={styles.row} />;
 
   const overlap = 0.55;
-  const maxW = Math.min(width * 0.66, 680);
-  const cardW = Math.min(75, maxW / (1 + (n - 1) * overlap));
+  const maxW = Math.min(width * 0.79, 816);
+  // width-driven size (+20%) but capped by screen height so the hand
+  // never overwhelms small landscape phones
+  const cardW = Math.min(90, height * 0.22, maxW / (1 + (n - 1) * overlap));
   const mid = (n - 1) / 2;
 
   const play = (card: string) => {
@@ -127,7 +129,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-end",
     justifyContent: "center",
-    minHeight: 110,
+    minHeight: 132,
     paddingTop: 6,
     paddingBottom: 4,
   },
