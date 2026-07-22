@@ -120,3 +120,42 @@ def test_partner_winning_but_cannot_overtrump_still_free():
     trick = t((0, "AC"), (1, "9C"))
     legal = legal_moves(hand, trick, TRUMP, seat=2)
     assert sorted(legal) == sorted(hand)
+
+
+# ---------- Tfaskira limit: hand contains ONLY trumps ----------
+
+def test_only_trumps_partner_cut_must_overtrump():
+    # User's example: P0 leads clubs, P1 (partner of P3) cuts with 9S and
+    # is master, P2 follows clubs. P3 void in clubs with ONLY trumps,
+    # holding the Jack -> must climb with JS (no under-trump allowed).
+    hand = ["JS", "7S", "8S"]
+    trick = t((0, "AC"), (1, "9S"), (2, "7C"))
+    legal = legal_moves(hand, trick, TRUMP, seat=3)
+    assert legal == ["JS"]
+
+
+def test_only_trumps_partner_cut_no_higher_free_trump_choice():
+    # Same situation but no trump higher than the partner's 9S ->
+    # any trump of their choice.
+    hand = ["7S", "8S", "QS"]
+    trick = t((0, "AC"), (1, "9S"), (2, "7C"))
+    legal = legal_moves(hand, trick, TRUMP, seat=3)
+    assert sorted(legal) == sorted(hand)
+
+
+def test_only_trumps_partner_wins_plain_any_trump():
+    # Partner is master WITHOUT a trump; player has only trumps ->
+    # no climbing obligation (no trump in the trick), any trump.
+    hand = ["JS", "7S"]
+    trick = t((0, "AC"), (1, "9C"))
+    legal = legal_moves(hand, trick, TRUMP, seat=3)
+    assert sorted(legal) == sorted(hand)
+
+
+def test_mixed_hand_partner_cut_keeps_tfaskira():
+    # Player also holds a plain card -> full Tfaskira freedom remains,
+    # even though the partner is master with a trump.
+    hand = ["JS", "7S", "QH"]
+    trick = t((0, "AC"), (1, "9S"), (2, "7C"))
+    legal = legal_moves(hand, trick, TRUMP, seat=3)
+    assert sorted(legal) == sorted(hand)

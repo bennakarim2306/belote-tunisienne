@@ -272,6 +272,11 @@ export const LESSONS: Lesson[] = [
         ar: "تصلح في البلاصة الثالثة (شريكك بدا ومازال مولى) ولا الرابعة (شريكك ماسك اللعبة). في البلاصة الثانية لا، أبداً.",
       },
       {
+        fr: "Limite : si tu n'as QUE des atouts en main et que ton partenaire est maître avec un atout, tu dois monter à l'atout si tu peux — la Tfaskira ne permet jamais de sous-couper.",
+        en: "Limit: if you hold ONLY trumps and your partner is winning with a trump, you must overtrump if you can — the Tfaskira never allows under-trumping.",
+        ar: "حدّ : كان ما عندكش كان الأتو في يدك وشريكك مولى بأتو، لازمك تطلع بالأتو كان تنجم — التفسكيرة ما تسمحش أبداً بالقص بالصغير.",
+      },
+      {
         fr: "Attention : si l'atout est demandé, l'obligation de monter reste — Tfaskira ou pas.",
         en: "Careful: when trumps are led, the obligation to climb still stands — Tfaskira or not.",
         ar: "رد بالك : كي يتطلب الأتو، واجب الطلوع يقعد — تفسكيرة ولا لا.",

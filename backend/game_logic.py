@@ -88,8 +88,12 @@ def legal_moves(hand, trick, trump, seat=None):
 
     # void in the led suit — Tfaskira: if the partner is currently master
     # of the trick, no obligation to cut, any card may be played.
+    # Limit: with ONLY trumps in hand, Tfaskira cannot be used to under-trump
+    # or refuse to climb — the normal trump obligation below applies
+    # (must overtrump the winning trump when possible).
     if seat is not None and trick_winner(trick, trump) == (seat + 2) % 4:
-        return list(hand)
+        if any(suit_of(c) != trump for c in hand):
+            return list(hand)
 
     my_trumps = [c for c in hand if suit_of(c) == trump]
     if my_trumps:
