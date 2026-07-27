@@ -15,6 +15,7 @@ import jwt
 from dotenv import load_dotenv
 from fastapi import (APIRouter, FastAPI, HTTPException, Request, WebSocket,
                      WebSocketDisconnect)
+from fastapi.responses import HTMLResponse
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel, EmailStr, Field
 from starlette.middleware.cors import CORSMiddleware
@@ -233,6 +234,12 @@ async def google_session(body: GoogleSessionBody):
 async def me(request: Request):
     user = await get_current_user(request)
     return user
+
+
+@api.get("/datenschutz", response_class=HTMLResponse)
+async def datenschutz():
+    """Public privacy policy (Datenschutzerklärung) — required by Google Play."""
+    return (Path(__file__).parent / "datenschutzerklaerung.html").read_text(encoding="utf-8")
 
 
 @api.post("/auth/logout")
