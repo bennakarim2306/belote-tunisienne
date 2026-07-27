@@ -242,6 +242,39 @@ async def datenschutz():
     return (Path(__file__).parent / "datenschutzerklaerung.html").read_text(encoding="utf-8")
 
 
+@api.get("/account-deletion", response_class=HTMLResponse)
+async def account_deletion_page():
+    """Public account-deletion instructions — required by Google Play."""
+    return (Path(__file__).parent / "account_deletion.html").read_text(encoding="utf-8")
+
+
+@api.delete("/users/me")
+async def delete_account(request: Request):
+    """Delete the account and ALL associated data (Google Play requirement)."""
+    user = await get_current_user(request)
+    uid = user["user_id"]
+    await db.user_sessions.delete_many({"user_id": uid})
+    await db.friendships.delete_many(
+        {"$or": [{"requester_id": uid}, {"recipient_id": uid}]})
+    await db.invites.delete_many(
+        {"$or": [{"to_user_id": uid}, {"from_user.user_id": uid}]})
+    await db.mm_queue.delete_many({"user_ids": uid})
+    await db.mm_duo_invites.delete_many(
+        {"$or": [{"from_player.user_id": uid}, {"to_user.user_id": uid}]})
+    await db.mm_matched.delete_one({"_id": uid})
+    await db.mm_feedback.delete_one({"_id": uid})
+    # match history is shared between 4 players — anonymize this player's entry
+    await db.matches.update_many(
+        {"players.user_id": uid},
+        {"$set": {"players.$[p].user_id": "deleted",
+                  "players.$[p].username": "—",
+                  "players.$[p].avatar_id": "av1"}},
+        array_filters=[{"p.user_id": uid}],
+    )
+    await db.users.delete_one({"user_id": uid})
+    return {"ok": True}
+
+
 @api.post("/auth/logout")
 async def logout(request: Request):
     auth = request.headers.get("Authorization", "")

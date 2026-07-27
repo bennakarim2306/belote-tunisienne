@@ -3,6 +3,8 @@ import { Image } from "expo-image";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
 import {
+  Linking,
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -33,6 +35,8 @@ export default function ProfileScreen() {
   const [showAvatars, setShowAvatars] = useState(false);
   const [showStats, setShowStats] = useState(false);
   const [soundOn, setSoundOn] = useState(isSoundEnabled());
+  const [showDelete, setShowDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const toggleSound = (v: boolean) => {
     setSoundOn(v);
@@ -65,6 +69,22 @@ export default function ProfileScreen() {
   const doLogout = async () => {
     await logout();
     router.replace("/auth");
+  };
+
+  const openPrivacy = () => {
+    Linking.openURL(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/datenschutz`);
+  };
+
+  const doDelete = async () => {
+    setDeleting(true);
+    try {
+      await api.del("/users/me");
+      setShowDelete(false);
+      await logout();
+      router.replace("/auth");
+    } catch {
+      setDeleting(false);
+    }
   };
 
   const stats = user?.stats ?? {};
@@ -275,6 +295,16 @@ export default function ProfileScreen() {
           ))}
         </View>
 
+        <Pressable
+          testID="privacy-policy-link"
+          onPress={openPrivacy}
+          style={[styles.sectionToggle, { marginTop: SP.xl }]}
+        >
+          <Ionicons name="shield-checkmark" size={18} color={C.goldSoft} />
+          <Text style={styles.sectionToggleText}>{t("privacyPolicy")}</Text>
+          <Ionicons name="open-outline" size={16} color={C.ink3} />
+        </Pressable>
+
         <ChunkyButton
           testID="logout-button"
           label={t("logout")}
@@ -282,7 +312,48 @@ export default function ProfileScreen() {
           onPress={doLogout}
           style={{ marginHorizontal: SP.lg, marginTop: SP.lg }}
         />
+
+        <Pressable
+          testID="delete-account-button"
+          onPress={() => setShowDelete(true)}
+          style={styles.deleteBtn}
+        >
+          <Ionicons name="trash" size={16} color={C.error} />
+          <Text style={styles.deleteBtnText}>{t("deleteAccount")}</Text>
+        </Pressable>
       </ScrollView>
+
+      <Modal
+        visible={showDelete}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowDelete(false)}
+      >
+        <View style={styles.modalScrim}>
+          <View style={styles.modalCard} testID="delete-account-modal">
+            <Ionicons name="warning" size={34} color={C.error} />
+            <Text style={styles.modalTitle}>{t("deleteAccount")}</Text>
+            <Text style={styles.modalBody}>{t("deleteAccountWarn")}</Text>
+            <View style={styles.modalRow}>
+              <Pressable
+                testID="delete-cancel-button"
+                onPress={() => setShowDelete(false)}
+                style={[styles.modalBtn, { backgroundColor: C.bg3 }]}
+              >
+                <Text style={[styles.modalBtnText, { color: C.ink }]}>{t("cancel")}</Text>
+              </Pressable>
+              <Pressable
+                testID="delete-confirm-button"
+                disabled={deleting}
+                onPress={doDelete}
+                style={[styles.modalBtn, { backgroundColor: C.error, opacity: deleting ? 0.6 : 1 }]}
+              >
+                <Text style={styles.modalBtnText}>{t("deleteAccountConfirm")}</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -407,4 +478,53 @@ const styles = StyleSheet.create({
   langActive: { borderColor: C.brand, backgroundColor: "rgba(0,229,122,0.10)" },
   langText: { fontFamily: F.bold, fontSize: 15, color: C.ink2 },
   langTextActive: { color: C.brand },
+  deleteBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    height: 46,
+    borderRadius: R.md,
+    borderWidth: 1.5,
+    borderColor: "rgba(255,90,90,0.5)",
+    marginHorizontal: SP.lg,
+    marginTop: SP.md,
+  },
+  deleteBtnText: { fontFamily: F.display, fontSize: 14, color: C.error },
+  modalScrim: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.65)",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: SP.lg,
+  },
+  modalCard: {
+    backgroundColor: C.card,
+    borderRadius: R.lg,
+    borderWidth: 1.5,
+    borderColor: "rgba(255,90,90,0.4)",
+    padding: SP.xl,
+    alignItems: "center",
+    maxWidth: 420,
+    width: "100%",
+  },
+  modalTitle: { fontFamily: F.serif, fontSize: 19, color: C.ink, marginTop: SP.sm },
+  modalBody: {
+    fontFamily: F.text,
+    fontSize: 13.5,
+    color: C.ink2,
+    textAlign: "center",
+    marginTop: SP.sm,
+    lineHeight: 20,
+  },
+  modalRow: { flexDirection: "row", gap: SP.sm, marginTop: SP.lg, alignSelf: "stretch" },
+  modalBtn: {
+    flex: 1,
+    height: 44,
+    borderRadius: R.pill,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: SP.sm,
+  },
+  modalBtnText: { fontFamily: F.display, fontSize: 13, color: C.onBrand },
 });
