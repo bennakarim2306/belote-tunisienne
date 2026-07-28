@@ -16,17 +16,23 @@ export default function AdBanner() {
 
 // Collapsed to 0 height until an ad is actually loaded, so the screen uses
 // the full height (like Expo Go) whenever there is no fill / ad not ready.
+// On failure (no fill), a fresh load is retried every 60s.
 function NativeBanner({ mod }: { mod: any }) {
   const [loaded, setLoaded] = useState(false);
+  const [attempt, setAttempt] = useState(0);
   const { BannerAd, BannerAdSize } = mod;
   return (
     <View style={loaded ? styles.native : styles.collapsed} testID="ad-banner-native">
       <BannerAd
+        key={attempt}
         unitId={AD_UNITS.banner}
         size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
         requestOptions={{ requestNonPersonalizedAdsOnly: true }}
         onAdLoaded={() => setLoaded(true)}
-        onAdFailedToLoad={() => setLoaded(false)}
+        onAdFailedToLoad={() => {
+          setLoaded(false);
+          setTimeout(() => setAttempt((a) => a + 1), 60000);
+        }}
       />
     </View>
   );
