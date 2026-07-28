@@ -6,6 +6,7 @@ import re
 import time
 import uuid
 from datetime import datetime, timedelta, timezone
+from html import escape as html_escape
 from pathlib import Path
 from typing import Optional
 
@@ -246,6 +247,86 @@ async def datenschutz():
 async def account_deletion_page():
     """Public account-deletion instructions — required by Google Play."""
     return (Path(__file__).parent / "account_deletion.html").read_text(encoding="utf-8")
+
+
+# ---------------------------------------------------------------------------
+# Beta test feedback form (public form + key-protected results)
+# ---------------------------------------------------------------------------
+
+class FeedbackBody(BaseModel):
+    name: str = Field(min_length=1, max_length=60)
+    device: str = Field(default="android", max_length=20)
+    model: str = Field(default="", max_length=60)
+    modes: list[str] = Field(default_factory=list, max_length=10)
+    rating: int = Field(ge=1, le=5)
+    liked: str = Field(default="", max_length=2000)
+    bugs: str = Field(default="", max_length=2000)
+    ideas: str = Field(default="", max_length=2000)
+
+
+@api.get("/feedback", response_class=HTMLResponse)
+async def feedback_form():
+    """Public test feedback form for beta testers."""
+    return (Path(__file__).parent / "feedback_form.html").read_text(encoding="utf-8")
+
+
+@api.post("/feedback/submit")
+async def feedback_submit(body: FeedbackBody):
+    doc = body.model_dump()
+    doc["_id"] = uuid.uuid4().hex
+    doc["created_at"] = datetime.now(timezone.utc).isoformat()
+    await db.test_feedback.insert_one(doc)
+    return {"ok": True}
+
+
+@api.get("/feedback/results", response_class=HTMLResponse)
+async def feedback_results(key: str = ""):
+    if key != os.environ.get("FEEDBACK_ADMIN_KEY"):
+        raise HTTPException(status_code=403, detail="forbidden")
+    rows = await db.test_feedback.find({}, {"_id": 0}).sort(
+        "created_at", -1).to_list(500)
+    esc = html_escape
+    avg = round(sum(r["rating"] for r in rows) / len(rows), 2) if rows else "—"
+    mode_labels = {"solo": "Solo", "online": "En ligne", "duo": "Duo",
+                   "tutorial": "Tutoriel", "friends": "Amis"}
+    body_rows = ""
+    for r in rows:
+        modes = ", ".join(mode_labels.get(m, m) for m in r.get("modes", []))
+        body_rows += (
+            "<tr>"
+            f"<td>{esc(r['created_at'][:16].replace('T', ' '))}</td>"
+            f"<td><strong>{esc(r['name'])}</strong></td>"
+            f"<td>{esc(r.get('device', ''))}<br><small>{esc(r.get('model', ''))}</small></td>"
+            f"<td>{esc(modes)}</td>"
+            f"<td class='stars'>{'★' * r['rating']}{'☆' * (5 - r['rating'])}</td>"
+            f"<td>{esc(r.get('liked', ''))}</td>"
+            f"<td class='bug'>{esc(r.get('bugs', ''))}</td>"
+            f"<td>{esc(r.get('ideas', ''))}</td>"
+            "</tr>"
+        )
+    return f"""<!DOCTYPE html>
+<html lang="fr"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Résultats des tests — Belote Tunisienne</title>
+<style>
+  body {{ font-family: Georgia, serif; background: #12100C; color: #F3EBD8; margin: 0; padding: 24px; }}
+  h1 {{ color: #E9C46A; font-size: 1.4em; }}
+  .meta {{ color: #B8AD92; margin-bottom: 16px; }}
+  table {{ border-collapse: collapse; width: 100%; font-size: 0.9em; }}
+  th, td {{ border: 1px solid #3a3324; padding: 8px 10px; text-align: left; vertical-align: top; }}
+  th {{ background: #1E1A12; color: #E9C46A; position: sticky; top: 0; }}
+  tr:nth-child(even) {{ background: #17140E; }}
+  .stars {{ color: #E9C46A; white-space: nowrap; }}
+  .bug {{ color: #FFB0B0; }}
+  small {{ color: #B8AD92; }}
+</style></head><body>
+<h1>🃏 Résultats des tests — Belote Tunisienne</h1>
+<p class="meta">{len(rows)} retour(s) — note moyenne : <strong>{avg} / 5</strong></p>
+<table>
+<tr><th>Date</th><th>Testeur</th><th>Appareil</th><th>Modes</th><th>Note</th><th>A bien fonctionné</th><th>Bugs</th><th>Suggestions</th></tr>
+{body_rows if body_rows else '<tr><td colspan="8">Aucun retour pour le moment.</td></tr>'}
+</table>
+</body></html>"""
 
 
 @api.delete("/users/me")

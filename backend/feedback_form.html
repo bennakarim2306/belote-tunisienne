@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Belote Tunisienne — Formulaire de test</title>
+<style>
+  :root { --gold: #E9C46A; --bg: #12100C; --card: #1E1A12; --ink: #F3EBD8; --ink2: #B8AD92; --brand: #00E57A; --error: #FF5A5A; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "Times New Roman", serif; background: var(--bg); color: var(--ink); max-width: 680px; margin: 0 auto; padding: 28px 18px 60px; line-height: 1.55; }
+  h1 { font-size: 1.55em; color: var(--gold); border-bottom: 2px solid var(--gold); padding-bottom: 10px; }
+  p.sub { color: var(--ink2); margin-top: 4px; }
+  label { display: block; margin: 18px 0 6px; font-weight: bold; color: var(--gold); font-size: 0.98em; }
+  input[type=text], textarea, select {
+    width: 100%; background: var(--card); color: var(--ink); border: 1px solid #3a3324;
+    border-radius: 8px; padding: 10px 12px; font-family: inherit; font-size: 1em;
+  }
+  textarea { min-height: 90px; resize: vertical; }
+  .checks { display: flex; flex-wrap: wrap; gap: 8px; }
+  .checks label { margin: 0; font-weight: normal; color: var(--ink); background: var(--card); border: 1px solid #3a3324; border-radius: 999px; padding: 7px 14px; cursor: pointer; user-select: none; }
+  .checks input { margin-right: 6px; }
+  .stars { display: flex; gap: 6px; font-size: 1.7em; cursor: pointer; user-select: none; }
+  .stars span { color: #4a4232; transition: color .12s; }
+  .stars span.on { color: var(--gold); }
+  button { margin-top: 26px; width: 100%; background: var(--brand); color: #051A10; border: 0; border-radius: 999px; padding: 14px; font-size: 1.05em; font-weight: bold; cursor: pointer; font-family: inherit; }
+  button:disabled { opacity: .5; }
+  .ok { text-align: center; padding: 60px 10px; }
+  .ok h2 { color: var(--brand); }
+  .err { color: var(--error); margin-top: 10px; display: none; }
+  .req { color: var(--error); }
+</style>
+</head>
+<body>
+
+<div id="form-view">
+  <h1>🃏 Belote Tunisienne — Test</h1>
+  <p class="sub">Merci de nous aider à tester le jeu ! Vos retours sont précieux. (~2 minutes)</p>
+
+  <label>Ton nom ou pseudo <span class="req">*</span></label>
+  <input type="text" id="name" maxlength="60" placeholder="Ex : Sami" />
+
+  <label>Appareil utilisé</label>
+  <select id="device">
+    <option value="android">Android</option>
+    <option value="ios">iPhone / iPad</option>
+    <option value="web">Navigateur web</option>
+  </select>
+
+  <label>Modèle de l'appareil (optionnel)</label>
+  <input type="text" id="model" maxlength="60" placeholder="Ex : Samsung Galaxy S23" />
+
+  <label>Modes testés</label>
+  <div class="checks" id="modes">
+    <label><input type="checkbox" value="solo" />Solo (hors-ligne)</label>
+    <label><input type="checkbox" value="online" />En ligne</label>
+    <label><input type="checkbox" value="duo" />Duo</label>
+    <label><input type="checkbox" value="tutorial" />Tutoriel / Coach</label>
+    <label><input type="checkbox" value="friends" />Amis / Invitations</label>
+  </div>
+
+  <label>Note globale <span class="req">*</span></label>
+  <div class="stars" id="stars">
+    <span data-v="1">★</span><span data-v="2">★</span><span data-v="3">★</span><span data-v="4">★</span><span data-v="5">★</span>
+  </div>
+
+  <label>Ce qui a bien fonctionné</label>
+  <textarea id="liked" maxlength="2000" placeholder="Ce que tu as aimé..."></textarea>
+
+  <label>Bugs ou problèmes rencontrés</label>
+  <textarea id="bugs" maxlength="2000" placeholder="Décris le problème et comment le reproduire..."></textarea>
+
+  <label>Suggestions d'amélioration</label>
+  <textarea id="ideas" maxlength="2000" placeholder="Tes idées..."></textarea>
+
+  <button id="send">Envoyer mes retours</button>
+  <p class="err" id="err">Merci d'indiquer au moins ton nom et une note ★.</p>
+</div>
+
+<div id="ok-view" class="ok" style="display:none">
+  <h2>✅ Merci !</h2>
+  <p>Tes retours ont bien été envoyés. Barcha merci ! 🙏</p>
+</div>
+
+<script>
+  let rating = 0;
+  const stars = document.querySelectorAll("#stars span");
+  stars.forEach(s => s.addEventListener("click", () => {
+    rating = +s.dataset.v;
+    stars.forEach(x => x.classList.toggle("on", +x.dataset.v <= rating));
+  }));
+
+  document.getElementById("send").addEventListener("click", async () => {
+    const name = document.getElementById("name").value.trim();
+    const err = document.getElementById("err");
+    if (!name || !rating) { err.style.display = "block"; return; }
+    err.style.display = "none";
+    const btn = document.getElementById("send");
+    btn.disabled = true;
+    const modes = [...document.querySelectorAll("#modes input:checked")].map(c => c.value);
+    try {
+      const r = await fetch("/api/feedback/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          device: document.getElementById("device").value,
+          model: document.getElementById("model").value.trim(),
+          modes,
+          rating,
+          liked: document.getElementById("liked").value.trim(),
+          bugs: document.getElementById("bugs").value.trim(),
+          ideas: document.getElementById("ideas").value.trim(),
+        }),
+      });
+      if (!r.ok) throw new Error();
+      document.getElementById("form-view").style.display = "none";
+      document.getElementById("ok-view").style.display = "block";
+    } catch {
+      btn.disabled = false;
+      err.textContent = "Erreur d'envoi — réessaie dans un instant.";
+      err.style.display = "block";
+    }
+  });
+</script>
+
+</body>
+</html>
