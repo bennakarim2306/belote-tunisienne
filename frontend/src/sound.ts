@@ -1,5 +1,10 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { AudioPlayer, createAudioPlayer } from "expo-audio";
+import { AudioPlayer, createAudioPlayer, setAudioModeAsync } from "expo-audio";
+
+// Game SFX must NEVER interrupt music playing in another app:
+// 'mixWithOthers' requests NO audio focus on Android (no pause/duck of the
+// user's music) and mixes alongside other audio on iOS.
+setAudioModeAsync({ interruptionMode: "mixWithOthers" }).catch(() => {});
 
 const SOURCES = {
   deal: require("../assets/sounds/deal.wav"),
