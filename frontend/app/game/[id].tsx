@@ -853,7 +853,12 @@ export default function GameScreen() {
               {t("us")} {state.match_scores[myTeam]} — {state.match_scores[1 - myTeam]}{" "}
               {t("them")} · {state.target} pts
             </Text>
-            <ScrollView style={{ marginTop: SP.sm }}>
+            <ScrollView
+              style={{ marginTop: SP.sm, flexShrink: 1, flexGrow: 0 }}
+              contentContainerStyle={{ paddingBottom: 4 }}
+              showsVerticalScrollIndicator
+              testID="score-history-scroll"
+            >
               {state.hand_history?.length ? (
                 state.hand_history.map((h) => (
                   <View key={h.hand_number} style={styles.historyRow}>

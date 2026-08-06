@@ -1,0 +1,51 @@
+{
+  "summary": "Frontend-only regression test for the in-game score-history modal fix in /app/frontend/app/game/[id].tsx. Verified in the small landscape viewport (900x420) that with 12 injected hands the modal is bounded inside the card, the ScrollView is scrollable, hand 12 (Donne 12) becomes visible after scrolling, and the Close (Fermer) button is fully visible and dismisses the modal. Regression path with an empty history also works (shows 'Aucune donne terminée pour l'instant' and Close works). Bug is fixed.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_scenarios_executed": [
+    {
+      "name": "Score history modal - 12 hands injected",
+      "route": "/game/local_short_histagent1",
+      "viewport": "900x420",
+      "assertions": {
+        "(a) close button fully inside viewport": "PASS (bbox x=294 y=283.5 w=312 h=42 -> bottom=325.5 <= 420)",
+        "(b) ScrollView bounded and scrollable": "PASS (scrollHeight=616, clientHeight=120)",
+        "(c) Donne 12 row visible after scroll to bottom": "PASS (scrollTop=496 → row 225.5-243.5 inside container 151.5-271.5); also verified via mouse wheel scroll",
+        "(d) Close button dismisses modal": "PASS"
+      }
+    },
+    {
+      "name": "Regression - empty history",
+      "route": "/game/local_short_histagent2",
+      "assertions": {
+        "'no hands yet' text shown": "PASS (Aucune donne terminée pour l'instant)",
+        "Close button visible and dismisses": "PASS"
+      }
+    }
+  ],
+  "notes": [
+    "el.scrollTo(0, scrollHeight) via page.evaluate did not update scrollTop reliably in Playwright/RN-Web, but setting el.scrollTop directly (and real mouse-wheel via page.mouse.wheel) both scrolled the container to the bottom and made Donne 12 visible. This is a Playwright/RN-Web quirk, NOT a product bug.",
+    "Console emitted only benign warnings ('shadow*' style props deprecated; transform-origin DOM prop warning) - unrelated to this fix."
+  ],
+  "screenshots": [
+    "/tmp/score_history_before.png",
+    "/tmp/score_history_after.png",
+    "/tmp/history_bottom.png",
+    "/tmp/history_wheel.png",
+    "/tmp/history_empty.png"
+  ],
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (skipped)", "frontend": "100%"},
+  "seed_data_creation": "Injected 12 synthetic hand_history entries into localStorage key 'local_solo_game' at runtime for /game/local_short_histagent1 (no persistent seed).",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Score-history modal fix (flexShrink:1, flexGrow:0 on ScrollView, testID score-history-scroll, close button below) validated at 900x420. Auth testIDs are auth-email-input / auth-password-input / auth-submit-button. Local solo game route is /game/local_short_<suffix> and its state is in localStorage key 'local_solo_game' as {id,uid,doc}. Inject hand_history AFTER the game screen mounts once, then reload."
+}
