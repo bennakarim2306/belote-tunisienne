@@ -5,6 +5,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Dimensions,
   ImageBackground,
   Modal,
   Platform,
@@ -36,6 +37,11 @@ import { isLocalGameId, newLocalGameId, useLocalGame } from "@/src/game/useLocal
 import { TKey, useI18n } from "@/src/i18n";
 import { playSound } from "@/src/sound";
 import { C, F, PATTERN_BG, R, SP } from "@/src/theme";
+
+// raise the bidding panel by 5% of the screen height so it never covers the
+// top of the player's cards (dimensions frozen at app start; landscape lock)
+const _WIN = Dimensions.get("window");
+const BIDDING_RAISE = Math.round(Math.min(_WIN.width, _WIN.height) * 0.05);
 
 type TFunc = (key: TKey, vars?: Record<string, string | number>) => string;
 
@@ -638,7 +644,7 @@ export default function GameScreen() {
       {/* bidding overlays (hidden while cards are being dealt) */}
       {!dealing && (
         <View
-          style={[styles.biddingWrap, { bottom: insets.bottom + 134 }]}
+          style={[styles.biddingWrap, { bottom: insets.bottom + 134 + BIDDING_RAISE }]}
           pointerEvents="box-none"
         >
           {coachDisplay && (

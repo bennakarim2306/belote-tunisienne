@@ -12,7 +12,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 
-import { SUIT_COLOR_ON_DARK, SUIT_SYMBOL } from "@/src/components/PlayingCard";
+import { SUIT_COLOR, SUIT_SYMBOL } from "@/src/components/PlayingCard";
 import { GameState } from "@/src/game/useGameSocket";
 import { TKey } from "@/src/i18n";
 import { C, F, R, SP } from "@/src/theme";
@@ -145,7 +145,7 @@ export default function BiddingPanel({ state, t, onAction }: Props) {
                 }}
                 style={styles.capotSuitBtn}
               >
-                <Text style={[styles.capotSuitText, { color: SUIT_COLOR_ON_DARK[s] }]}>
+                <Text style={[styles.capotSuitText, { color: s === "H" || s === "D" ? "#FF7A66" : "#FFFFFF" }]}>
                   {SUIT_SYMBOL[s]}
                 </Text>
               </Pressable>
@@ -191,7 +191,7 @@ export default function BiddingPanel({ state, t, onAction }: Props) {
               onPress={() => setSuit(s)}
               style={[styles.suitBtn, suit === s && styles.suitBtnActive]}
             >
-              <Text style={[styles.suitText, { color: SUIT_COLOR_ON_DARK[s] }]}>
+              <Text style={[styles.suitText, { color: SUIT_COLOR[s] }]}>
                 {SUIT_SYMBOL[s]}
               </Text>
             </Pressable>
@@ -320,13 +320,13 @@ const styles = StyleSheet.create({
     width: 44,
     height: 36,
     borderRadius: R.sm,
-    backgroundColor: C.card,
+    backgroundColor: "#FFFFFF",
     borderWidth: 2,
     borderColor: C.border,
     alignItems: "center",
     justifyContent: "center",
   },
-  suitBtnActive: { borderColor: C.brand, backgroundColor: "rgba(0,229,122,0.12)" },
+  suitBtnActive: { borderColor: C.brand, backgroundColor: "#E8FFF3" },
   suitText: { fontSize: 19 },
   valueGrid: {
     flexDirection: "row",
