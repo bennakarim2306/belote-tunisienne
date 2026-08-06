@@ -191,8 +191,13 @@ export function useLocalGame(gameId: string | undefined) {
 
     if (g.phase !== "bidding" && g.phase !== "playing") return;
     const actor = g.turn;
-    if (actor === null || !g.players[actor].is_bot) return; // untimed human turn
-    const delay = Math.max(0, g.pause_until - nowS) + 1 + Math.random();
+    if (actor === null) return;
+    // last trick: nobody has a choice (1 card each) — throw automatically,
+    // one card per second, in play order (humans included)
+    const lastTrickAuto = g.phase === "playing" && g.hands[actor].length === 1;
+    if (!lastTrickAuto && !g.players[actor].is_bot) return; // untimed human turn
+    const pause = Math.max(0, g.pause_until - nowS);
+    const delay = lastTrickAuto ? pause + 1 : pause + 1 + Math.random();
     run(delay, () => {
       const gg = engineRef.current;
       if (!gg || (gg.phase !== "bidding" && gg.phase !== "playing") || gg.turn !== actor) return;

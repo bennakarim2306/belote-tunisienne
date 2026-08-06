@@ -244,16 +244,16 @@ export default function GameScreen() {
       } else if (ev.e === "pause_declined") {
         setBanner({ text: t("pauseDeclined"), key: Date.now() });
       } else if (ev.e === "trick_end") {
-        // the completed trick rests ~0.9s (so the 4th card is clearly seen),
+        // the completed trick rests 1s (so the 4th card is clearly seen),
         // then the collect animation plays (~1s) — see TrickArea HOLD_MS
         setShowLast(true);
-        setTimeout(() => playSound("trick", 0.7), 850);
-        setTimeout(() => setShowLast(false), 2050);
+        setTimeout(() => playSound("trick", 0.7), 950);
+        setTimeout(() => setShowLast(false), 2150);
         if (Platform.OS !== "web" && state && ev.winner_seat !== undefined &&
             ev.winner_seat % 2 === state.my_seat % 2) {
           setTimeout(() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          }, 850);
+          }, 950);
         }
       } else if (ev.e === "match_end" && Platform.OS !== "web") {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -266,7 +266,9 @@ export default function GameScreen() {
   const wasMyTurnRef = useRef(false);
   useEffect(() => {
     const mine = !!state && state.turn === state.my_seat && !state.paused && !dealing &&
-      (state.phase === "bidding" || state.phase === "playing");
+      (state.phase === "bidding" || state.phase === "playing") &&
+      // last trick auto-plays itself (no choice) — no need to call the player
+      !(state.phase === "playing" && state.hand.length === 1);
     if (mine && !wasMyTurnRef.current) playSound("yourTurn", 0.5);
     wasMyTurnRef.current = mine;
   }, [state, dealing]);
@@ -308,7 +310,7 @@ export default function GameScreen() {
       setHandEndReady(true);
       return;
     }
-    const tm = setTimeout(() => setHandEndReady(true), 2150);
+    const tm = setTimeout(() => setHandEndReady(true), 2250);
     return () => clearTimeout(tm);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state?.phase]);

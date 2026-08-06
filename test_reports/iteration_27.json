@@ -1,0 +1,30 @@
+{
+  "summary": "OFFLINE last-trick auto-play (frontend TS engine useLocalGame.ts) verified end-to-end via Playwright on live preview. Human's last card is auto-played without any tap, hand-end modal appears after the trick rest+collect, non-last tricks still require the human tap (regression OK), and Continuer transitions to the next hand.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "Playwright script embedded in this iteration (see console output above); results:",
+    "Run A (H90 forced, all 7 tricks played manually): my hand 1->0 at t=5.68s WITHOUT any tap, hand-end-modal at t=8.78s.",
+    "Run B (with regression check): hand=2 waited 3s -> still 2 cards (no auto-play on non-last trick). Then hand 1->0 at t=3.45s WITHOUT any tap, modal at t=7.67s (gap 4.22s ~= 1s hold + 1s collect + 2.25s handEndReady). Continuer works: next hand starts with 8 cards (Donne 2)."
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "useLocalGame.ts scheduleAuto: `lastTrickAuto = phase === 'playing' && hands[actor].length === 1` correctly scopes auto-play to the last trick only; humans on tricks 1-7 remain untimed (verified: hand=2 waited 3s, stayed 2).",
+    "Delay formula `pause + 1` (deterministic 1.0s) for last-trick auto matches backend cadence; bot moves on regular turns still use `pause + 1 + random()` — good separation.",
+    "app/game/[id].tsx: yourTurn sound correctly suppressed when hand.length===1 (line 271) so no chime fires when the human's last card is about to be auto-played.",
+    "TrickArea HOLD_MS=1000 matches the [id].tsx trick_end timers (950/2150) and handEndReady=2250 — timings consistent with observed 4.22s gap between last-card and modal.",
+    "engine.ts remains unchanged; scheduleAuto layer alone drives the new behavior. Clean separation."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (skipped per request)", "frontend": "100%"},
+  "seed_data_creation": "None. Fresh offline game booted at /game/local_short_test<ts>.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Reliable path for offline solo tests: login (tester1@belote.tn/Belote123!) -> goto /game/local_short_test<uniq>. Bidding: click bid-suit-H then bid-value-90 then announce-bid-button once; subsequent panel reappearances (bots outbidding, all-pass redeal): click pass-button. Panel testIDs: bidding-panel, bid-suit-{H|S|C|D}, bid-value-{90..160}, announce-bid-button, pass-button. Hand: hand-card-{card}. Turn indicator: your-turn-pill. Hand end: hand-end-modal + hand-continue-button. Trick area: trick-area (contains 4 <img> during a trick).",
+  "rca_of_issue": "No bug. Feature verified: (1) offline engine auto-plays the last trick without any human tap, (2) tricks 1-7 preserve full human control (waited 3s on hand=2 -> no auto), (3) full hand flow (bidding -> 7 tricks -> auto last trick -> hand-end modal -> Continuer -> next hand with 8 cards) works."
+}

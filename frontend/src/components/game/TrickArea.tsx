@@ -17,7 +17,7 @@ import { C, F } from "@/src/theme";
 const CARD_W = 74;
 // the completed trick rests on the table before being collected, so the
 // 4th (last-played) card is clearly visible — keep in sync with [id].tsx
-const HOLD_MS = 900;
+const HOLD_MS = 1000;
 
 // rel position offsets — CLOCKWISE play direction on screen:
 // 0 = me (bottom), 1 = next player (LEFT), 2 = partner (top), 3 = previous (RIGHT)

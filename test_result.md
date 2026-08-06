@@ -311,3 +311,20 @@ agent_communication:
       - working: true
         agent: "main"
         comment: "E2E browser check in tutorial coach game (unlock: localStorage tutorial_progress=14): partner announcement commentary displayed; existing bid hints unaffected."
+
+frontend:
+  - task: "Last trick auto-play (no choice): when every player has 1 card left, cards are thrown automatically one per second in play order (humans included). Implemented in BOTH drivers: backend game_runtime.py _auto (last_trick_auto -> delay pause+1.0s) and frontend useLocalGame.ts scheduleAuto (lastTrickAuto). TrickArea HOLD_MS 900->1000 (1s rest before collect), [id].tsx trick sound/haptic 850->950ms, showLast 2050->2150, handEndReady 2150->2250, yourTurn chime suppressed when hand.length===1 in playing."
+    implemented: true
+    working: "NA"
+    file: "/app/backend/game_runtime.py, /app/frontend/src/game/useLocalGame.ts, /app/frontend/src/components/game/TrickArea.tsx, /app/frontend/app/game/[id].tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "BACKEND VERIFIED by main agent via WS script (/tmp/test_last_trick_auto.py): solo backend game, played tricks 1-7 manually, stopped clicking on last trick -> server threw my card automatically, last-trick cadence exactly 1.0s/1.0s/1.0s. OFFLINE (useLocalGame.ts) not yet verified E2E in browser."
+
+agent_communication:
+  - agent: "main"
+    message: "NEW: last trick auto-play in offline solo. Test at 1920x800 landscape: login tester1 (Belote123!), go to /game/local_short_<anything> (fresh local game), bid or let bots bid, then play tricks 1-7 manually (tap legal cards; if a tap does nothing the card is illegal, try another). When each player has only 1 card left (8th trick), DO NOT tap anything: the 4 cards must be thrown automatically ~1s apart (mine included), then the trick stays visible ~1s, collects, and the hand-end modal appears. Also regression: on tricks 1-7 MY card must NOT auto-play (I keep control). Backend online path already verified by main agent."

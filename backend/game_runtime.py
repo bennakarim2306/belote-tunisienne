@@ -472,7 +472,12 @@ class GameRuntimeMixin:
             actor = g.turn
             player = g.players[actor]
             pause = max(0, g.pause_until - now)
-            if player["is_bot"] or player.get("left"):
+            # last trick: nobody has a choice (1 card each) — throw
+            # automatically, one card per second, in play order (humans too)
+            last_trick_auto = g.phase == "playing" and len(g.hands[actor]) == 1
+            if last_trick_auto:
+                delay = pause + 1.0
+            elif player["is_bot"] or player.get("left"):
                 delay = pause + random.uniform(1.0, 2.0)
             else:
                 if not g.turn_timeout:
