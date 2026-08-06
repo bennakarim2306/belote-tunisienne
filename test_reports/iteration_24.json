@@ -1,0 +1,40 @@
+{
+  "summary": "Frontend-only verification of the chat-bubble vs bid/contract-bubble stacking fix in PlayerSeat.tsx. Logged in as tester1@belote.tn, navigated to /game/local_short_chatbubbletest, announced S/160 to become contract holder (seat 0, bubbleSide='right'), opened chat and sent 'Yezzi!' chip. Measured bounding boxes of both bubbles simultaneously and captured screenshot. Result: chat bubble (y=626, h=23, bottom=649) is placed 9px ABOVE the contract bubble (y=658, h=54), no overlap. Chat auto-hides after ~4s and contract remains visible. Bid/contract bubble alone before chat is unchanged. Fix is verified.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "verification_details": {
+    "route_tested": "/game/local_short_chatbubbletest (offline local TS engine)",
+    "seat": 0,
+    "bubbleSide": "right",
+    "chat_msg_chip": "chat-msg-yezzi",
+    "chat_bubble_bbox": {"x": 94, "y": 626, "width": 74, "height": 23},
+    "contract_bubble_bbox": {"x": 94, "y": 658, "width": 51, "height": 54},
+    "chat_bottom": 649,
+    "contract_top": 658,
+    "gap_px": 9,
+    "overlap": false,
+    "chat_is_above_contract": true,
+    "fix_verified": true,
+    "regression_contract_alone_bbox": {"x": 94, "y": 658, "width": 51, "height": 54},
+    "chat_bubble_auto_hide_after_4s": true,
+    "contract_still_visible_after_chat_hidden": true,
+    "screenshot_evidence": "/tmp/both_bubbles.png (Yezzi! bubble visibly stacked above gold 160 spades contract bubble next to Tester1)"
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "PlayerSeat.tsx logic is clean and minimally invasive: only the chat bubble receives the vertical offset+higher zIndex when hasBid is true; bid/contract bubble positioning is untouched. Applies to both bubbleSide variants ('right' shifts top up by 28px + zIndex 13, 'top' shifts top up to -60). Reference: /app/frontend/src/components/game/PlayerSeat.tsx:126-144."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (skipped)", "frontend": "100%"},
+  "seed_data_creation": "None (used existing tester1@belote.tn account and local offline game route).",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "For local-game chat testing, /game/local_short_<anything> works fully offline; seat 0 chat is committed locally and the chat bubble auto-hides after ~4s. Capture both bounding_box()s within ~1s of clicking the chat chip.",
+  "rca_of_issue": "Root cause was that on right-anchored seats (seat 0 bottom and seat 2 top), both chatBubble and bid/contract bubble used bubbleSide='right' with left:82 and identical `top` offsets and same zIndex 12, so the later-rendered bid/contract bubble covered the chat bubble. Fix stacks the chat bubble 28px higher and bumps its zIndex to 13 when a bid/contract is present. Verified: gap of ~9px between the two bubbles, chat visibly above contract, no regression on either bubble alone."
+}

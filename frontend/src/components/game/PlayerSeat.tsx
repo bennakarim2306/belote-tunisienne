@@ -81,6 +81,9 @@ export default function PlayerSeat({
   }));
 
   const ringSize = size + 18;
+  // when both a chat message and a bid/contract bubble are visible, the chat
+  // bubble is stacked ABOVE the bid bubble instead of overlapping behind it
+  const hasBid = !!(contractLabel || bidLabel);
 
   return (
     <View style={styles.wrap} testID={`seat-${player.seat}`}>
@@ -126,7 +129,11 @@ export default function PlayerSeat({
           style={[
             styles.bubble,
             styles.chatBubble,
-            bubbleSide === "right" && [styles.bubbleRight, { top: ringSize / 2 - 16 }],
+            hasBid && bubbleSide === "top" && { top: -60 },
+            bubbleSide === "right" && [
+              styles.bubbleRight,
+              { top: ringSize / 2 - 16 - (hasBid ? 28 : 0), zIndex: 13 },
+            ],
           ]}
           testID={`chat-bubble-${player.seat}`}
         >
