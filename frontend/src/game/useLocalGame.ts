@@ -162,19 +162,30 @@ export function useLocalGame(gameId: string | undefined) {
     }
 
     if (g.phase === "surcontre") {
-      const team = g.current_bid!.seat % 2;
-      const botSeat = [team, team + 2].find((s) => g.players[s].is_bot);
-      if (botSeat === undefined) return;
-      run(1.5 + Math.random(), () => {
-        const gg = engineRef.current;
-        if (!gg || gg.phase !== "surcontre") return;
-        try {
-          const evts = shouldSurcontre(gg.hands[botSeat], gg.current_bid!.suit)
-            ? gg.applySurcontre(botSeat)
-            : gg.applyDeclineSurcontre(botSeat);
-          commit(evts);
-        } catch {}
-      });
+      const holder = g.current_bid!.seat;
+      if (g.players[holder].is_bot) {
+        // bot contract holder decides quickly
+        run(1.5 + Math.random(), () => {
+          const gg = engineRef.current;
+          if (!gg || gg.phase !== "surcontre") return;
+          try {
+            const evts = shouldSurcontre(gg.hands[holder], gg.current_bid!.suit)
+              ? gg.applySurcontre(holder)
+              : gg.applyDeclineSurcontre(holder);
+            commit(evts);
+          } catch {}
+        });
+      } else {
+        // human contract holder: 5s reaction window, then the contre is
+        // ignored automatically
+        run(Math.max(0.5, g.turn_deadline - nowS), () => {
+          const gg = engineRef.current;
+          if (!gg || gg.phase !== "surcontre") return;
+          try {
+            commit(gg.applyDeclineSurcontre(holder));
+          } catch {}
+        });
+      }
       return;
     }
 

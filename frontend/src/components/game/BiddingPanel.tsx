@@ -26,6 +26,24 @@ interface Props {
   onAction: (msg: Record<string, unknown>) => void;
 }
 
+// Shrinking golden bar showing the 5s reaction window after a contre.
+function SurcontreCountdown({ deadline }: { deadline: number }) {
+  const frac = useSharedValue(1);
+  useEffect(() => {
+    if (!deadline) return;
+    const remaining = Math.max(0, deadline - Date.now() / 1000);
+    frac.value = Math.min(1, remaining / 5);
+    frac.value = withTiming(0, { duration: remaining * 1000, easing: Easing.linear });
+  }, [deadline, frac]);
+  const style = useAnimatedStyle(() => ({ width: `${frac.value * 100}%` }));
+  if (!deadline) return null;
+  return (
+    <View style={styles.cdTrack} testID="surcontre-countdown">
+      <Animated.View style={[styles.cdFill, style]} />
+    </View>
+  );
+}
+
 export default function BiddingPanel({ state, t, onAction }: Props) {
   const [suit, setSuit] = useState<string | null>(null);
   const [value, setValue] = useState<number | null>(null);
@@ -81,6 +99,7 @@ export default function BiddingPanel({ state, t, onAction }: Props) {
       return (
         <Animated.View entering={FadeInUp} style={styles.panel} testID="surcontre-panel">
           <Text style={styles.panelTitle}>{t("opponentContred")}</Text>
+          <SurcontreCountdown deadline={state.turn_deadline} />
           <View style={styles.actionRow}>
             <Pressable
               testID="surcontre-button"
@@ -103,6 +122,7 @@ export default function BiddingPanel({ state, t, onAction }: Props) {
     return (
       <Animated.View entering={FadeInUp} style={styles.panel}>
         <Text style={styles.panelTitle}>{t("waitingDecision")}</Text>
+        <SurcontreCountdown deadline={state.turn_deadline} />
       </Animated.View>
     );
   }
@@ -265,6 +285,14 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 8,
   },
+  cdTrack: {
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "rgba(255,184,0,0.18)",
+    overflow: "hidden",
+    marginBottom: 6,
+  },
+  cdFill: { height: 4, borderRadius: 2, backgroundColor: "#FFB800" },
   panelTurn: {
     borderWidth: 2,
     shadowColor: C.gold,

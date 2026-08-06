@@ -27,7 +27,7 @@ export const PLAIN_POINTS: Record<string, number> = {
 };
 export const BID_VALUES = [90, 100, 110, 120, 130, 140, 150, 160];
 
-export const SURCONTRE_SECONDS = 15;
+export const SURCONTRE_SECONDS = 5;
 export const HAND_END_SECONDS = 30;
 export const MATCH_END_SECONDS = 10;
 export const TRICK_PAUSE = 1.8;
@@ -360,7 +360,9 @@ export class BeloteEngine {
     this.bids.push({ seat, type: "contre" });
     this.phase = "surcontre";
     this.turn = null;
-    this.turn_deadline = this.turn_timeout ? now() + SURCONTRE_SECONDS : 0;
+    // 5s reaction window (surcontre or ignore) — applies in ALL games,
+    // timed or not
+    this.turn_deadline = now() + SURCONTRE_SECONDS;
     this.version += 1;
     return [{ e: "contre", seat }];
   }

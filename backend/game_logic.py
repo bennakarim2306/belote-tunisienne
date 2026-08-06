@@ -11,7 +11,7 @@ PLAIN_POINTS = {"A": 11, "10": 10, "K": 4, "Q": 3, "J": 2, "9": 0, "8": 0, "7": 
 BID_VALUES = [90, 100, 110, 120, 130, 140, 150, 160]
 
 TURN_SECONDS = 30
-SURCONTRE_SECONDS = 15
+SURCONTRE_SECONDS = 5
 HAND_END_SECONDS = 30        # players confirm with a "ready" button, auto-validated after 30s
 MATCH_END_SECONDS = 10       # shorter wait before revealing the match result
 PAUSE_MAX_SECONDS = 180      # accepted pause auto-resumes after 3 min
@@ -259,7 +259,9 @@ class BeloteGame:
         self.bids.append({"seat": seat, "type": "contre"})
         self.phase = "surcontre"
         self.turn = None
-        self.turn_deadline = (time.time() + SURCONTRE_SECONDS) if self.turn_timeout else 0.0
+        # 5s reaction window (surcontre or ignore) — applies in ALL games,
+        # timed or not
+        self.turn_deadline = time.time() + SURCONTRE_SECONDS
         self.version += 1
         return [{"e": "contre", "seat": seat}]
 

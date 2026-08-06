@@ -442,13 +442,15 @@ class GameRuntimeMixin:
             if g.phase == "surcontre":
                 team = g.current_bid["seat"] % 2
                 seats = [team, team + 2]
-                bot_seat = next((s for s in seats if g.players[s]["is_bot"] or
-                                 g.players[s].get("left")), None)
-                if bot_seat is not None:
+                holder = g.current_bid["seat"]
+                holder_gone = g.players[holder]["is_bot"] or g.players[holder].get("left")
+                if holder_gone:
+                    # bot (or absent) contract holder decides quickly
+                    bot_seat = holder
                     await asyncio.sleep(random.uniform(1.5, 2.5))
                 else:
-                    if not g.turn_timeout:
-                        return  # untimed game: wait for a human decision
+                    # human contract holder: full 5s reaction window, then
+                    # the contre is ignored automatically
                     await asyncio.sleep(max(0.5, g.turn_deadline - now))
                     bot_seat = seats[0]
                 async with live.lock:
