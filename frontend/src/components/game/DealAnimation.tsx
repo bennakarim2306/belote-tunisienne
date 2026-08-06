@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import { StyleSheet, View } from "react-native";
 import Animated, {
   Easing,
@@ -65,11 +65,17 @@ export default function DealAnimation({ mySeat, dealer, onDone }: Props) {
     return arr;
   }, [dealer, mySeat]);
 
+  // onDone via ref: the parent re-renders every second during timed games
+  // (turn countdown), and an inline onDone prop would otherwise reset this
+  // timeout on every render — so it would NEVER fire for the first bidder.
+  const onDoneRef = useRef(onDone);
+  onDoneRef.current = onDone;
+
   useEffect(() => {
     const total = order.length * CARD_DELAY + CARD_DUR + 250;
-    const tm = setTimeout(onDone, total);
+    const tm = setTimeout(() => onDoneRef.current(), total);
     return () => clearTimeout(tm);
-  }, [order, onDone]);
+  }, [order]);
 
   return (
     <View style={styles.overlay} pointerEvents="none" testID="deal-animation">

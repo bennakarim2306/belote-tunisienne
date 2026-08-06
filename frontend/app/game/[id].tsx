@@ -159,6 +159,15 @@ export default function GameScreen() {
     }
   }, [state]);
 
+  // safety net: never keep the deal overlay up when it's my turn and the
+  // bidding already has activity (reconnects, background-throttled timers)
+  useEffect(() => {
+    if (dealing && state && state.phase === "bidding" &&
+        state.turn === state.my_seat && state.bids.length > 0) {
+      setDealing(false);
+    }
+  }, [state, dealing]);
+
   // process incoming events
   useEffect(() => {
     if (!events.list.length || events.id === lastEventId.current) return;
