@@ -238,12 +238,15 @@ async def me(request: Request):
 
 
 @api.get("/datenschutz", response_class=HTMLResponse)
+@api.get("/datenschutzerklaerung", response_class=HTMLResponse)
 async def datenschutz():
     """Public privacy policy (Datenschutzerklärung) — required by Google Play."""
     return (Path(__file__).parent / "datenschutzerklaerung.html").read_text(encoding="utf-8")
 
 
 @api.get("/account-deletion", response_class=HTMLResponse)
+@api.get("/konto-loeschen", response_class=HTMLResponse)
+@api.get("/delete-account", response_class=HTMLResponse)
 async def account_deletion_page():
     """Public account-deletion instructions — required by Google Play."""
     return (Path(__file__).parent / "account_deletion.html").read_text(encoding="utf-8")
