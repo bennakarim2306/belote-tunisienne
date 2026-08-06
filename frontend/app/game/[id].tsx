@@ -198,7 +198,7 @@ export default function GameScreen() {
         playSound("belote");
         setBanner({ text: t(ev.word === "belote" ? "belote" : "rebelote"), key: Date.now() });
       } else if (ev.e === "bid") {
-        playSound("bid", 0.6);
+        playSound("bid", 0.45);
         if (state?.coach_mode && ev.seat !== undefined && ev.seat !== state.my_seat) {
           const name = state.players.find((p) => p.seat === ev.seat)?.username ?? "";
           const suitSym = SUIT_SYMBOL[ev.suit ?? ""] ?? "";
@@ -209,7 +209,7 @@ export default function GameScreen() {
           showCoachMsg(t(key as TKey, { name, value: String(ev.value ?? ""), suit: suitSym }));
         }
       } else if (ev.e === "contre") {
-        playSound("contre", 0.75);
+        playSound("contre", 0.55);
         setBanner({ text: t("contreBang"), key: Date.now() });
         if (state?.coach_mode && ev.seat !== undefined && ev.seat !== state.my_seat) {
           const name = state.players.find((p) => p.seat === ev.seat)?.username ?? "";
@@ -219,7 +219,7 @@ export default function GameScreen() {
           ));
         }
       } else if (ev.e === "surcontre") {
-        playSound("surcontre", 0.8);
+        playSound("surcontre", 0.6);
         setBanner({ text: t("surcontreBang"), key: Date.now() });
         if (state?.coach_mode && ev.seat !== undefined && ev.seat !== state.my_seat) {
           const name = state.players.find((p) => p.seat === ev.seat)?.username ?? "";
@@ -229,7 +229,7 @@ export default function GameScreen() {
           ));
         }
       } else if (ev.e === "capot") {
-        playSound("capot", 0.8);
+        playSound("capot", 0.6);
         setBanner({ text: t("capotBang"), key: Date.now() });
         if (state?.coach_mode && ev.seat !== undefined && ev.seat !== state.my_seat) {
           const name = state.players.find((p) => p.seat === ev.seat)?.username ?? "";
@@ -267,7 +267,7 @@ export default function GameScreen() {
   useEffect(() => {
     const mine = !!state && state.turn === state.my_seat && !state.paused && !dealing &&
       (state.phase === "bidding" || state.phase === "playing");
-    if (mine && !wasMyTurnRef.current) playSound("yourTurn", 0.65);
+    if (mine && !wasMyTurnRef.current) playSound("yourTurn", 0.5);
     wasMyTurnRef.current = mine;
   }, [state, dealing]);
 
