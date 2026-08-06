@@ -328,3 +328,16 @@ frontend:
 agent_communication:
   - agent: "main"
     message: "NEW: last trick auto-play in offline solo. Test at 1920x800 landscape: login tester1 (Belote123!), go to /game/local_short_<anything> (fresh local game), bid or let bots bid, then play tricks 1-7 manually (tap legal cards; if a tap does nothing the card is illegal, try another). When each player has only 1 card left (8th trick), DO NOT tap anything: the 4 cards must be thrown automatically ~1s apart (mine included), then the trick stays visible ~1s, collects, and the hand-end modal appears. Also regression: on tricks 1-7 MY card must NOT auto-play (I keep control). Backend online path already verified by main agent."
+
+frontend:
+  - task: "Add friend in-game: tap a human player's avatar during online/private games -> player card modal (avatar/username/ELO) with Ajouter (friend request) / Accepter (received request) / Demande envoyée / Déjà amis states. PlayerSeat avatar is a Pressable (seat-avatar-{seat}); bots and solo-local games are not tappable. Backend untouched (reuses /friends, /friends/request, /friends/respond)."
+    implemented: true
+    working: true
+    file: "/app/frontend/app/game/[id].tsx, /app/frontend/src/components/game/PlayerSeat.tsx, /app/frontend/src/i18n.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "E2E verified by main agent in browser both directions with a private-room game (tester1+tester2+2 bots): tester1 tapped Tester2 avatar -> Ajouter -> 'Demande envoyée !'; tester2 tapped Tester1 avatar -> Accepter -> 'Déjà amis ✓'. testIDs: player-card-modal, add-friend-button, accept-friend-button, friend-request-sent, already-friends, player-card-close."

@@ -32,9 +32,11 @@ import PlayerSeat from "@/src/components/game/PlayerSeat";
 import TrickArea from "@/src/components/game/TrickArea";
 import PlayingCard, { SUIT_COLOR_ON_DARK, SUIT_SYMBOL, rankLabel } from "@/src/components/PlayingCard";
 import { useAuth } from "@/src/context/AuthContext";
-import { useGameSocket } from "@/src/game/useGameSocket";
+import { GamePlayer, useGameSocket } from "@/src/game/useGameSocket";
 import { isLocalGameId, newLocalGameId, useLocalGame } from "@/src/game/useLocalGame";
 import { TKey, useI18n } from "@/src/i18n";
+import { api } from "@/src/api";
+import Avatar from "@/src/components/Avatar";
 import { isSoundEnabled, playSound, setSoundEnabled } from "@/src/sound";
 import { C, F, PATTERN_BG, R, SP } from "@/src/theme";
 
@@ -130,6 +132,11 @@ export default function GameScreen() {
   const [dealing, setDealing] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const [soundOn, setSoundOn] = useState(isSoundEnabled());
+  const [playerCard, setPlayerCard] = useState<GamePlayer | null>(null);
+  const [friendStatus, setFriendStatus] = useState<
+    "loading" | "none" | "friends" | "pending_sent" | "pending_received"
+  >("loading");
+  const friendshipIdRef = useRef<string | null>(null);
   const [chatBubbles, setChatBubbles] = useState<Record<number, { text: string; key: number }>>({});
   const chatTimers = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
   const [coachMsg, setCoachMsg] = useState<{ text: string; key: number } | null>(null);
@@ -145,6 +152,54 @@ export default function GameScreen() {
     if (coachMsgTimer.current) clearTimeout(coachMsgTimer.current);
     coachMsgTimer.current = setTimeout(() => setCoachMsg(null), 6500);
   };
+
+  // tap an online human's avatar -> player card with an "add friend" button
+  const openPlayerCard = async (p: GamePlayer) => {
+    setPlayerCard(p);
+    setFriendStatus("loading");
+    friendshipIdRef.current = null;
+    try {
+      const res = await api.get("/friends");
+      const find = (arr: { user_id: string; friendship_id: string }[]) =>
+        arr.find((f) => f.user_id === p.user_id);
+      const received = find(res.pending_received);
+      if (find(res.friends)) setFriendStatus("friends");
+      else if (find(res.pending_sent)) setFriendStatus("pending_sent");
+      else if (received) {
+        friendshipIdRef.current = received.friendship_id;
+        setFriendStatus("pending_received");
+      } else setFriendStatus("none");
+    } catch {
+      setFriendStatus("none");
+    }
+  };
+
+  const addFriendFromGame = async () => {
+    if (!playerCard) return;
+    try {
+      await api.post("/friends/request", { user_id: playerCard.user_id });
+    } catch {
+      // already_exists -> treat as sent
+    }
+    setFriendStatus("pending_sent");
+  };
+
+  const acceptFriendFromGame = async () => {
+    if (!friendshipIdRef.current) return;
+    try {
+      await api.post("/friends/respond", {
+        friendship_id: friendshipIdRef.current,
+        accept: true,
+      });
+      setFriendStatus("friends");
+    } catch {}
+  };
+
+  // only real humans (online/private games) get a tappable avatar
+  const seatPress = (p: GamePlayer) =>
+    !isLocal && !p.is_bot && p.user_id !== user?.user_id
+      ? () => openPlayerCard(p)
+      : undefined;
 
   // trigger the dealing animation on every fresh hand
   useEffect(() => {
@@ -562,6 +617,7 @@ export default function GameScreen() {
           showTimer={seatTimerOn}
           size={38}
           bubbleSide="right"
+          onPress={seatPress(partner)}
         />
       </View>
 
@@ -578,6 +634,7 @@ export default function GameScreen() {
             chatText={chatBubbles[leftP.seat]?.text}
             deadline={state.turn_deadline}
             showTimer={seatTimerOn}
+            onPress={seatPress(leftP)}
           />
           <TrickArea
             trick={state.trick}
@@ -596,6 +653,7 @@ export default function GameScreen() {
             chatText={chatBubbles[rightP.seat]?.text}
             deadline={state.turn_deadline}
             showTimer={seatTimerOn}
+            onPress={seatPress(rightP)}
           />
         </View>
 
@@ -947,6 +1005,70 @@ export default function GameScreen() {
         </Pressable>
       </Modal>
 
+      {/* player card: add an online player as friend */}
+      <Modal visible={!!playerCard} transparent animationType="fade">
+        <Pressable style={styles.quitScrim} onPress={() => setPlayerCard(null)}>
+          <Pressable
+            style={[styles.quitCard, styles.playerCard]}
+            testID="player-card-modal"
+            onPress={() => {}}
+          >
+            {playerCard && (
+              <>
+                <Avatar
+                  avatarId={playerCard.avatar_id}
+                  size={64}
+                  ringColor={C.gold}
+                  ringWidth={2}
+                />
+                <Text style={[styles.quitTitle, { marginTop: SP.sm }]}>
+                  {playerCard.username}
+                </Text>
+                <Text style={styles.quitDesc}>ELO {playerCard.elo}</Text>
+                {friendStatus === "none" && (
+                  <ChunkyButton
+                    testID="add-friend-button"
+                    label={t("add")}
+                    small
+                    onPress={addFriendFromGame}
+                    style={{ marginTop: SP.md, minWidth: 170 }}
+                  />
+                )}
+                {friendStatus === "pending_received" && (
+                  <ChunkyButton
+                    testID="accept-friend-button"
+                    label={t("accept")}
+                    small
+                    onPress={acceptFriendFromGame}
+                    style={{ marginTop: SP.md, minWidth: 170 }}
+                  />
+                )}
+                {friendStatus === "pending_sent" && (
+                  <View style={styles.friendStatePill} testID="friend-request-sent">
+                    <Ionicons name="checkmark-circle" size={15} color={C.brand} />
+                    <Text style={styles.friendStateText}>{t("requestSent")}</Text>
+                  </View>
+                )}
+                {friendStatus === "friends" && (
+                  <View style={styles.friendStatePill} testID="already-friends">
+                    <Ionicons name="people" size={15} color={C.brand} />
+                    <Text style={styles.friendStateText}>{t("alreadyFriends")}</Text>
+                  </View>
+                )}
+                <Pressable
+                  testID="player-card-close"
+                  onPress={() => setPlayerCard(null)}
+                  hitSlop={8}
+                  style={{ marginTop: SP.md }}
+                >
+                  <Text style={styles.playerCardClose}>{t("close")}</Text>
+                </Pressable>
+              </>
+            )}
+          </Pressable>
+        </Pressable>
+      </Modal>
+
       {/* quit confirm */}
       <Modal visible={quitOpen} transparent animationType="fade">
         <View style={styles.quitScrim}>
@@ -1192,6 +1314,21 @@ const styles = StyleSheet.create({
     marginTop: SP.sm,
   },
   quitRow: { flexDirection: "row", gap: SP.md, marginTop: SP.lg },
+  playerCard: { maxWidth: 320, alignItems: "center" },
+  friendStatePill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: SP.md,
+    backgroundColor: "rgba(8,26,17,0.6)",
+    borderWidth: 1,
+    borderColor: "rgba(233,196,106,0.45)",
+    borderRadius: R.pill,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+  },
+  friendStateText: { fontFamily: F.bold, fontSize: 13, color: C.ink },
+  playerCardClose: { fontFamily: F.bold, fontSize: 13.5, color: C.ink2 },
   chatScrim: { flex: 1, backgroundColor: C.scrim, justifyContent: "flex-end" },
   chatSheet: {
     backgroundColor: C.bg,

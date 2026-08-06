@@ -243,6 +243,7 @@ const fr = {
   noFriendsDesc:
     "Cherche des joueurs par pseudo et ajoute-les pour les inviter dans tes parties privées.",
   requestSent: "Demande envoyée !",
+  alreadyFriends: "Déjà amis ✓",
   profile: "Profil",
   statistics: "Statistiques",
   gamesPlayed: "Parties",
@@ -521,6 +522,7 @@ const ar: Record<keyof typeof fr, string> = {
   noFriends: "مازال ما عندكش أصحاب",
   noFriendsDesc: "لوّج على اللاعبين بالاسم وزيدهم باش تعزمهم للطاولات الخاصة.",
   requestSent: "الطلب تبعث !",
+  alreadyFriends: "أصحاب ديجا ✓",
   profile: "حسابي",
   statistics: "إحصائيات",
   gamesPlayed: "حصص",
@@ -799,6 +801,7 @@ const en: Record<keyof typeof fr, string> = {
   noFriends: "No friends yet",
   noFriendsDesc: "Search players by username and add them to invite them to your private games.",
   requestSent: "Request sent!",
+  alreadyFriends: "Already friends ✓",
   profile: "Profile",
   statistics: "Statistics",
   gamesPlayed: "Games",

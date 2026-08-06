@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import Animated, {
   ZoomIn,
   useAnimatedStyle,
@@ -49,6 +49,8 @@ interface Props {
   size?: number;
   /** where announce/contract/chat bubbles are anchored (default above avatar) */
   bubbleSide?: "top" | "right";
+  /** tapping the avatar (online games: opens the add-friend player card) */
+  onPress?: () => void;
 }
 
 export default function PlayerSeat({
@@ -64,6 +66,7 @@ export default function PlayerSeat({
   isMe,
   size = 46,
   bubbleSide = "top",
+  onPress,
 }: Props) {
   const pulse = useSharedValue(0);
 
@@ -87,7 +90,13 @@ export default function PlayerSeat({
 
   return (
     <View style={styles.wrap} testID={`seat-${player.seat}`}>
-      <View style={{ width: ringSize, height: ringSize, alignItems: "center", justifyContent: "center" }}>
+      <Pressable
+        onPress={onPress}
+        disabled={!onPress}
+        hitSlop={6}
+        testID={`seat-avatar-${player.seat}`}
+        style={{ width: ringSize, height: ringSize, alignItems: "center", justifyContent: "center" }}
+      >
         <Animated.View
           style={[
             styles.turnRing,
@@ -112,7 +121,7 @@ export default function PlayerSeat({
           </View>
         )}
         {isTurn && showTimer && deadline ? <SeatTimer deadline={deadline} /> : null}
-      </View>
+      </Pressable>
       <View style={styles.nameRow}>
         <Text style={styles.name} numberOfLines={1}>
           {player.username}
