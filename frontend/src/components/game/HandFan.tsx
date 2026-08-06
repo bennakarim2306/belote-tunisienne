@@ -1,6 +1,6 @@
 import * as Haptics from "expo-haptics";
 import React, { useEffect } from "react";
-import { Platform, Pressable, StyleSheet, View, useWindowDimensions } from "react-native";
+import { Dimensions, Platform, Pressable, StyleSheet, View } from "react-native";
 import Animated, {
   Easing,
   FadeInDown,
@@ -12,6 +12,15 @@ import Animated, {
 } from "react-native-reanimated";
 
 import PlayingCard from "@/src/components/PlayingCard";
+
+// Frozen at app start: the app is landscape-locked, so the usable size never
+// legitimately changes. Freezing (instead of useWindowDimensions) keeps the
+// card size FIXED when the app returns from background — system bars can
+// transiently alter the reported window dimensions on resume.
+// max/min normalization guards against a swapped width/height report.
+const WIN = Dimensions.get("window");
+const WIN_W = Math.max(WIN.width, WIN.height);
+const WIN_H = Math.min(WIN.width, WIN.height);
 
 interface Props {
   hand: string[];
@@ -51,15 +60,14 @@ function CoachPulse({ children, radius }: { children: React.ReactNode; radius: n
 }
 
 export default function HandFan({ hand, legal, myTurn, trump, onPlay, coachCard }: Props) {
-  const { width, height } = useWindowDimensions();
   const n = hand.length;
   if (n === 0) return <View style={styles.row} />;
 
   const overlap = 0.55;
-  const maxW = Math.min(width * 0.79, 816);
+  const maxW = Math.min(WIN_W * 0.79, 816);
   // width-driven size (+20%) but capped by screen height so the hand
   // never overwhelms small landscape phones
-  const cardW = Math.min(90, height * 0.22, maxW / (1 + (n - 1) * overlap));
+  const cardW = Math.min(90, WIN_H * 0.22, maxW / (1 + (n - 1) * overlap));
   const mid = (n - 1) / 2;
 
   const play = (card: string) => {
