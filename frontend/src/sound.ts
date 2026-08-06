@@ -13,6 +13,11 @@ const SOURCES = {
   belote: require("../assets/sounds/belote.wav"),
   victory: require("../assets/sounds/victory.wav"),
   defeat: require("../assets/sounds/defeat.wav"),
+  yourTurn: require("../assets/sounds/your_turn.wav"),
+  bid: require("../assets/sounds/bid.wav"),
+  contre: require("../assets/sounds/contre.wav"),
+  surcontre: require("../assets/sounds/surcontre.wav"),
+  capot: require("../assets/sounds/capot.wav"),
 } as const;
 
 export type SoundName = keyof typeof SOURCES;

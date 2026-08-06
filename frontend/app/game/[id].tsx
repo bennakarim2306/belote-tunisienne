@@ -35,7 +35,7 @@ import { useAuth } from "@/src/context/AuthContext";
 import { useGameSocket } from "@/src/game/useGameSocket";
 import { isLocalGameId, newLocalGameId, useLocalGame } from "@/src/game/useLocalGame";
 import { TKey, useI18n } from "@/src/i18n";
-import { playSound } from "@/src/sound";
+import { isSoundEnabled, playSound, setSoundEnabled } from "@/src/sound";
 import { C, F, PATTERN_BG, R, SP } from "@/src/theme";
 
 // raise the bidding panel by 5% of the screen height so it never covers the
@@ -129,6 +129,7 @@ export default function GameScreen() {
   const [remaining, setRemaining] = useState<number | null>(null);
   const [dealing, setDealing] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
+  const [soundOn, setSoundOn] = useState(isSoundEnabled());
   const [chatBubbles, setChatBubbles] = useState<Record<number, { text: string; key: number }>>({});
   const chatTimers = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
   const [coachMsg, setCoachMsg] = useState<{ text: string; key: number } | null>(null);
@@ -196,16 +197,19 @@ export default function GameScreen() {
       } else if (ev.e === "belote") {
         playSound("belote");
         setBanner({ text: t(ev.word === "belote" ? "belote" : "rebelote"), key: Date.now() });
-      } else if (ev.e === "bid" && state?.coach_mode && ev.seat !== undefined &&
-                 ev.seat !== state.my_seat) {
-        const name = state.players.find((p) => p.seat === ev.seat)?.username ?? "";
-        const suitSym = SUIT_SYMBOL[ev.suit ?? ""] ?? "";
-        const isPartner = ev.seat % 2 === state.my_seat % 2;
-        const key = isPartner
-          ? "coach_partner_bid"
-          : `coach_opp_bid_${Math.min(ev.value ?? 90, 130)}`;
-        showCoachMsg(t(key as TKey, { name, value: String(ev.value ?? ""), suit: suitSym }));
+      } else if (ev.e === "bid") {
+        playSound("bid", 0.6);
+        if (state?.coach_mode && ev.seat !== undefined && ev.seat !== state.my_seat) {
+          const name = state.players.find((p) => p.seat === ev.seat)?.username ?? "";
+          const suitSym = SUIT_SYMBOL[ev.suit ?? ""] ?? "";
+          const isPartner = ev.seat % 2 === state.my_seat % 2;
+          const key = isPartner
+            ? "coach_partner_bid"
+            : `coach_opp_bid_${Math.min(ev.value ?? 90, 130)}`;
+          showCoachMsg(t(key as TKey, { name, value: String(ev.value ?? ""), suit: suitSym }));
+        }
       } else if (ev.e === "contre") {
+        playSound("contre", 0.75);
         setBanner({ text: t("contreBang"), key: Date.now() });
         if (state?.coach_mode && ev.seat !== undefined && ev.seat !== state.my_seat) {
           const name = state.players.find((p) => p.seat === ev.seat)?.username ?? "";
@@ -215,6 +219,7 @@ export default function GameScreen() {
           ));
         }
       } else if (ev.e === "surcontre") {
+        playSound("surcontre", 0.8);
         setBanner({ text: t("surcontreBang"), key: Date.now() });
         if (state?.coach_mode && ev.seat !== undefined && ev.seat !== state.my_seat) {
           const name = state.players.find((p) => p.seat === ev.seat)?.username ?? "";
@@ -224,6 +229,7 @@ export default function GameScreen() {
           ));
         }
       } else if (ev.e === "capot") {
+        playSound("capot", 0.8);
         setBanner({ text: t("capotBang"), key: Date.now() });
         if (state?.coach_mode && ev.seat !== undefined && ev.seat !== state.my_seat) {
           const name = state.players.find((p) => p.seat === ev.seat)?.username ?? "";
@@ -255,6 +261,15 @@ export default function GameScreen() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [events]);
+
+  // "your turn" chime: plays once each time the turn comes back to me
+  const wasMyTurnRef = useRef(false);
+  useEffect(() => {
+    const mine = !!state && state.turn === state.my_seat && !state.paused && !dealing &&
+      (state.phase === "bidding" || state.phase === "playing");
+    if (mine && !wasMyTurnRef.current) playSound("yourTurn", 0.65);
+    wasMyTurnRef.current = mine;
+  }, [state, dealing]);
 
   // banner auto-hide
   useEffect(() => {
@@ -459,6 +474,22 @@ export default function GameScreen() {
               <Ionicons name="pause" size={20} color={C.cream} />
             </Pressable>
           )}
+          <Pressable
+            testID="mute-button"
+            onPress={() => {
+              const next = !soundOn;
+              setSoundOn(next);
+              setSoundEnabled(next);
+            }}
+            hitSlop={10}
+            style={styles.quitBtn}
+          >
+            <Ionicons
+              name={soundOn ? "volume-high" : "volume-mute"}
+              size={20}
+              color={soundOn ? C.cream : "rgba(255,255,255,0.45)"}
+            />
+          </Pressable>
         </View>
 
         <View style={{ flex: 1 }} />
