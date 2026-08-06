@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { AppState } from "react-native";
 
 import { wsUrl } from "@/src/api";
 import { useAuth } from "@/src/context/AuthContext";
@@ -169,6 +170,12 @@ export function useGameSocket(gameId: string | undefined) {
       setConnected(false);
       wsRef.current = null;
       if (closedRef.current) return;
+      if (AppState.currentState !== "active") {
+        // app is backgrounded (battery saver may cut the network): don't burn
+        // retry attempts — the AppState listener reconnects on resume
+        setTimeout(connect, 4000);
+        return;
+      }
       attemptsRef.current += 1;
       if (attemptsRef.current > 10) {
         setFatalError("connection_lost");
@@ -192,9 +199,19 @@ export function useGameSocket(gameId: string | undefined) {
         wsRef.current.send(JSON.stringify({ action: "ping" }));
       }
     }, 25000);
+    // resume from background: reset the retry budget, clear any transient
+    // "connection lost" error and reconnect immediately — the seat is kept
+    // server-side, so the player rejoins the game right where it stands
+    const sub = AppState.addEventListener("change", (s) => {
+      if (s !== "active" || closedRef.current) return;
+      attemptsRef.current = 0;
+      setFatalError((prev) => (prev === "connection_lost" ? null : prev));
+      connect();
+    });
     return () => {
       closedRef.current = true;
       clearInterval(ping);
+      sub.remove();
       try {
         wsRef.current?.close();
       } catch {}

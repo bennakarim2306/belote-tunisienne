@@ -182,9 +182,15 @@ def test_stale_purge_returns_idle(mm_clients):
     st = _status(solo)
     assert st["status"] == "waiting"
 
-    # stop polling for 15s (queue_stale = 12s, loop tick 2s)
+    # brief app backgrounding (no polling) must NOT drop the player
+    # (queue_stale = 60s now — regression guard for the battery-saver bug)
     time.sleep(15)
+    st = _status(solo)
+    assert st["status"] == "waiting", f"expected waiting after 15s idle, got {st}"
 
+    # a genuinely gone player is purged after queue_stale (60s since the
+    # last status poll above, which refreshed last_seen)
+    time.sleep(65)
     st = _status(solo)
     assert st["status"] == "idle", f"expected idle after purge, got {st}"
 

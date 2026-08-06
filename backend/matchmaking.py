@@ -13,9 +13,9 @@ from live_utils import elo_window, make_bots
 
 logger = logging.getLogger(__name__)
 
-QUEUE_STALE_SECONDS = 12
+QUEUE_STALE_SECONDS = 60  # tolerate app backgrounding (frozen JS timers)
 DUO_INVITE_TTL = 120  # duo invites expire after 2 minutes
-MATCHED_TTL = 120     # "found" tickets stay readable for 2 minutes
+MATCHED_TTL = 600     # "found" tickets stay readable for 10 minutes
 FEEDBACK_TTL = 30
 MM_LOCK_TTL = 6
 

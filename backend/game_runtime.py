@@ -17,7 +17,7 @@ import game_logic as gl
 logger = logging.getLogger(__name__)
 
 DISCONNECT_GRACE = 4          # seconds before a lost socket triggers the auto-pause
-DISCONNECT_PAUSE_SECONDS = 120  # network pause: bot substitutes after 2 min
+DISCONNECT_PAUSE_SECONDS = 60  # network pause: bot substitutes after 1 min (seat stays reclaimable)
 ABANDONED_CLEANUP_SECONDS = 600  # local cache eviction when nobody is connected
 POLL_INTERVAL = 0.5           # cross-process sync cadence
 CONN_FRESH_SECONDS = 20       # doc heartbeat freshness = "connected somewhere"

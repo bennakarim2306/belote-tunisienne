@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { Platform, StyleSheet, Text, View } from "react-native";
+import { AppState, Platform, StyleSheet, Text, View } from "react-native";
 import Animated, {
   Easing,
   FadeInDown,
@@ -91,6 +91,51 @@ export default function MatchmakingScreen() {
   useEffect(() => {
     let poll: ReturnType<typeof setInterval> | null = null;
     let tick: ReturnType<typeof setInterval> | null = null;
+    let checking = false;
+
+    const checkStatus = async () => {
+      if (cancelledRef.current || checking) return;
+      checking = true;
+      try {
+        const st = await api.get("/matchmaking/status");
+        if (st.status === "found" && st.game_id) {
+          cancelledRef.current = true;
+          setFound(true);
+          if (Platform.OS !== "web") {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          }
+          setTimeout(() => {
+            router.replace({ pathname: "/game/[id]", params: { id: st.game_id } });
+          }, 700);
+        } else if (st.status === "waiting") {
+          setPendingPartner(null);
+          setPlayers(st.players ?? []);
+          setEloRange(st.elo_range ?? 100);
+          setDuoInfo(st.duo ?? null);
+        } else if (st.status === "duo_pending") {
+          setPendingPartner(st.partner ?? null);
+        } else if (isDuo) {
+          // declined / cancelled / expired -> inform and go back
+          cancelledRef.current = true;
+          const key =
+            st.status === "duo_declined"
+              ? "duoDeclinedMsg"
+              : st.status === "duo_cancelled"
+                ? "duoCancelledMsg"
+                : "duoExpiredMsg";
+          setEndMsg(t(key as never));
+          setTimeout(() => router.back(), 1800);
+        } else if (st.status === "idle") {
+          // dropped from the queue (app was backgrounded and polling froze):
+          // silently rejoin so the search continues seamlessly
+          await api.post("/matchmaking/join", {
+            match_type: type === "long" ? "long" : "short",
+          });
+        }
+      } catch {}
+      checking = false;
+    };
+
     (async () => {
       if (!isDuo) {
         try {
@@ -101,44 +146,19 @@ export default function MatchmakingScreen() {
         }
       }
       tick = setInterval(() => setSeconds((s) => s + 1), 1000);
-      poll = setInterval(async () => {
-        if (cancelledRef.current) return;
-        try {
-          const st = await api.get("/matchmaking/status");
-          if (st.status === "found" && st.game_id) {
-            cancelledRef.current = true;
-            setFound(true);
-            if (Platform.OS !== "web") {
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            }
-            setTimeout(() => {
-              router.replace({ pathname: "/game/[id]", params: { id: st.game_id } });
-            }, 700);
-          } else if (st.status === "waiting") {
-            setPendingPartner(null);
-            setPlayers(st.players ?? []);
-            setEloRange(st.elo_range ?? 100);
-            setDuoInfo(st.duo ?? null);
-          } else if (st.status === "duo_pending") {
-            setPendingPartner(st.partner ?? null);
-          } else if (isDuo) {
-            // declined / cancelled / expired -> inform and go back
-            cancelledRef.current = true;
-            const key =
-              st.status === "duo_declined"
-                ? "duoDeclinedMsg"
-                : st.status === "duo_cancelled"
-                  ? "duoCancelledMsg"
-                  : "duoExpiredMsg";
-            setEndMsg(t(key as never));
-            setTimeout(() => router.back(), 1800);
-          }
-        } catch {}
-      }, 1500);
+      poll = setInterval(checkStatus, 1500);
     })();
+
+    // on resume from background, check immediately (found ticket lives 10 min;
+    // if the queue entry was purged, checkStatus rejoins on the spot)
+    const sub = AppState.addEventListener("change", (s) => {
+      if (s === "active") checkStatus();
+    });
+
     return () => {
       if (poll) clearInterval(poll);
       if (tick) clearInterval(tick);
+      sub.remove();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
