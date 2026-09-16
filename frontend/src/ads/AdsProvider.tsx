@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 
 import { ADS_ENABLED } from "@/src/ads/config";
+import { markConsentSettled } from "@/src/ads/consentGate";
 import { adsNativeSupported, getAdsModule } from "@/src/ads/env";
 import { preloadInterstitial } from "@/src/ads/interstitial";
 
@@ -11,9 +12,15 @@ import { preloadInterstitial } from "@/src/ads/interstitial";
 // No-op on web / Expo Go — children render normally everywhere.
 export default function AdsProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
-    if (!ADS_ENABLED || !adsNativeSupported) return;
+    if (!ADS_ENABLED || !adsNativeSupported) {
+      markConsentSettled();
+      return;
+    }
     const mod = getAdsModule();
-    if (!mod) return;
+    if (!mod) {
+      markConsentSettled();
+      return;
+    }
     (async () => {
       try {
         // requestInfoUpdate + loadAndShowConsentFormIfRequired in one call
@@ -26,6 +33,9 @@ export default function AdsProvider({ children }: { children: React.ReactNode })
         await mod.default().initialize();
         preloadInterstitial();
       } catch {}
+      // consent flow fully finished -> other startup dialogs (push permission)
+      // may now safely appear
+      markConsentSettled();
     })();
   }, []);
 

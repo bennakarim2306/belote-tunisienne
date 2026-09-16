@@ -138,13 +138,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, [token]);
 
-  // Push registration — on login and on every app open (tokens can rotate)
+  // Push registration — on login (dialog allowed, after ads consent settles)
+  // and on app resume (silent: only refreshes the token if already granted)
   useEffect(() => {
     const uid = user?.user_id;
     if (!uid || !token) return;
     registerForPush(uid);
     const sub = AppState.addEventListener("change", (s) => {
-      if (s === "active") registerForPush(uid);
+      if (s === "active") registerForPush(uid, { onlyIfGranted: true });
     });
     return () => sub.remove();
   }, [user?.user_id, token]);

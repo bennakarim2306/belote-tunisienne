@@ -15,12 +15,13 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import RotateGate from "@/src/components/RotateGate";
+import { consentSettled } from "@/src/ads/consentGate";
 import { AuthProvider } from "@/src/context/AuthContext";
 import { useIconFonts } from "@/src/hooks/use-icon-fonts";
 import { LanguageProvider } from "@/src/i18n";
 
-// Push notifications: foreground display behaviour + Android channel must be
-// configured at module scope, before any push can arrive (native only).
+// Push notifications: foreground display behaviour must be configured early
+// (JS-side only — safe at module scope).
 if (Platform.OS !== "web") {
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
@@ -28,13 +29,6 @@ if (Platform.OS !== "web") {
       shouldPlaySound: true,
       shouldSetBadge: false,
     }),
-  });
-}
-if (Platform.OS === "android") {
-  Notifications.setNotificationChannelAsync("default", {
-    name: "Default",
-    importance: Notifications.AndroidImportance.MAX,
-    sound: "default",
   });
 }
 
@@ -105,21 +99,37 @@ export default function RootLayout() {
   useEffect(() => {
     if (Platform.OS === "web") return;
 
+    // Android channel — created after native modules are fully registered
+    // (module-scope native calls can hard-crash cold starts on SDK 54)
+    if (Platform.OS === "android") {
+      Notifications.setNotificationChannelAsync("default", {
+        name: "Default",
+        importance: Notifications.AndroidImportance.MAX,
+        sound: "default",
+      }).catch(() => {});
+    }
+
     // warm tap — notification tapped while the app is open/backgrounded
-    const tapSub = Notifications.addNotificationResponseReceivedListener(
-      (response) => {
-        openPushUrl(response.notification.request.content.data || {});
-      },
-    );
+    let tapSub: { remove: () => void } | null = null;
+    try {
+      tapSub = Notifications.addNotificationResponseReceivedListener(
+        (response) => {
+          openPushUrl(response.notification.request.content.data || {});
+        },
+      );
+    } catch {}
 
     // cold-start tap — app was killed when the notification was tapped
-    Notifications.getLastNotificationResponseAsync().then((response) => {
-      if (response) openPushUrl(response.notification.request.content.data || {});
-    });
+    Notifications.getLastNotificationResponseAsync()
+      .then((response) => {
+        if (response) openPushUrl(response.notification.request.content.data || {});
+      })
+      .catch(() => {});
 
     // denied-permission weekly nudge -> deep-link to system settings
     (async () => {
       try {
+        await consentSettled; // never overlap the ads consent dialog
         const { status, canAskAgain } = await Notifications.getPermissionsAsync();
         if (status !== "denied" || canAskAgain) return;
         const lastNudge = await AsyncStorage.getItem("pushNudgeAt");
@@ -149,7 +159,7 @@ export default function RootLayout() {
     })();
 
     return () => {
-      tapSub.remove();
+      tapSub?.remove();
     };
   }, []);
 
