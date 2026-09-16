@@ -1,0 +1,34 @@
+{
+  "summary": "Regression verification of the AdMob interstitial fix (immersiveModeEnabled + expo-status-bar/expo-navigation-bar imports in /app/frontend/src/ads/interstitial.ts). On web the ads module is a no-op (adsNativeSupported=false) so showInterstitialAfterMatch() resolves false and the .finally(...) chain proceeds — verified end-to-end via Playwright at the live preview URL. App boots without crash, login works, a full offline solo match to 500 pts finished (Défaite: Nous 160 — 510 Eux in 3 hands via the new short 'Rapide' target), MatchEndOverlay renders with replay-button and back-home-button, and 'Rejouer' correctly navigates to a fresh /game/local_short_<id> URL (overlay gone, game-screen mounted). Deprecated packages / SafeAreaView / react-native issues: none introduced by this change.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "Playwright run embedded in this iteration; key console output:",
+    "login-ok url=/home (no crash from new expo-status-bar / expo-navigation-bar imports)",
+    "game loaded (game-screen testID visible)",
+    "continuer #1, #2, #3 (hand-end recap 'Continuer' works between hands)",
+    "MATCH-END reached (continuers=3), result-text='Défaite', btns: replay=True back-home=True online=False",
+    "REPLAY: /game/local_short_t1789599812 -> /game/local_short_mu4pn4wb  game-screen=True overlay_gone=True",
+    "PAGEERRORS: none"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "/app/frontend/src/ads/interstitial.ts:20-21 ensureInterstitial() early-returns when !ADS_ENABLED || !adsNativeSupported, so on web/Expo Go no listeners are attached and the expo-status-bar/expo-navigation-bar side effects never run — the top-level imports are the only web-touching code and both packages ship a safe web shim (setStatusBarHidden is a no-op; NavigationBar.setVisibilityAsync is unreachable on web anyway). Verified at runtime: app boots and login succeeds with zero page errors.",
+    "showInterstitialAfterMatch() short-circuits to `return false` on web at line 68 BEFORE reaching interstitial.show({ immersiveModeEnabled: true }), so the new show-option addition can never affect the web match-end navigation — confirmed by 'Rejouer' successfully routing to a fresh /game/local_short_<id>.",
+    "The Platform.OS === 'ios' / 'android' guards inside OPENED/CLOSED listeners are correctly scoped so status/navigation-bar restoration cannot be triggered on web even if the ad path were reachable — safe defensively.",
+    "app/game/[id].tsx: quitAfterMatch and replay both wrap navigation in showInterstitialAfterMatch().finally(...), matching the recommended pattern; verified for replay (executed live). back-home-button uses the identical onHome=quitAfterMatch chain so behavior is the same as replay (both go through Promise.finally on the immediately-resolved no-op on web).",
+    "HandEndModal.tsx MatchEndOverlay renders replay-button + back-home-button + optional match-end-online-button — testIDs consistent with the fix scope; onlineWaiting fallback (0 for non-solo, api-driven for solo) — non-blocking here."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (skipped per request)", "frontend": "100%"},
+  "seed_data_creation": "None. Fresh offline game booted at /game/local_short_t<ts>. Login used existing tester1@belote.tn credential from /app/memory/test_credentials.md.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Web is completely safe for AdMob interstitial changes because adsNativeSupported=false gates everything. Fast full-match playbook (target 500 = 'Rapide', ~2-3 min real time): on bidding-panel, if pass-button is visible (my turn) try clicking bid-suit-{H|S|C|D} + bid-value-{160..90} + announce-bid-button, else pass-button. On your-turn-pill in playing phase, iterate hand-card-* and click each until the pill disappears (illegal cards no-op). Between hands hand-continue-button, last trick auto-plays. Match ends -> match-end-overlay with replay-button / back-home-button / match-end-online-button. Confirmed: replay navigates to a NEW /game/local_short_<id> URL and mounts a fresh game-screen.",
+  "rca_of_issue": "No bug. The AdMob 'X' clipping fix (interstitial.show({ immersiveModeEnabled: true }) + OPENED/CLOSED bar management) only executes on native Android/iOS builds where adsNativeSupported=true. On web preview it's dead code, so the fix cannot regress the web build. Full-match end -> Rejouer path, which relies on showInterstitialAfterMatch().finally(go), was exercised end-to-end and works exactly as designed."
+}

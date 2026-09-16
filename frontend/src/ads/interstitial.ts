@@ -1,3 +1,7 @@
+import * as NavigationBar from "expo-navigation-bar";
+import { setStatusBarHidden } from "expo-status-bar";
+import { Platform } from "react-native";
+
 import { AD_UNITS, ADS_ENABLED } from "@/src/ads/config";
 import { adsNativeSupported, getAdsModule } from "@/src/ads/env";
 
@@ -25,8 +29,17 @@ function ensureInterstitial() {
     interstitial.addAdEventListener(AdEventType.LOADED, () => {
       loaded = true;
     });
+    interstitial.addAdEventListener(AdEventType.OPENED, () => {
+      // iOS: hide the status bar so it can never overlap the ad's close (X)
+      if (Platform.OS === "ios") setStatusBarHidden(true, "none");
+    });
     interstitial.addAdEventListener(AdEventType.CLOSED, () => {
       loaded = false;
+      // restore the game's immersive mode (the ad activity resets system bars)
+      if (Platform.OS === "android") {
+        setStatusBarHidden(true, "none");
+        NavigationBar.setVisibilityAsync("hidden").catch(() => {});
+      }
       interstitial.load(); // prepare the next one
     });
     interstitial.addAdEventListener(AdEventType.ERROR, () => {
@@ -58,7 +71,10 @@ export async function showInterstitialAfterMatch(): Promise<boolean> {
     return false;
   }
   try {
-    await interstitial.show();
+    // immersiveModeEnabled: the ads SDK lays the ad out for immersive
+    // (fullscreen) apps itself — fixes the close "X" being clipped behind
+    // hidden system bars on Android 13-15 (our app runs immersive landscape)
+    await interstitial.show({ immersiveModeEnabled: true });
     return true;
   } catch {
     return false;
