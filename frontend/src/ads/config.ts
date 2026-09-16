@@ -16,10 +16,3 @@ export const AD_UNITS = {
     default: "",
   }) as string,
 };
-
-// Interstitial frequency: show one ad every N finished matches.
-export const INTERSTITIAL_EVERY: Record<string, number> = {
-  online: 2,
-  solo: 2,
-  private: 6,
-};

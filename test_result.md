@@ -368,3 +368,16 @@ backend:
       - working: true
         agent: "main"
         comment: "Verified by main agent: python engine short=500/long=1000, TS engine identical, 70-match TS simulation passes, backend test suite passes (fixed pre-existing pause-test mismatch), browser shows 'Rapide 500 points / Normale 1000 points' in the solo type modal."
+
+frontend:
+  - task: "Interstitial at EVERY match end, all modes (online/solo/private/tutorial). Removed frequency caps (INTERSTITIAL_EVERY + AsyncStorage counters). Reliability fix: ad load ERROR now schedules a 30s retry; preload re-invoked at hand_end/finished. Ad also shows on the 'Rejouer' exit, not only 'back home'."
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/ads/interstitial.ts, /app/frontend/src/ads/config.ts, /app/frontend/app/game/[id].tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Native-builds ONLY (web/Expo Go = no-op by design, adsNativeSupported=false). Web smoke: game screen boots cleanly with the new wiring. Real ad display must be validated by the user in a rebuilt APK."

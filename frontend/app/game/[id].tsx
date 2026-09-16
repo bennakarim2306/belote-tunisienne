@@ -20,8 +20,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import ChunkyButton from "@/src/components/ChunkyButton";
 import {
-  maybeShowInterstitialAfterMatch,
   preloadInterstitial,
+  showInterstitialAfterMatch,
 } from "@/src/ads/interstitial";
 import BiddingPanel from "@/src/components/game/BiddingPanel";
 import CoachBubble from "@/src/components/game/CoachBubble";
@@ -375,23 +375,32 @@ export default function GameScreen() {
     router.replace("/(tabs)/home");
   };
 
-  // interstitial ad (native builds only): preload once, show after match per frequency rules
+  // interstitial ad (native builds only): preload at game start, retry when
+  // the match nears its end, and show at EVERY match end in all modes
   useEffect(() => {
     preloadInterstitial();
   }, []);
+  useEffect(() => {
+    if (state?.phase === "hand_end" || state?.phase === "finished") {
+      preloadInterstitial(); // idempotent — re-load if an earlier load failed
+    }
+  }, [state?.phase]);
   const quitAfterMatch = () => {
-    maybeShowInterstitialAfterMatch(state?.origin ?? "online").finally(quit);
+    showInterstitialAfterMatch().finally(quit);
   };
 
   // "Rejouer": solo -> a fresh offline vs-AI game right away; online -> back
   // to the matchmaking queue with the same match type
   const replay = () => {
     const mt: "short" | "long" = state?.match_type === "long" ? "long" : "short";
-    if (state?.origin === "solo") {
-      router.replace({ pathname: "/game/[id]", params: { id: newLocalGameId(mt) } });
-    } else {
-      router.replace({ pathname: "/matchmaking", params: { type: mt } });
-    }
+    const go = () => {
+      if (state?.origin === "solo") {
+        router.replace({ pathname: "/game/[id]", params: { id: newLocalGameId(mt) } });
+      } else {
+        router.replace({ pathname: "/matchmaking", params: { type: mt } });
+      }
+    };
+    showInterstitialAfterMatch().finally(go);
   };
 
   const sendChat = (kind: "msg" | "emoji", value: string) => {
