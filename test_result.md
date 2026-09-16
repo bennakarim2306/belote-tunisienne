@@ -355,3 +355,16 @@ backend:
       - working: true
         agent: "main"
         comment: "Verified by main agent: register-push relays to SuprSend (401 with placeholder key = expected in dev; real key injected at deployment), nudge tested E2E against local Mongo (fake queue entry 60s wait -> candidates selected -> trigger POST sent -> global cooldown set -> second call skipped). Frontend: _layout.tsx handlers (module-scope handler+channel, warm/cold tap, denied nudge), src/push.ts registration on login/app-open. Real delivery ONLY testable in native build after Publish + google-services.json (user must still provide it)."
+
+backend:
+  - task: "Match targets changed: Rapide(short)=500 pts, Normale(long)=1000 pts in BOTH engines (game_logic.py + engine.ts, parity kept). i18n labels updated FR/AR/EN, home modal + room screen numbers, tutorial lesson text. Pre-existing test fix: test_pack2 pause assertion aligned to DISCONNECT_PAUSE_SECONDS=60."
+    implemented: true
+    working: true
+    file: "/app/backend/game_logic.py, /app/frontend/src/game/engine.ts, /app/frontend/app/(tabs)/home.tsx, /app/frontend/app/room/[code].tsx, /app/frontend/src/i18n.tsx, /app/frontend/src/tutorial/lessons.ts"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Verified by main agent: python engine short=500/long=1000, TS engine identical, 70-match TS simulation passes, backend test suite passes (fixed pre-existing pause-test mismatch), browser shows 'Rapide 500 points / Normale 1000 points' in the solo type modal."

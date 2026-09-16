@@ -195,8 +195,8 @@ async def test_disconnect_auto_pause_and_resume(http, tester1, tester2):
         assert paused_state is not None, "state.paused not populated"
         assert paused_state.get("reason") == "disconnect"
         assert paused_state.get("seat") == tester2_seat
-        # until roughly now + 120s
-        assert paused_state.get("until", 0) - time.time() > 60
+        # until roughly now + DISCONNECT_PAUSE_SECONDS (60s)
+        assert paused_state.get("until", 0) - time.time() > 30
 
         # tester1 tries an action while paused → should error 'paused'
         # Use a benign action like pause_request (server rejects with 'paused' for gameplay actions,

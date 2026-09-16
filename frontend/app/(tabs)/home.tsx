@@ -680,7 +680,7 @@ export default function HomeScreen() {
               <Ionicons name="flash" size={26} color={C.brand} />
               <View style={{ flex: 1, marginLeft: SP.md }}>
                 <Text style={styles.typeTitle}>{t("shortMatch")}</Text>
-                <Text style={styles.typeDesc}>{t("pointsTarget", { n: 1000 })}</Text>
+                <Text style={styles.typeDesc}>{t("pointsTarget", { n: 500 })}</Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color={C.ink3} />
             </Pressable>
@@ -699,7 +699,7 @@ export default function HomeScreen() {
               <Ionicons name="hourglass" size={26} color={C.brand2} />
               <View style={{ flex: 1, marginLeft: SP.md }}>
                 <Text style={styles.typeTitle}>{t("longMatch")}</Text>
-                <Text style={styles.typeDesc}>{t("pointsTarget", { n: 2000 })}</Text>
+                <Text style={styles.typeDesc}>{t("pointsTarget", { n: 1000 })}</Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color={C.ink3} />
             </Pressable>

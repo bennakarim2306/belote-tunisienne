@@ -38,9 +38,9 @@ export const LESSONS: Lesson[] = [
         ar: "اللعبة فيها 32 كارطة : 7، 8، 9، 10، الفالاّ، الدامة، الرّي والآص في الألوان الأربعة (♠ ♥ ♦ ♣). كل لاعب ياخو 8 كروط.",
       },
       {
-        fr: "Le but : marquer des points en gagnant des plis. La première équipe qui atteint 1000 points (partie courte) ou 2000 points (partie longue) remporte la partie.",
-        en: "The goal: score points by winning tricks. The first team to reach 1000 points (short game) or 2000 points (long game) wins the match.",
-        ar: "الهدف : تجمع نقاط بالربح في اللعبات. أول فريق يوصل 1000 نقطة (حصة قصيرة) ولا 2000 نقطة (حصة طويلة) يربح الحصة.",
+        fr: "Le but : marquer des points en gagnant des plis. La première équipe qui atteint 500 points (partie rapide) ou 1000 points (partie normale) remporte la partie.",
+        en: "The goal: score points by winning tricks. The first team to reach 500 points (quick game) or 1000 points (normal game) wins the match.",
+        ar: "الهدف : تجمع نقاط بالربح في اللعبات. أول فريق يوصل 500 نقطة (حصة سريعة) ولا 1000 نقطة (حصة عادية) يربح الحصة.",
       },
     ],
     tip: {

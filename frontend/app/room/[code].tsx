@@ -185,7 +185,7 @@ export default function RoomScreen() {
                 />
                 <Text style={styles.matchTypeText}>
                   {room?.match_type === "long" ? t("longMatch") : t("shortMatch")} ·{" "}
-                  {t("pointsTarget", { n: room?.match_type === "long" ? 2000 : 1000 })}
+                  {t("pointsTarget", { n: room?.match_type === "long" ? 1000 : 500 })}
                   {" · "}
                   {room?.turn_timer ? t("timerOn") : `${t("timerSetting")}: ${t("timerOff")}`}
                 </Text>

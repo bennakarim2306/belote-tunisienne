@@ -229,7 +229,7 @@ export class BeloteEngine {
     this.players = players.map((p, i) => ({ ...p, seat: i, left: false }));
     this.match_type = matchType;
     this.turn_timeout = turnTimeout;
-    this.target = matchType === "short" ? 1000 : 2000;
+    this.target = matchType === "short" ? 500 : 1000;
     this.match_scores = [0, 0];
     this.hand_number = 0;
     this.dealer = Math.floor(Math.random() * 4);

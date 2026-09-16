@@ -120,7 +120,7 @@ class BeloteGame:
         self.players = [dict(p, seat=i, left=False) for i, p in enumerate(players)]
         self.match_type = match_type
         self.turn_timeout = turn_timeout  # seconds per move, None = unlimited
-        self.target = 1000 if match_type == "short" else 2000
+        self.target = 500 if match_type == "short" else 1000
         self.match_scores = [0, 0]
         self.hand_number = 0
         self.dealer = random.randrange(4)
