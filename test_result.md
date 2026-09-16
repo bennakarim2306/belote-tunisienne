@@ -341,3 +341,17 @@ frontend:
       - working: true
         agent: "main"
         comment: "E2E verified by main agent in browser both directions with a private-room game (tester1+tester2+2 bots): tester1 tapped Tester2 avatar -> Ajouter -> 'Demande envoyée !'; tester2 tapped Tester1 avatar -> Accepter -> 'Déjà amis ✓'. testIDs: player-card-modal, add-friend-button, accept-friend-button, friend-request-sent, already-friends, player-card-close."
+
+backend:
+  - task: "Emergent managed push notifications: POST /api/register-push relay + send_push helper (push.py) + matchmaking queue nudge (maybe_send_queue_push called each matchmaking_loop tick; 45s queue wait, 30min global cooldown in db.kv, 24h per-user cooldown users.mm_push_at, active<=14d candidates, cap 100)."
+    implemented: true
+    working: true
+    file: "/app/backend/push.py, /app/backend/matchmaking.py, /app/backend/server.py, /app/backend/.env"
+    stuck_count: 0
+    priority: "high"
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Verified by main agent: register-push relays to SuprSend (401 with placeholder key = expected in dev; real key injected at deployment), nudge tested E2E against local Mongo (fake queue entry 60s wait -> candidates selected -> trigger POST sent -> global cooldown set -> second call skipped). Frontend: _layout.tsx handlers (module-scope handler+channel, warm/cold tap, denied nudge), src/push.ts registration on login/app-open. Real delivery ONLY testable in native build after Publish + google-services.json (user must still provide it)."

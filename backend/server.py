@@ -22,6 +22,7 @@ from pydantic import BaseModel, EmailStr, Field
 from starlette.middleware.cors import CORSMiddleware
 
 from game_manager import GameManager
+from push import push_router
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -907,6 +908,7 @@ async def root():
 
 
 app.include_router(api)
+app.include_router(push_router)
 
 app.add_middleware(
     CORSMiddleware,

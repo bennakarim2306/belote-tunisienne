@@ -12,6 +12,7 @@ import React, {
 import { AppState, Platform } from "react-native";
 
 import { api, setApiToken } from "@/src/api";
+import { registerForPush } from "@/src/push";
 import { storage } from "@/src/utils/storage";
 
 export interface User {
@@ -136,6 +137,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       sub.remove();
     };
   }, [token]);
+
+  // Push registration — on login and on every app open (tokens can rotate)
+  useEffect(() => {
+    const uid = user?.user_id;
+    if (!uid || !token) return;
+    registerForPush(uid);
+    const sub = AppState.addEventListener("change", (s) => {
+      if (s === "active") registerForPush(uid);
+    });
+    return () => sub.remove();
+  }, [user?.user_id, token]);
 
   // Hot deep links (mobile)
   useEffect(() => {

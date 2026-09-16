@@ -10,6 +10,7 @@ import time
 import uuid
 
 from live_utils import elo_window, make_bots
+from push import maybe_send_queue_push
 
 logger = logging.getLogger(__name__)
 
@@ -240,6 +241,11 @@ class MatchmakingMixin:
                             q.remove(e)
                             await self.db.mm_queue.delete_one({"_id": e["_id"]})
                         await self._make_match(group, mt)
+                # entice recently-active players when the queue is stuck waiting
+                try:
+                    await maybe_send_queue_push(self.db)
+                except Exception:
+                    logger.exception("queue push nudge error")
                 # sweep leftover live data (any process may have crashed)
                 await self.db.live_games.delete_many(
                     {"phase": "finished", "updated_at": {"$lt": now - 900}})
