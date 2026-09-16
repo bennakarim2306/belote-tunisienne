@@ -492,6 +492,20 @@ async def presence_ping(request: Request):
     return {"ok": True}
 
 
+@api.get("/presence/pulse")
+async def presence_pulse(request: Request):
+    """Social proof: other players online now + players waiting in the queue."""
+    user = await get_current_user(request)
+    now_ts = time.time()
+    online = await db.users.count_documents(
+        {"last_active": {"$gt": now_ts - ONLINE_WINDOW_SECONDS},
+         "user_id": {"$ne": user["user_id"]}})
+    entries = await db.mm_queue.find({}, {"players": 1}).to_list(200)
+    waiting = len({p["user_id"] for e in entries for p in e["players"]
+                   if p["user_id"] != user["user_id"]})
+    return {"online": online, "waiting": waiting}
+
+
 @api.get("/friends")
 async def list_friends(request: Request):
     user = await get_current_user(request)

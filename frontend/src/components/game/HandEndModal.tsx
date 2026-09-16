@@ -170,12 +170,17 @@ export function MatchEndOverlay({
   t,
   onHome,
   onReplay,
+  onlineWaiting = 0,
+  onPlayOnline,
 }: {
   state: GameState;
   myUserId: string;
   t: TFunc;
   onHome: () => void;
   onReplay?: () => void;
+  /** humans currently waiting in the online queue (solo vs AI games only) */
+  onlineWaiting?: number;
+  onPlayOnline?: () => void;
 }) {
   const myTeam = state.my_seat % 2;
   const won = state.winner_team === myTeam;
@@ -257,13 +262,23 @@ export function MatchEndOverlay({
             </Text>
           </View>
         )}
+        {onPlayOnline && onlineWaiting > 0 && (
+          <ChunkyButton
+            testID="match-end-online-button"
+            label={t("matchEndOnline", { n: onlineWaiting })}
+            onPress={onPlayOnline}
+            small
+            style={{ marginTop: SP.md }}
+          />
+        )}
         {onReplay && (
           <ChunkyButton
             testID="replay-button"
             label={t("replay")}
             onPress={onReplay}
             small
-            style={{ marginTop: SP.md }}
+            variant={onPlayOnline && onlineWaiting > 0 ? "secondary" : undefined}
+            style={{ marginTop: onPlayOnline && onlineWaiting > 0 ? SP.sm : SP.md }}
           />
         )}
         <ChunkyButton
@@ -271,7 +286,7 @@ export function MatchEndOverlay({
           label={t("backHome")}
           onPress={onHome}
           small
-          variant={onReplay ? "secondary" : undefined}
+          variant={onReplay || (onPlayOnline && onlineWaiting > 0) ? "secondary" : undefined}
           style={{ marginTop: onReplay ? SP.sm : SP.md }}
         />
       </Animated.View>

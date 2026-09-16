@@ -94,6 +94,7 @@ export default function HomeScreen() {
   const [joinCode, setJoinCode] = useState("");
   const [joinError, setJoinError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [onlineNow, setOnlineNow] = useState(0);
   const [notifOpen, setNotifOpen] = useState(false);
   const [privateOpen, setPrivateOpen] = useState(false);
   const [currentGame, setCurrentGame] = useState<CurrentGame | null>(null);
@@ -112,6 +113,10 @@ export default function HomeScreen() {
       refreshUser();
       refresh();
       const poll = async () => {
+        // social proof: other players online right now
+        api.get("/presence/pulse")
+          .then((p) => setOnlineNow(p.online ?? 0))
+          .catch(() => {});
         // an unfinished offline solo game takes precedence over server games
         const local = user ? await getSavedLocalGame(user.user_id) : null;
         if (local) {
@@ -355,6 +360,11 @@ export default function HomeScreen() {
                     <Text style={styles.gridDesc} numberOfLines={2}>
                       {t("playOnlineDesc")}
                     </Text>
+                    {onlineNow > 0 && (
+                      <Text style={styles.onlineNowText} testID="online-now-count">
+                        🟢 {t("onlineCount", { n: onlineNow })}
+                      </Text>
+                    )}
                   </View>
                   <View style={styles.cardSuitsRow}>
                     {SUIT_DECO.map((d) => (
@@ -876,6 +886,12 @@ const styles = StyleSheet.create({
     fontFamily: F.text,
     fontSize: 12.5,
     color: "rgba(255,255,255,0.85)",
+  },
+  onlineNowText: {
+    fontFamily: F.bold,
+    fontSize: 12,
+    color: C.green,
+    marginTop: 4,
   },
   dividerRow: {
     flexDirection: "row",

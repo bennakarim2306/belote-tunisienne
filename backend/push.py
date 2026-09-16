@@ -123,3 +123,40 @@ async def maybe_send_queue_push(db):
                     len(recipients), n_waiting)
     except Exception as e:
         logger.warning("queue nudge push failed (non-blocking): %s", e)
+
+
+# ---------------- daily "peak hour" push ----------------
+
+PEAK_HOUR_UTC = 20  # 21:00 in Tunisia (UTC+1)
+
+
+async def maybe_send_peak_hour_push(db):
+    """Once a day at peak hour, invite recently-active players to the tables."""
+    from datetime import datetime, timezone
+    now_dt = datetime.now(timezone.utc)
+    if now_dt.hour != PEAK_HOUR_UTC:
+        return
+    today = now_dt.strftime("%Y-%m-%d")
+    kv = await db.kv.find_one({"_id": "peak_hour_push"})
+    if kv and kv.get("day") == today:
+        return
+    await db.kv.update_one({"_id": "peak_hour_push"},
+                           {"$set": {"day": today}}, upsert=True)
+    now = time.time()
+    rows = await db.users.find(
+        {"last_active": {"$gt": now - ACTIVE_WINDOW}},
+        {"user_id": 1}).to_list(2000)
+    ids = [r["user_id"] for r in rows]
+    for i in range(0, len(ids), 100):
+        try:
+            await send_push(
+                recipients=ids[i:i + 100],
+                data={"title": "Belote Tunisienne",
+                      "message": "C'est l'heure de la Belote ! Les tables se remplissent 🎴",
+                      "action_url": "/"},
+                idempotency_key=f"peak_{today}_{i}",
+            )
+        except Exception as e:
+            logger.warning("peak hour push chunk failed (non-blocking): %s", e)
+    if ids:
+        logger.info("peak hour push sent to %d users", len(ids))

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "114670152265",
+    "project_id": "belote-tunisienne",
+    "storage_bucket": "belote-tunisienne.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:114670152265:android:064f02eea89b6b700bed98",
+        "android_client_info": {
+          "package_name": "com.emergent.cardtableorient.b0nhgs"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyANi63CZ9X5I43VXO7YlC1tbqHUEuRGfic"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -141,6 +141,8 @@ export default function GameScreen() {
   const chatTimers = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
   const [coachMsg, setCoachMsg] = useState<{ text: string; key: number } | null>(null);
   const coachMsgTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [onlineWaiting, setOnlineWaiting] = useState(0);
+  const [seekDismissed, setSeekDismissed] = useState(false);
   const [handEndReady, setHandEndReady] = useState(false);
   const prevPhaseRef = useRef<string | null>(null);
   const lastEventId = useRef(0);
@@ -375,6 +377,26 @@ export default function GameScreen() {
     router.replace("/(tabs)/home");
   };
 
+  // while playing vs AI: poll for humans looking for an online game so we can
+  // invite the player to join them (banner + match-end button)
+  useEffect(() => {
+    if (!isLocal || !user) return;
+    const check = () => {
+      api.get("/presence/pulse")
+        .then((p) => setOnlineWaiting(p.waiting ?? 0))
+        .catch(() => {});
+    };
+    check();
+    const iv = setInterval(check, 30000);
+    return () => clearInterval(iv);
+  }, [isLocal, user]);
+
+  const goOnline = () => {
+    // NOTE: no leave() — the offline game stays saved and resumable from home
+    const mt = state?.match_type === "long" ? "long" : "short";
+    router.replace({ pathname: "/matchmaking", params: { type: mt } });
+  };
+
   // interstitial ad (native builds only): preload at game start, retry when
   // the match nears its end, and show at EVERY match end in all modes
   useEffect(() => {
@@ -607,6 +629,28 @@ export default function GameScreen() {
         )}
       </View>
 
+      {/* solo vs AI: humans are looking for an online game — invite banner */}
+      {isLocal && onlineWaiting > 0 && !seekDismissed && !dealing &&
+        (state.phase === "bidding" || state.phase === "playing") && (
+        <View style={styles.seekBanner} pointerEvents="box-none">
+          <View style={styles.seekPill} testID="online-seek-banner">
+            <Text style={styles.seekText} numberOfLines={1}>
+              🎮 {t("queueSeekBanner", { n: onlineWaiting })}
+            </Text>
+            <Pressable testID="join-online-button" onPress={goOnline} style={styles.seekJoinBtn}>
+              <Text style={styles.seekJoinText}>{t("joinOnline")}</Text>
+            </Pressable>
+            <Pressable
+              testID="dismiss-seek-banner"
+              onPress={() => setSeekDismissed(true)}
+              hitSlop={8}
+            >
+              <Ionicons name="close" size={16} color="rgba(255,255,255,0.6)" />
+            </Pressable>
+          </View>
+        </View>
+      )}
+
       {/* partner seat: pinned to the very top screen edge (max ~14px) — its
           position must never shift; rendered BEFORE the table so trick cards
           pass ABOVE the avatar */}
@@ -804,6 +848,8 @@ export default function GameScreen() {
           t={t}
           onHome={quitAfterMatch}
           onReplay={state.origin !== "private" ? replay : undefined}
+          onlineWaiting={state.origin === "solo" ? onlineWaiting : 0}
+          onPlayOnline={() => showInterstitialAfterMatch().finally(goOnline)}
         />
       )}
 
@@ -1323,6 +1369,34 @@ const styles = StyleSheet.create({
     marginTop: SP.sm,
   },
   quitRow: { flexDirection: "row", gap: SP.md, marginTop: SP.lg },
+  seekBanner: {
+    position: "absolute",
+    top: 64,
+    left: 0,
+    right: 0,
+    alignItems: "center",
+    zIndex: 25,
+  },
+  seekPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    backgroundColor: "rgba(8,26,17,0.92)",
+    borderWidth: 1,
+    borderColor: "rgba(233,196,106,0.55)",
+    borderRadius: R.pill,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    maxWidth: 560,
+  },
+  seekText: { fontFamily: F.bold, fontSize: 12.5, color: C.cream, flexShrink: 1 },
+  seekJoinBtn: {
+    backgroundColor: C.green,
+    borderRadius: R.pill,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+  },
+  seekJoinText: { fontFamily: F.extra, fontSize: 12.5, color: "#0A2E1C" },
   playerCard: { maxWidth: 320, alignItems: "center" },
   friendStatePill: {
     flexDirection: "row",

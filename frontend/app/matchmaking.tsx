@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { AppState, Platform, StyleSheet, Text, View } from "react-native";
+import { AppState, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import Animated, {
   Easing,
   FadeInDown,
@@ -18,8 +18,10 @@ import { api } from "@/src/api";
 import Avatar from "@/src/components/Avatar";
 import ChunkyButton from "@/src/components/ChunkyButton";
 import PlayingCard from "@/src/components/PlayingCard";
+import ShareSheet from "@/src/components/ShareSheet";
 import { useAuth } from "@/src/context/AuthContext";
 import { useI18n } from "@/src/i18n";
+import { APP_INSTALL_URL } from "@/src/share";
 import { C, F, R, SP } from "@/src/theme";
 
 interface FoundPlayer {
@@ -86,6 +88,7 @@ export default function MatchmakingScreen() {
   const [duoInfo, setDuoInfo] = useState<DuoStatusInfo | null>(null);
   const [pendingPartner, setPendingPartner] = useState<FoundPlayer | null>(null);
   const [endMsg, setEndMsg] = useState<string | null>(null);
+  const [shareOpen, setShareOpen] = useState(false);
   const cancelledRef = useRef(false);
 
   useEffect(() => {
@@ -190,6 +193,18 @@ export default function MatchmakingScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]} testID="matchmaking-screen">
+      {/* invite friends while waiting — social share (top right) */}
+      {!found && (
+        <Pressable
+          testID="invite-friends-button"
+          onPress={() => setShareOpen(true)}
+          style={[styles.inviteBtn, { top: insets.top + SP.sm }]}
+          hitSlop={8}
+        >
+          <Ionicons name="person-add" size={16} color={C.goldSoft} />
+          <Text style={styles.inviteBtnText}>{t("inviteFriends")}</Text>
+        </Pressable>
+      )}
       <View style={styles.center}>
         <View style={styles.cardsRow}>
           <ShufflingCard delay={-6} />
@@ -293,12 +308,35 @@ export default function MatchmakingScreen() {
           }}
         />
       )}
+
+      <ShareSheet
+        visible={shareOpen}
+        onClose={() => setShareOpen(false)}
+        title={t("inviteFriends")}
+        message={t("shareQueueMsg", { link: APP_INSTALL_URL })}
+        url={APP_INSTALL_URL}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.feltDark },
+  inviteBtn: {
+    position: "absolute",
+    right: SP.lg,
+    zIndex: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "rgba(28,23,20,0.9)",
+    borderWidth: 1,
+    borderColor: "rgba(233,196,106,0.55)",
+    borderRadius: R.pill,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  inviteBtnText: { fontFamily: F.bold, fontSize: 13, color: C.goldSoft },
   center: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: SP.lg },
   cardsRow: { flexDirection: "row", marginBottom: SP.xs },
   title: { fontFamily: F.display, fontSize: 18, color: C.cream },

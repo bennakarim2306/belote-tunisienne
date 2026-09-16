@@ -381,3 +381,16 @@ frontend:
       - working: "NA"
         agent: "main"
         comment: "Native-builds ONLY (web/Expo Go = no-op by design, adsNativeSupported=false). Web smoke: game screen boots cleanly with the new wiring. Real ad display must be validated by the user in a rebuilt APK."
+
+frontend:
+  - task: "Online liquidity pack: (1) invite-friends-button + ShareSheet on matchmaking screen; (2) online-seek-banner + join-online-button in solo vs AI games (polls /api/presence/pulse 30s, dismissible, solo game stays resumable); (3) online-now-count social proof on home online card; (4) match-end-online-button on MatchEndOverlay (solo origin, when waiting>0); (5) daily peak-hour push 21h Tunisia (backend). New endpoint GET /api/presence/pulse. google-services.json installed + app.json wired."
+    implemented: true
+    working: true
+    file: "/app/frontend/app/matchmaking.tsx, /app/frontend/app/game/[id].tsx, /app/frontend/app/(tabs)/home.tsx, /app/frontend/src/components/game/HandEndModal.tsx, /app/backend/server.py, /app/backend/push.py, /app/frontend/app.json"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Main agent E2E: home counter '🟢 1 joueur(s) en ligne', solo banner '🎮 1 joueur(s) cherchent... Rejoindre', invite button opens ShareSheet (WhatsApp/FB/Insta/copy). Peak push unit-tested with forced hour (kv day marker, 100-chunking, idempotent). Pulse endpoint curl-verified. Feature 4 (match-end button) wired + lint only — renders behind the same pulse data as the verified banner."
