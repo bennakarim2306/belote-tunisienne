@@ -5,6 +5,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useEffect, useRef, useState } from "react";
 
 import { useAuth } from "@/src/context/AuthContext";
+import { api } from "@/src/api";
 import { botBiddingAction, botPlay, shouldSurcontre } from "./ai";
 import { BeloteEngine, type EnginePlayerInfo } from "./engine";
 import type { GameEvent, GameState } from "./useGameSocket";
@@ -99,10 +100,20 @@ export function useLocalGame(gameId: string | undefined) {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const eventIdRef = useRef(0);
   const activeRef = useRef(false);
+  const telemetryRef = useRef(false);
 
   const persist = (g: BeloteEngine) => {
     if (g.phase === "finished") {
       AsyncStorage.removeItem(STORAGE_KEY).catch(() => {});
+      // report the finished offline match for admin statistics (best effort)
+      if (!telemetryRef.current) {
+        telemetryRef.current = true;
+        api.post("/telemetry/offline-match", {
+          match_type: g.match_type,
+          won: g.winner_team === 0, // human is always seat 0 / team 0
+          hands_played: g.hand_number,
+        }).catch(() => {});
+      }
       return;
     }
     AsyncStorage.setItem(

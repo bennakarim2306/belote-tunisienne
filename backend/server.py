@@ -21,6 +21,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel, EmailStr, Field
 from starlette.middleware.cors import CORSMiddleware
 
+from admin_stats import render_stats_html
 from game_manager import GameManager
 from push import push_router
 
@@ -280,6 +281,34 @@ async def feedback_submit(body: FeedbackBody):
     doc["_id"] = uuid.uuid4().hex
     doc["created_at"] = datetime.now(timezone.utc).isoformat()
     await db.test_feedback.insert_one(doc)
+    return {"ok": True}
+
+
+@api.get("/admin/stats", response_class=HTMLResponse)
+async def admin_stats_page(key: str = ""):
+    if key != os.environ.get("FEEDBACK_ADMIN_KEY"):
+        raise HTTPException(status_code=403, detail="forbidden")
+    return await render_stats_html(db)
+
+
+class OfflineMatchBody(BaseModel):
+    match_type: str = "short"
+    won: Optional[bool] = None
+    hands_played: int = 0
+
+
+@api.post("/telemetry/offline-match")
+async def telemetry_offline_match(body: OfflineMatchBody, request: Request):
+    """Offline (vs AI) matches are played on-device; the app reports each
+    finished match here so admin stats can include them."""
+    user = await get_current_user(request)
+    await db.offline_matches.insert_one({
+        "user_id": user["user_id"],
+        "match_type": body.match_type,
+        "won": body.won,
+        "hands_played": body.hands_played,
+        "finished_at": datetime.now(timezone.utc).isoformat(),
+    })
     return {"ok": True}
 
 
