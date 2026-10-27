@@ -1,0 +1,31 @@
+{
+  "summary": "Backend-only check of the admin stats bug fix in admin_stats.py, which now splits server matches by how many humans played: >=2 humans count as 'Parties en ligne (entre joueurs)', <=1 human counts as 'Parties contre l'IA' (old server solo + tutorial games plus offline telemetry). Added 7 TEST_ match docs to Mongo (4/3/2-human online matches at 1/20/60 days, 1-human solo/tutorial/old games), plus offline telemetry through the public API and extra peak-day docs. Checked how the public dashboard numbers changed, then deleted every inserted doc (DB back to 4 matches / 1 offline_matches doc, as before the run). Result: 15/16 pass. Every count, 30-day/7-day window, average, the peak day (vs-AI games correctly left out), the top 5, the 403 key check and telemetry auth and validation work. 1 failure: a match doc without a 'players' array makes the whole dashboard return 500.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "GET /api/admin/stats", "issue": "Returns 500 if any db.matches doc has no 'players' array (or players=null). The HUMANS expression does $size on the $filter of '$players', and $filter on null gives null, so Mongo fails with 'The argument to $size must be an array, but was of type: null' (code 17124, seen in backend.err.log). No such doc exists today (both writers in elo_stats.py always set players), so it is latent, but one bad or legacy doc takes the whole dashboard down. Fix: input: {'$ifNull': ['$players', []]} at admin_stats.py:37."},
+      {"endpoint": "GET /api/admin/stats", "issue": "The 'Parties classées (total)' card in the online section counts every ranked match (count_documents({'ranked': True})) without the humans>=2 filter. Private rooms are created with ranked=True by default (rooms.py:119 does not pass ranked=False). A private room with 1 human + 3 bots is therefore counted under 'Parties contre l'IA' and also as a ranked online match, so this card can be higher than 'Parties jouées (total)'. Add the humans>=2 filter, or confirm this is intended."},
+      {"endpoint": "GET /api/admin/stats", "issue": "Product question, not a bug: duo vs AI games (2 human friends + 2 bots, ranked=False, matchmaking.py:112) have humans=2, so they count as 'Parties en ligne (entre joueurs)', not as vs-AI games. Confirm this is the intended bucket."}
+    ]
+  },
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": [], "react_native_issues": []},
+  "test_report_links": ["/app/backend/tests/test_admin_stats.py", "/app/test_reports/pytest/pytest_admin_stats.xml"],
+  "action_items": [
+    "admin_stats.py:37: make the HUMANS $filter input null-safe ({'$ifNull': ['$players', []]}) so one bad match doc cannot 500 the dashboard (test TestRobustness::test_match_without_players_field).",
+    "Decide whether 'Parties classées (total)' should only count humans>=2 matches. Private rooms with 1 human + bots are ranked=True and currently inflate this online card.",
+    "Optional: confirm that duo vs AI games (2 humans + 2 bots) should count as online 'entre joueurs'."
+  ],
+  "critical_code_review_comments": [
+    "The split logic is correct: the shared $project 'base' with the HUMANS count is reused for total/30d/7d/peak/avg_hands. online_avg_per_player only counts players with online>0. ai_avg_per_player merges server-AI and offline per distinct user. All of this matched independent Python recomputation from the DB.",
+    "_count builds a new aggregation for each metric and computes $size/$filter for every match each time. That's fine at this scale (a few hundred docs). At large volume, use one $facet or store a 'humans' field at insert time in elo_stats.py.",
+    "Telemetry endpoint: Pydantic validation works (hands_played='abc' gives 422) and auth works (no token gives 401). match_type is a free string and hands_played has no bounds. Low risk for an admin-only stat, but a Literal['short','long'] and ge=0 would keep the data clean.",
+    "useLocalGame telemetry: telemetryRef is a once-only guard per hook instance. GameScreen is remounted for each game id, so replay sends one report per match. Correct."
+  ],
+  "updated_files": ["/app/backend/tests/test_admin_stats.py (new)"],
+  "success_rate": {"backend": "93.75% (15/16)", "frontend": "N/A (not requested)"},
+  "seed_data_creation": "Temporary only. db.matches docs tagged game_id=TEST_adm_<hex> (7 base docs + peak-day docs on 2019-03-03/2019-04-04 + 1 doc without players). db.offline_matches docs were created for tester1 through POST /api/telemetry/offline-match. All were deleted in fixture teardown. Verified afterwards: matches=4, offline_matches=1, same as before.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Run: cd /app/backend/tests && python -m pytest test_admin_stats.py -v. The test parses the dashboard HTML by <h2> section; labels repeat between sections, so look them up inside the section. The section title is the literal \"Parties contre l'IA\" (not HTML-escaped); card labels go through html.escape. The test writes to Mongo directly through pymongo using backend/.env and cleans up by game_id=TAG. Admin key comes from FEEDBACK_ADMIN_KEY in backend/.env.",
+  "rca_of_issue": "The bug fix works as intended. The only regression risk is that $size on a null 'players' field throws OperationFailure 17124, which becomes an HTTP 500. To reproduce: insert {match_id, finished_at, hands_played} with no players field and call GET /api/admin/stats?key=... Fix: use $ifNull on the $filter input."
+}
