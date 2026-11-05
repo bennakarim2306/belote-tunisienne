@@ -152,7 +152,7 @@ async def maybe_send_peak_hour_push(db):
             await send_push(
                 recipients=ids[i:i + 100],
                 data={"title": "Belote Tunisienne",
-                      "message": "C'est l'heure de la Belote ! Les tables se remplissent 🎴",
+                      "message": "C’est l’heure de la Belote ! Les tables se remplissent 🎴",
                       "action_url": "/"},
                 idempotency_key=f"peak_{today}_{i}",
             )

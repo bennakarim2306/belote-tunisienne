@@ -150,7 +150,10 @@ export default function HomeScreen() {
         });
         setTypeModal(null);
         setTimeout(() => {
-          router.push({ pathname: "/matchmaking", params: { type: matchType, duo: "1" } });
+          router.push({
+            pathname: "/matchmaking",
+            params: { type: matchType, duo: "1", mode: mode === "solo" ? "vs_ai" : "online" },
+          });
         }, 150);
       } catch {
         setTypeModal(null);

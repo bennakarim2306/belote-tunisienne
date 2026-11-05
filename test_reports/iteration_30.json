@@ -1,0 +1,28 @@
+{
+  "summary": "Checked the 3 bug fixes in the browser (844x390 landscape, tester1/tester2) and with a new pytest file (6/6 pass, including the test_duo_vs_ai regression). (1) Duo vs AI waiting screen: from home ('Jouer contre l'IA' -> Duo -> Tester2 -> Rapide) and from Friends (invite-game-Tester2 -> invite-mode-ai), the URL carries mode=vs_ai. The screen shows exactly 2 slots (Toi + Tester2 pending), '1/2 joueurs', no ELO range chip, and the hint 'La partie démarre dès que ton coéquipier accepte l'invitation'. Regressions are fine: online duo (mode=online) and solo online queue still show 4 slots, '1/4 joueurs', the 'Plage ELO ±100' chip and the 4-player hint. (2) Share links: the matchmaking invite-friends ShareSheet uses the new shareQueueMsg text with the Play Store link, and the Friends invite share uses the Play Store link too. The Play Store URL returns HTTP 200 and its package matches app.json android.package. The room share (share-code-button) still uses WEB_APP_URL/join/CODE. (3) Peak-hour push: a unit test with mocked send_push and a forced hour confirms the message has no ASCII apostrophe, uses U+2019 and is sent only once per day.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "matchmaking.tsx title (duo vs AI)", "issue": "For about 1.5s after opening the screen the title shows 'Recherche de joueurs…' before switching to 'En attente de Tester2…'. The first checkStatus only runs on the first 1500ms interval tick. Cosmetic.", "testID": "matchmaking-status-text", "priority": "low"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "matchmaking (duo vs AI)", "issues": ["The 'Toi' slot shows the duo ELO (1000) even though duo vs AI games are unranked. Consider hiding the ELO in vs_ai mode, as the ELO chip already is."]}
+    ],
+    "react_native_issues": []
+  },
+  "test_report_links": ["/app/backend/tests/test_iter30_duo_vsai_share_push.py", "/app/test_reports/pytest/pytest_iter30.xml"],
+  "action_items": [
+    "Optional (low): in matchmaking.tsx call checkStatus() once right away (before setInterval), or show duoWaitingPartner when isDuo, so the vs_ai and duo screens don't flash 'Recherche de joueurs…'.",
+    "Optional (low): hide the 'Toi' ELO value when isVsAi (unranked training game)."
+  ],
+  "critical_code_review_comments": [
+    "home.tsx acceptDuoInvite (line ~254) pushes /matchmaking without mode. This is fine today, because a vs_ai accept returns game_id and goes straight to the game, and online duo defaults to 4 slots. If vs_ai accept ever stops returning game_id, pass mode: inv.mode there as well."
+  ],
+  "updated_files": ["/app/backend/tests/test_iter30_duo_vsai_share_push.py (new)"],
+  "success_rate": {"backend": "100% (6/6)", "frontend": "100% (6/6 flows: home duo vs_ai, friends duo vs_ai, online duo regression, solo queue regression, queue/friends share Play Store link, room share deep link)"},
+  "seed_data_creation": "No seed data. Temporary duo invites and one private room were cancelled or left. The existing test_duo_vs_ai test created a live game g_6534ce99d7c3 for tester1/tester2, which was then cancelled with a WS leave (games/current now returns null).",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Run: cd /app/backend/tests && python -m pytest test_iter30_duo_vsai_share_push.py -v. test_duo_vs_ai.py leaves a live game for tester1/tester2; cancel it via WS {action:'leave'} as host or the home resume pill stays. Before using the friends invite-game-Tester2 button, POST /api/presence/ping as tester2 (the button only renders when the friend is online). Use the :visible locator for friends-screen testIDs (tab screens stay mounted)."
+}

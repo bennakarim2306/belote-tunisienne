@@ -1,12 +1,15 @@
 import * as Clipboard from "expo-clipboard";
 import { Linking, Share } from "react-native";
 
-// Public link of the app. Once published on the stores, replace with the
-// Play Store / App Store URL (or a smart onelink) to boost installs.
-export const APP_INSTALL_URL = process.env.EXPO_PUBLIC_BACKEND_URL ?? "";
+// Web URL of the app (used for deep links like room invites).
+export const WEB_APP_URL = process.env.EXPO_PUBLIC_BACKEND_URL ?? "";
+
+// Install link shared with friends: the Play Store listing of the game.
+export const APP_INSTALL_URL =
+  "https://play.google.com/store/apps/details?id=com.emergent.cardtableorient.b0nhgs";
 
 // Smart link: opens the app/web directly on the room with the code pre-filled.
-export const roomLink = (code: string) => `${APP_INSTALL_URL}/join/${code}`;
+export const roomLink = (code: string) => `${WEB_APP_URL}/join/${code}`;
 
 export function shareWhatsApp(text: string) {
   Linking.openURL(`https://wa.me/?text=${encodeURIComponent(text)}`).catch(() => {});

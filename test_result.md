@@ -394,3 +394,16 @@ frontend:
       - working: true
         agent: "main"
         comment: "Main agent E2E: home counter '🟢 1 joueur(s) en ligne', solo banner '🎮 1 joueur(s) cherchent... Rejoindre', invite button opens ShareSheet (WhatsApp/FB/Insta/copy). Peak push unit-tested with forced hour (kv day marker, 100-chunking, idempotent). Pulse endpoint curl-verified. Feature 4 (match-end button) wired + lint only — renders behind the same pulse data as the verified banner."
+
+frontend:
+  - task: "3 bug fixes: (1) Duo vs AI matchmaking screen must show only 2 slots (You + teammate), '{n}/2 joueurs', NO ELO range chip, hint 'La partie démarre dès que ton coéquipier accepte l'invitation' — mode param (vs_ai|online) now passed by home.tsx chooseType and friends.tsx sendGameInvite to /matchmaking; duo-vs-duo (mode=online) keeps 4 slots. (2) Share invite link now points to the Play Store (https://play.google.com/store/apps/details?id=com.emergent.cardtableorient.b0nhgs) with new localized download wording (shareQueueMsg FR/AR/EN); room deep links still use WEB_APP_URL (roomLink must be unchanged). (3) Peak-hour push message apostrophes switched to U+2019 so the upstream HTML-escaping no longer shows '&#x27;'."
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/app/matchmaking.tsx, /app/frontend/app/(tabs)/home.tsx, /app/frontend/app/(tabs)/friends.tsx, /app/frontend/src/share.ts, /app/frontend/src/i18n.tsx, /app/backend/push.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Lint clean, services up. To create a vs_ai duo pending state: login tester1, POST /api/matchmaking/duo/invite {to_user_id of tester2, match_type short, mode vs_ai} then open /matchmaking?type=short&duo=1&mode=vs_ai. Credentials in /app/memory/test_credentials.md."

@@ -77,8 +77,14 @@ function EmptySlot({ label }: { label: string }) {
 export default function MatchmakingScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { type, duo } = useLocalSearchParams<{ type: string; duo?: string }>();
+  const { type, duo, mode } = useLocalSearchParams<{
+    type: string;
+    duo?: string;
+    mode?: string;
+  }>();
   const isDuo = duo === "1";
+  // duo vs AI: only the teammate is awaited (the 2 opponents are bots)
+  const isVsAi = isDuo && mode === "vs_ai";
   const { user } = useAuth();
   const { t } = useI18n();
   const [seconds, setSeconds] = useState(0);
@@ -150,6 +156,7 @@ export default function MatchmakingScreen() {
       }
       tick = setInterval(() => setSeconds((s) => s + 1), 1000);
       poll = setInterval(checkStatus, 1500);
+      checkStatus(); // immediate first check (no 1.5s 'searching' flash in duo)
     })();
 
     // on resume from background, check immediately (found ticket lives 10 min;
@@ -176,7 +183,8 @@ export default function MatchmakingScreen() {
 
   const partnerSlot = duoInfo?.partner ?? pendingPartner;
   const foundCount = (duoInfo ? 2 : 1) + players.length;
-  const emptySlots = Math.max(0, 4 - foundCount - (pendingPartner ? 1 : 0));
+  const totalSlots = isVsAi ? 2 : 4;
+  const emptySlots = Math.max(0, totalSlots - foundCount - (pendingPartner ? 1 : 0));
 
   if (endMsg) {
     return (
@@ -220,7 +228,7 @@ export default function MatchmakingScreen() {
               : t("searching")}
         </Text>
         <Text style={styles.counter} testID="matchmaking-players-count">
-          {t("playersCount", { n: foundCount })}
+          {t("playersCount", { n: foundCount, total: totalSlots })}
         </Text>
 
         <View style={styles.slotsRow} testID="matchmaking-slots">
@@ -230,7 +238,7 @@ export default function MatchmakingScreen() {
               {t("you")}
             </Text>
             <Text style={styles.slotElo}>
-              {isDuo ? (user?.elo_duo ?? 1000) : (user?.elo ?? 1000)}
+              {isVsAi ? "" : isDuo ? (user?.elo_duo ?? 1000) : (user?.elo ?? 1000)}
             </Text>
           </View>
           {partnerSlot && (
@@ -275,10 +283,12 @@ export default function MatchmakingScreen() {
           ))}
         </View>
 
-        <View style={styles.rangeChip} testID="matchmaking-elo-range">
-          <Ionicons name="flame" size={13} color={C.gold} />
-          <Text style={styles.rangeText}>{t("eloRangeLabel", { n: eloRange })}</Text>
-        </View>
+        {!isVsAi && (
+          <View style={styles.rangeChip} testID="matchmaking-elo-range">
+            <Ionicons name="flame" size={13} color={C.gold} />
+            <Text style={styles.rangeText}>{t("eloRangeLabel", { n: eloRange })}</Text>
+          </View>
+        )}
 
         {duoInfo && (
           <View
@@ -291,7 +301,7 @@ export default function MatchmakingScreen() {
         )}
 
         <Text style={styles.timer}>{seconds}s</Text>
-        <Text style={styles.hint}>{t("searchingHint")}</Text>
+        <Text style={styles.hint}>{isVsAi ? t("duoVsAiHint") : t("searchingHint")}</Text>
       </View>
 
       {!found && (

@@ -122,7 +122,7 @@ export default function FriendsScreen() {
       });
       router.push({
         pathname: "/matchmaking",
-        params: { type: inviteMatchType, duo: "1" },
+        params: { type: inviteMatchType, duo: "1", mode },
       });
     } catch {
       showToast(t("error_generic"));
