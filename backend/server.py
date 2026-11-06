@@ -28,6 +28,7 @@ from game_manager import GameManager
 from push import push_router
 
 import server_metrics
+import sync_channel
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -591,6 +592,7 @@ async def friend_request(body: FriendRequestBody, request: Request):
         "friendship_id": f"f_{uuid.uuid4().hex[:12]}",
         "requester_id": user["user_id"], "recipient_id": body.user_id,
         "status": "pending", "created_at": datetime.now(timezone.utc).isoformat()})
+    await sync_channel.notify_users([body.user_id])
     return {"ok": True}
 
 
@@ -606,6 +608,7 @@ async def friend_respond(body: FriendRespondBody, request: Request):
                                         {"$set": {"status": "accepted"}})
     else:
         await db.friendships.delete_one({"friendship_id": body.friendship_id})
+    await sync_channel.notify_users([user["user_id"], fr["requester_id"]])
     return {"ok": True}
 
 
@@ -652,9 +655,19 @@ async def sync(request: Request, h: str = ""):
     last-seen hash `h` — otherwise the response is a near-empty 'nothing new'."""
     user = await get_current_user(request)
     uid = user["user_id"]
-    now_ts = time.time()
     await db.users.update_one({"user_id": uid},
-                              {"$set": {"last_active": now_ts}})
+                              {"$set": {"last_active": time.time()}})
+    snap = await _sync_snapshot(uid)
+    resp = {"h": snap["h"], "online": snap["online"], "waiting": snap["waiting"]}
+    if snap["h"] != h:
+        resp["data"] = snap["data"]
+    return resp
+
+
+async def _sync_snapshot(uid):
+    """Full sync payload + digest for one user (shared by GET /sync and the
+    realtime sync channel)."""
+    now_ts = time.time()
     online = await db.users.count_documents(
         {"last_active": {"$gt": now_ts - ONLINE_WINDOW_SECONDS},
          "user_id": {"$ne": uid}})
@@ -665,10 +678,7 @@ async def sync(request: Request, h: str = ""):
     data["current_game"] = await _current_game_payload(uid)
     digest = hashlib.md5(
         json.dumps(data, sort_keys=True, default=str).encode()).hexdigest()[:12]
-    resp = {"h": digest, "online": online, "waiting": waiting}
-    if digest != h:
-        resp["data"] = data
-    return resp
+    return {"h": digest, "online": online, "waiting": waiting, "data": data}
 
 
 # ---------------- matchmaking ----------------
@@ -769,6 +779,7 @@ async def duo_invite(body: DuoInviteBody, request: Request):
         raise HTTPException(status_code=403, detail="not_allowed")
     invite_id = await manager.create_duo_invite(to_player(user), target,
                                                 body.match_type, body.mode)
+    await sync_channel.notify_users([body.to_user_id])
     return {"invite_id": invite_id}
 
 
@@ -778,6 +789,8 @@ async def duo_accept(invite_id: str, request: Request):
     inv = await manager.accept_duo_invite(invite_id, to_player(user))
     if not inv:
         raise HTTPException(status_code=404, detail="invite_gone")
+    await sync_channel.notify_users([user["user_id"],
+                                     inv["from_player"]["user_id"]])
     return {"ok": True, "match_type": inv["match_type"], "mode": inv["mode"],
             "game_id": inv.get("game_id")}
 
@@ -786,6 +799,7 @@ async def duo_accept(invite_id: str, request: Request):
 async def duo_decline(invite_id: str, request: Request):
     user = await get_current_user(request)
     await manager.decline_duo_invite(invite_id, user["user_id"])
+    await sync_channel.notify_users([user["user_id"]])
     return {"ok": True}
 
 
@@ -899,10 +913,14 @@ async def change_seat(code: str, body: SeatBody, request: Request):
 @api.post("/rooms/{code}/start")
 async def start_room(code: str, request: Request):
     user = await get_current_user(request)
+    room = await manager.get_room(code)
     try:
         game_id = await manager.start_room(code, user["user_id"])
     except ValueError as err:
         raise HTTPException(status_code=400, detail=str(err))
+    if room:  # instant "a game started" for everyone seated (current_game)
+        await sync_channel.notify_users(
+            [p["user_id"] for p in room["seats"] if p])
     return {"game_id": game_id}
 
 
@@ -927,6 +945,7 @@ async def invite_to_room(code: str, body: InviteBody, request: Request):
                   "created_at": datetime.now(timezone.utc).isoformat()}},
         upsert=True)
     await manager.reserve_seat(room["code"], body.user_id, body.seat)
+    await sync_channel.notify_users([body.user_id])
     return {"ok": True}
 
 
@@ -953,10 +972,62 @@ async def dismiss_invite(invite_id: str, request: Request):
     await db.invites.update_one(
         {"invite_id": invite_id, "to_user_id": user["user_id"]},
         {"$set": {"status": "dismissed"}})
+    await sync_channel.notify_users([user["user_id"]])
     return {"ok": True}
 
 
 # ---------------- websocket ----------------
+
+@app.websocket("/api/ws/sync")
+async def ws_sync(websocket: WebSocket):
+    """Phase 2 — one lightweight realtime channel per logged-in player.
+    Pushes sync payloads and matchmaking events instantly; the client does
+    zero HTTP polling while this socket is healthy."""
+    token = websocket.query_params.get("token", "")
+    user = await user_from_token(token)
+    if not user:
+        # accept first so the client actually sees the 4001 close code
+        await websocket.accept()
+        await websocket.close(code=4001)
+        return
+    uid = user["user_id"]
+    await websocket.accept()
+    server_metrics.record("ws-sync: connexion", uid)
+    sync_channel.register(uid, websocket)
+    await db.users.update_one({"user_id": uid},
+                              {"$set": {"last_active": time.time()}})
+    refresher = asyncio.create_task(_sync_refresher(uid))
+    try:
+        await sync_channel.push_sync(uid)  # initial full payload
+        while True:
+            msg = await websocket.receive_json()
+            if msg.get("action") == "ping":
+                # the ping doubles as the presence heartbeat (green dot)
+                server_metrics.record("ws-sync: ping", uid)
+                await db.users.update_one(
+                    {"user_id": uid}, {"$set": {"last_active": time.time()}})
+                await websocket.send_json({"type": "pong"})
+    except WebSocketDisconnect:
+        pass
+    except Exception:
+        pass
+    finally:
+        refresher.cancel()
+        sync_channel.unregister(uid, websocket)
+
+
+async def _sync_refresher(uid):
+    """Slow safety refresh: keeps the online/waiting counters fresh and picks
+    up changes made by another server process (no in-process notify hook)."""
+    try:
+        while True:
+            await asyncio.sleep(sync_channel.REFRESH_SECONDS)
+            await sync_channel.push_sync(uid)
+    except asyncio.CancelledError:
+        pass
+    except Exception:
+        pass
+
 
 @app.websocket("/api/ws/game/{game_id}")
 async def ws_game(websocket: WebSocket, game_id: str):
@@ -1045,6 +1116,7 @@ async def startup():
     await db.users.create_index([("elo_duo", -1)])
     asyncio.create_task(manager.matchmaking_loop())
     asyncio.create_task(server_metrics.metrics_loop(db))
+    sync_channel.configure(_sync_snapshot)
 
 
 @app.on_event("shutdown")

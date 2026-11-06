@@ -1,0 +1,44 @@
+{
+  "summary": "Phase 2 realtime sync channel (WS /api/ws/sync) validated end-to-end. Backend: 7/7 new tests pass (initial payload with data+h equal to HTTP /sync digest; bad token rejected; friend request push 0.14-0.16s and decline push ~0.2s; mm_found pushed ~0.6-1.3s after 4th join (bounded by matchmaking loop tick) + status found same game_id + current_game sync push; mm_update on duo decline 0.13s; ping->pong + last_active updated + tester1 counted online for tester2; safety refresh after ~11.8s with counters only (no data when unchanged)). Regression suites iter32 sync/ratelimit, friends, iter30 duo, admin stats: 32/32 pass. Frontend (844x390): exactly ONE /api/ws/sync WS after login, ZERO HTTP /api/sync over 22s idle on Home (only 1 initial /sync at login), online count visible; friend request from tester2 shows bell+menu badge instantly with zero HTTP calls and clears instantly on decline; forced WS drop -> immediate HTTP /sync catch-up then reconnect exactly 3.0s later and polling stops again. Matchmaking 'Jouer en ligne > Rapide': browser navigated to /game/{id} 2.02s after the 4th scripted player joined (mm_found frame at +1.01s, status check at +1.09s, +0.7s intentional animation delay). No deprecated Expo packages touched in this scope.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "WS /api/ws/sync (bad token)", "issue": "websocket.close(4001) is called BEFORE accept(), so Starlette rejects the handshake with HTTP 403 — clients never see close code 4001 (browser gets 1006). Same pattern as /ws/game. Harmless (client falls back + retries every 20s) but if a 4001 code is wanted for 'session expired -> logout' logic, accept() first then close(4001)."},
+      {"endpoint": "POST /matchmaking/duo/{id}/accept (mode online)", "issue": "Inviter only gets a generic sync push, not an mm_update event, so the inviter's waiting screen goes duo_pending -> waiting only on its next status poll (<=5s). Consider push_event(mm_update) to the inviter on online duo accept for consistency with decline."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {"flow": "matchmaking mmSignal", "issue": "checkStatus() returns early when a status poll is already in flight (`checking` flag). If mm_found arrives while a poll that started before the match formed is in flight, the signal is dropped and navigation waits for the next poll (up to ~5s). Fix: set a 'recheck' flag when skipped and re-run checkStatus once the in-flight one finishes. Reference: /app/frontend/app/matchmaking.tsx:105-117", "affected_testIDs": []}
+    ],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter33_ws_sync.py",
+    "/app/backend/tests/iter33_fe_mm_filler.py",
+    "/app/test_reports/pytest/iter33_ws_sync.xml",
+    "/app/test_reports/pytest/iter33_regression.xml"
+  ],
+  "action_items": [
+    "(Optional) matchmaking.tsx: don't drop mmSignal when a status check is in flight — queue a re-check.",
+    "(Optional) ws_sync: accept() before close(4001) if the client should distinguish invalid token from network errors.",
+    "(Optional) push mm_update to the inviter on online duo accept."
+  ],
+  "critical_code_review_comments": [
+    "sync_channel push is per-process (in-memory _conns); fine with --workers 1. With multiple workers, mm_found from the matchmaking loop running in another process is NOT pushed as an event — only covered by the 12s refresher's current_game data (client navigates only via its own status poll). Keep in mind if scaling workers.",
+    "Each open sync socket runs a 12s refresher doing ~4 Mongo queries (count users, scan mm_queue up to 200, notifications payload, current game) — lighter than 7s HTTP polling but scales linearly with connections; consider a shared global counters tick if user count grows.",
+    "uvicorn --reload watches /app/backend including tests/: creating/editing test files reloads the backend and drops all sync/game sockets (dev-only side effect, observed in logs)."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iter33_ws_sync.py (new)",
+    "/app/backend/tests/iter33_fe_mm_filler.py (new FE helper)"
+  ],
+  "success_rate": {"backend": "100% (7/7 new + 32/32 regression)", "frontend": "100% (FE7, FE8, live badge push, WS-drop fallback)"},
+  "seed_data_creation": "Registered throwaway TEST_mm*/TEST_f* accounts (6) for 4-player queues. Created 3 matchmaking games, all removed from live_games by id afterwards; mm_queue empty. tester1<->tester2 friendship docs created by tests were deleted (original state: no friendship).",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Run test_iter33_ws_sync.py for the sync channel (needs pymongo, local DB test_database). Matchmaking games have no host so WS 'leave' does not end them — clean up by deleting the live_games doc by _id (runtime driver stops on next commit). Bad-token WS shows up as HTTP 403 (InvalidStatus), not close 4001. Browser-automation python env has no pymongo — use HTTP APIs or a background bash helper (iter33_fe_mm_filler.py waits for tester1 in mm_queue then joins 3 TEST accounts and writes /tmp/iter33_mm.json). Old /api/notifications and admin/stats 500s in backend.out.log predate this iteration.",
+  "rca_of_issue": ""
+}

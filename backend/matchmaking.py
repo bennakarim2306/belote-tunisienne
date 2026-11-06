@@ -12,6 +12,8 @@ import uuid
 from live_utils import elo_window, make_bots
 from push import maybe_send_peak_hour_push, maybe_send_queue_push
 
+import sync_channel
+
 logger = logging.getLogger(__name__)
 
 QUEUE_STALE_SECONDS = 60  # tolerate app backgrounding (frozen JS timers)
@@ -58,6 +60,8 @@ class MatchmakingMixin:
                 for p in e["players"]:
                     if p["user_id"] != user_id:
                         await self._set_feedback(p["user_id"], "duo_cancelled")
+                        await sync_channel.push_event([p["user_id"]],
+                                                      {"type": "mm_update"})
 
     async def clear_matched(self, user_id):
         await self.db.mm_matched.delete_one({"_id": user_id})
@@ -73,6 +77,10 @@ class MatchmakingMixin:
             await self.db.mm_matched.replace_one(
                 {"_id": uid}, {"_id": uid, "game_id": game_id, "ts": now},
                 upsert=True)
+        # Phase 2: instant push to connected players (opponent found!)
+        await sync_channel.push_event(
+            user_ids, {"type": "mm_found", "game_id": game_id})
+        await sync_channel.notify_users(user_ids)
 
     # ---------- duo invites ----------
 
@@ -118,6 +126,9 @@ class MatchmakingMixin:
             inv["game_id"] = game_id
             return inv
         await self.join_queue_duo(inv["from_player"], to_player, inv["match_type"])
+        # instant update for the inviter's waiting screen (now in the queue)
+        await sync_channel.push_event([inv["from_player"]["user_id"]],
+                                      {"type": "mm_update"})
         return inv
 
     async def decline_duo_invite(self, invite_id, user_id):
@@ -125,6 +136,8 @@ class MatchmakingMixin:
             {"_id": invite_id, "to_user.user_id": user_id, "status": "pending"})
         if inv:
             await self._set_feedback(inv["from_player"]["user_id"], "duo_declined")
+            await sync_channel.push_event([inv["from_player"]["user_id"]],
+                                          {"type": "mm_update"})
 
     async def cancel_duo_invite(self, from_user_id):
         await self.db.mm_duo_invites.delete_many(

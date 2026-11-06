@@ -8,6 +8,7 @@ from datetime import datetime, timedelta, timezone
 from html import escape
 
 import server_metrics
+import sync_channel
 
 
 async def _event_rows(db, now_dt, minutes):
@@ -156,6 +157,7 @@ async def collect_stats(db):
 
     # ---- server usage ----
     s["ws_connections"] = server_metrics.active_ws_connections()
+    s["sync_channels"] = sync_channel.connection_count()
     s["ev60"] = await _event_rows(db, now_dt, 60)
     s["ev24"] = await _event_rows(db, now_dt, 1440)
     s["ev60_total"] = sum(r["n"] for r in s["ev60"])
@@ -279,6 +281,7 @@ async def render_stats_html(db):
 <h2>Utilisation du serveur</h2>
 <div class="grid">
   {_card("Connexions WS actives", s["ws_connections"], "sockets de jeu ouverts")}
+  {_card("Canaux sync connectés", s["sync_channels"], "joueurs en temps réel")}
   {_card("Événements (60 min)", s["ev60_total"], "API + WebSocket")}
   {_card("Événements (24 h)", s["ev24_total"], "API + WebSocket")}
   {_card("Parties IA via serveur (24 h)", s["ai_server_24h"])}

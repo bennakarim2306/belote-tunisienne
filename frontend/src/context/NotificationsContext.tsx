@@ -9,7 +9,7 @@ import React, {
 } from "react";
 import { AppState } from "react-native";
 
-import { api } from "@/src/api";
+import { api, wsUrl } from "@/src/api";
 import { useAuth } from "@/src/context/AuthContext";
 
 export interface FriendRequestNotif {
@@ -51,6 +51,8 @@ interface NotifValue {
   online: number;
   waiting: number;
   currentGame: CurrentGameInfo | null;
+  /** bumps whenever the server pushes a matchmaking event (found/update) */
+  mmSignal: number;
   refresh: () => Promise<void>;
   setSlowMode: (slow: boolean) => void;
 }
@@ -62,21 +64,24 @@ const NotificationsContext = createContext<NotifValue>({
   online: 0,
   waiting: 0,
   currentGame: null,
+  mmSignal: 0,
   refresh: async () => {},
   setSlowMode: () => {},
 });
 
-const FAST_MS = 7000; // normal cadence (social freshness ~7 s)
-const SLOW_MS = 20000; // during an online game (WS covers the gameplay)
+const FAST_MS = 7000; // HTTP fallback cadence (social freshness ~7 s)
+const SLOW_MS = 20000; // fallback cadence during an online game
+const PING_MS = 25000; // WS heartbeat (doubles as presence, window 90 s)
 
 /**
- * Single batched poll: GET /sync replaces the separate presence ping/pulse,
- * notifications and current-game polls. The server answers "nothing new"
- * (tiny response) when the social payload hasn't changed, and the poll stops
- * entirely while the app is in the background.
+ * Phase 2 realtime channel: one lightweight WebSocket per logged-in player
+ * (WS /api/ws/sync). The server pushes friend requests, invites, current
+ * game and "opponent found" instantly — zero HTTP polling while the channel
+ * is healthy. If the socket drops, the HTTP /sync poll (Phase 1) takes over
+ * until the channel reconnects. Background = everything off.
  */
 export function NotificationsProvider({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const userId = user?.user_id ?? null;
   const [friendRequests, setFriendRequests] = useState<FriendRequestNotif[]>([]);
   const [invites, setInvites] = useState<InviteNotif[]>([]);
@@ -84,39 +89,117 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
   const [online, setOnline] = useState(0);
   const [waiting, setWaiting] = useState(0);
   const [currentGame, setCurrentGame] = useState<CurrentGameInfo | null>(null);
+  const [mmSignal, setMmSignal] = useState(0);
 
   const hashRef = useRef("");
   const slowRef = useRef(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pollingRef = useRef(false);
   const aliveRef = useRef(false);
+  const tokenRef = useRef<string | null>(null);
+  tokenRef.current = token ?? null;
+
+  const wsRef = useRef<WebSocket | null>(null);
+  const wsOkRef = useRef(false);
+  const pingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const reconnectRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const applySync = useCallback((res: any) => {
+    setOnline(res.online ?? 0);
+    setWaiting(res.waiting ?? 0);
+    if (res.data) {
+      setFriendRequests(res.data.friend_requests ?? []);
+      setInvites(res.data.invites ?? []);
+      setDuoInvites(res.data.duo_invites ?? []);
+      setCurrentGame(res.data.current_game ?? null);
+    }
+    hashRef.current = res.h ?? "";
+  }, []);
 
   const poll = useCallback(async () => {
     if (pollingRef.current) return;
     pollingRef.current = true;
     try {
       const res = await api.get(`/sync?h=${hashRef.current}`);
-      setOnline(res.online ?? 0);
-      setWaiting(res.waiting ?? 0);
-      if (res.data) {
-        setFriendRequests(res.data.friend_requests ?? []);
-        setInvites(res.data.invites ?? []);
-        setDuoInvites(res.data.duo_invites ?? []);
-        setCurrentGame(res.data.current_game ?? null);
-      }
-      hashRef.current = res.h ?? "";
+      applySync(res);
     } catch {}
     pollingRef.current = false;
-  }, []);
+  }, [applySync]);
 
+  // HTTP fallback loop — only runs while the realtime channel is down
   const schedule = useCallback(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(async () => {
       if (!aliveRef.current || AppState.currentState !== "active") return;
+      if (wsOkRef.current) return; // realtime channel handles it
       await poll();
       schedule();
     }, slowRef.current ? SLOW_MS : FAST_MS);
   }, [poll]);
+
+  const closeWs = useCallback(() => {
+    wsOkRef.current = false;
+    if (pingRef.current) clearInterval(pingRef.current);
+    pingRef.current = null;
+    if (reconnectRef.current) clearTimeout(reconnectRef.current);
+    reconnectRef.current = null;
+    const ws = wsRef.current;
+    wsRef.current = null;
+    if (ws) {
+      ws.onclose = null;
+      ws.onmessage = null;
+      ws.onopen = null;
+      ws.onerror = null;
+      try {
+        ws.close();
+      } catch {}
+    }
+  }, []);
+
+  const connectWs = useCallback(() => {
+    if (!aliveRef.current || wsRef.current || !tokenRef.current) return;
+    if (AppState.currentState !== "active") return;
+    let ws: WebSocket;
+    try {
+      ws = new WebSocket(
+        wsUrl(`/api/ws/sync?token=${encodeURIComponent(tokenRef.current)}`),
+      );
+    } catch {
+      schedule();
+      return;
+    }
+    wsRef.current = ws;
+    ws.onopen = () => {
+      wsOkRef.current = true;
+      if (timerRef.current) clearTimeout(timerRef.current); // stop HTTP polls
+      pingRef.current = setInterval(() => {
+        try {
+          ws.send(JSON.stringify({ action: "ping" }));
+        } catch {}
+      }, PING_MS);
+    };
+    ws.onmessage = (e) => {
+      try {
+        const msg = JSON.parse(e.data as string);
+        if (msg.type === "sync") applySync(msg);
+        else if (msg.type === "mm_found" || msg.type === "mm_update") {
+          setMmSignal(Date.now());
+        }
+      } catch {}
+    };
+    ws.onerror = () => {};
+    ws.onclose = () => {
+      const wasOk = wsOkRef.current;
+      wsOkRef.current = false;
+      if (pingRef.current) clearInterval(pingRef.current);
+      pingRef.current = null;
+      wsRef.current = null;
+      if (!aliveRef.current || AppState.currentState !== "active") return;
+      poll(); // immediate catch-up, then HTTP fallback until reconnected
+      schedule();
+      reconnectRef.current = setTimeout(connectWs, wasOk ? 3000 : 20000);
+    };
+  }, [applySync, poll, schedule]);
 
   useEffect(() => {
     if (!userId) {
@@ -128,22 +211,30 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
       return;
     }
     aliveRef.current = true;
-    poll().then(schedule);
-    // background = zero network; instant catch-up poll on resume
+    poll().then(() => {
+      schedule();
+      connectWs();
+    });
+    // background = zero network; instant catch-up + reconnect on resume
     const sub = AppState.addEventListener("change", (s) => {
       if (!aliveRef.current) return;
       if (s === "active") {
-        poll().then(schedule);
-      } else if (timerRef.current) {
-        clearTimeout(timerRef.current);
+        poll().then(() => {
+          schedule();
+          connectWs();
+        });
+      } else {
+        closeWs();
+        if (timerRef.current) clearTimeout(timerRef.current);
       }
     });
     return () => {
       aliveRef.current = false;
+      closeWs();
       if (timerRef.current) clearTimeout(timerRef.current);
       sub.remove();
     };
-  }, [userId, poll, schedule]);
+  }, [userId, poll, schedule, connectWs, closeWs]);
 
   // force a full payload on demand (after accepting/dismissing an invite...)
   const refresh = useCallback(async () => {
@@ -156,7 +247,7 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
     (slow: boolean) => {
       if (slowRef.current === slow) return;
       slowRef.current = slow;
-      if (aliveRef.current && timerRef.current) schedule();
+      if (aliveRef.current && !wsOkRef.current && timerRef.current) schedule();
     },
     [schedule],
   );
@@ -169,11 +260,12 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
       online,
       waiting,
       currentGame,
+      mmSignal,
       refresh,
       setSlowMode,
     }),
-    [friendRequests, invites, duoInvites, online, waiting, currentGame, refresh,
-     setSlowMode],
+    [friendRequests, invites, duoInvites, online, waiting, currentGame,
+     mmSignal, refresh, setSlowMode],
   );
 
   return (

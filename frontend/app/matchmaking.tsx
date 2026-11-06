@@ -20,6 +20,7 @@ import ChunkyButton from "@/src/components/ChunkyButton";
 import PlayingCard from "@/src/components/PlayingCard";
 import ShareSheet from "@/src/components/ShareSheet";
 import { useAuth } from "@/src/context/AuthContext";
+import { useNotifications } from "@/src/context/NotificationsContext";
 import { useI18n } from "@/src/i18n";
 import { APP_INSTALL_URL } from "@/src/share";
 import { C, F, R, SP } from "@/src/theme";
@@ -96,15 +97,30 @@ export default function MatchmakingScreen() {
   const [endMsg, setEndMsg] = useState<string | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
   const cancelledRef = useRef(false);
+  const checkRef = useRef<() => void>(() => {});
+  const { mmSignal } = useNotifications();
+
+  // realtime channel pushed a matchmaking event (opponent found / declined):
+  // check the status instantly instead of waiting for the next poll
+  useEffect(() => {
+    if (mmSignal) checkRef.current();
+  }, [mmSignal]);
 
   useEffect(() => {
     let poll: ReturnType<typeof setTimeout> | null = null;
     let tick: ReturnType<typeof setInterval> | null = null;
     let checking = false;
+    let recheck = false;
     let stopped = false;
 
     const checkStatus = async () => {
-      if (cancelledRef.current || checking) return;
+      if (cancelledRef.current) return;
+      if (checking) {
+        // a realtime push arrived mid-check: re-check right after instead
+        // of waiting for the next poll
+        recheck = true;
+        return;
+      }
       checking = true;
       try {
         const st = await api.get("/matchmaking/status");
@@ -144,7 +160,12 @@ export default function MatchmakingScreen() {
         }
       } catch {}
       checking = false;
+      if (recheck) {
+        recheck = false;
+        checkStatus();
+      }
     };
+    checkRef.current = checkStatus;
 
     (async () => {
       if (!isDuo) {

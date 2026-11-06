@@ -428,3 +428,17 @@ frontend:
     working: "needs_test"
     file: "frontend/src/context/NotificationsContext.tsx (rewritten: /sync poll 7s, slow 20s during online game, stops in background, resumes+immediate poll on active), frontend/src/context/AuthContext.tsx (presence ping removed), frontend/app/(tabs)/home.tsx (no own poll; online count + current game from context; local saved game still takes precedence), frontend/app/game/[id].tsx (onlineWaiting from context; setSlowMode(true) during online games), frontend/app/matchmaking.tsx (1.5s first 20s then 5s, no calls in background), frontend/app/room/[code].tsx (2s poll skipped in background)"
     comment: "useNotifications() now also exposes online, waiting, currentGame, setSlowMode. refresh() forces a full payload (hash reset)."
+
+backend:
+  - task: "Phase 2 realtime: per-player sync channel WS /api/ws/sync (instant pushes: friends, invites, mm_found)"
+    implemented: true
+    working: "needs_test"
+    file: "backend/sync_channel.py (new registry/push module), backend/server.py (ws_sync endpoint + _sync_refresher + _sync_snapshot refactor + notify hooks on friends/request, friends/respond, duo invite/accept/decline, rooms invite/start, invites dismiss), backend/matchmaking.py (_set_matched pushes {type:mm_found,game_id} + notify; decline/cancel push {type:mm_update}), backend/admin_stats.py (card 'Canaux sync connectés')"
+    comment: "WS auth via ?token= (same as game WS). Messages server->client: {type:sync,h,online,waiting,data?} (data only if changed per socket), {type:mm_found,game_id}, {type:mm_update}, {type:pong}. Client ping {action:ping} every 25s doubles as presence heartbeat. Per-connection safety refresh every 12s. Verified manually via websockets probe: initial payload, instant push on friend request (<1s), pong, push on decline. HTTP GET /sync unchanged (fallback + old clients)."
+
+frontend:
+  - task: "Phase 2 realtime: NotificationsContext opens WS /api/ws/sync; HTTP polling only as fallback; matchmaking reacts to mmSignal"
+    implemented: true
+    working: "needs_test"
+    file: "frontend/src/context/NotificationsContext.tsx (WS layer: onopen stops HTTP timer, onclose resumes polling + reconnect 3s/20s, ping 25s, background closes everything), frontend/app/matchmaking.tsx (mmSignal -> instant checkStatus via checkRef)"
+    comment: "Verified in browser: after login exactly 1 WS to /api/ws/sync opens. mm_found/mm_update messages bump mmSignal; matchmaking screen then calls /matchmaking/status immediately (keeps all existing navigation logic). Degressive HTTP polling kept as safety net."
