@@ -13,6 +13,7 @@ import time
 import bot_ai
 import coach
 import game_logic as gl
+import server_metrics
 
 logger = logging.getLogger(__name__)
 
@@ -283,6 +284,7 @@ class GameRuntimeMixin:
 
     async def broadcast(self, live, events):
         for user_id, conns in list(live.sockets.items()):
+            server_metrics.record("ws: état envoyé", user_id)
             seat = live.game.seat_of(user_id)
             state = self._coach_state(live.game, seat)
             for ws in list(conns):

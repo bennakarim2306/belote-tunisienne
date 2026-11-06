@@ -407,3 +407,10 @@ frontend:
       - working: "NA"
         agent: "main"
         comment: "Lint clean, services up. To create a vs_ai duo pending state: login tester1, POST /api/matchmaking/duo/invite {to_user_id of tester2, match_type short, mode vs_ai} then open /matchmaking?type=short&duo=1&mode=vs_ai. Credentials in /app/memory/test_credentials.md."
+
+backend:
+  - task: "Server usage stats in admin dashboard (GET /api/admin/stats?key=belote-admin-7f3a9c2e)"
+    implemented: true
+    working: "needs_test"
+    file: "backend/server_metrics.py, backend/admin_stats.py, backend/server.py, backend/game_runtime.py, backend/elo_stats.py"
+    comment: "NEW: server_metrics.py counts every API request (classified by path prefix into types like 'présence (pulse/ping)', 'matchmaking', 'amis', ...) and every WS message ('ws: connexion', 'ws: ping', 'ws: play', 'ws: état envoyé'...), buffered in memory, flushed to Mongo collection server_metrics every 15s as one doc per (minute, type) with n + users[] (TTL 7 days). Per-player attribution via token->user_id cache filled by user_from_token. Dashboard new section 'Utilisation du serveur': cards (Connexions WS actives, Événements 60min/24h, Parties IA via serveur 24h, DB size Mo) + 2 tables 'Événements app ↔ serveur par type' (60 min & 24 h: Événements, Évts/min, Joueurs, Évts/joueur/min) + table 'Parties serveur par composition' (4/3/2/1/0 humains). Also: elo_stats.py now persists 'origin' in match docs (additive). Full backend suite 146 passed + standalone e2e 29/29 (run alone: python3 tests/test_db_persistence_e2e.py — it is polluted if run after other tests)."

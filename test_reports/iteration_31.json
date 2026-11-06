@@ -1,0 +1,30 @@
+{
+  "summary": "Backend-only test of server-usage metrics (server_metrics.py middleware, WS counters, 15s Mongo flush) and the new admin section 'Utilisation du serveur'. New pytest file test_server_metrics.py: 14/14 passed. HTTP traffic (presence pulse x3, leaderboard x2, friends x2, solo) and WS traffic (connexion, ping x2, pass action) showed up in Mongo 'server_metrics' and in the 60 min and 24 h admin tables after a 17s wait, with Joueurs >= 1 and correct per-user attribution. /api/admin is not counted. Cards and the composition table render, an invalid key returns 403, and the regression sections are present. Regression: test_origin_field.py + test_admin_stats.py 19/19 passed; auth/me, matchmaking join/status/leave and CORS preflight return 200 through the middleware. No new backend errors since the last reload. The '$size must be an array, null' traceback in backend.err.log is from before the last restart (old code) and does not reproduce.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "WS /api/ws/game/{id} (server.py ~L945)", "issue": "Metric type is f\"ws: {msg.get('action')}\", taken straight from the client, so it can grow without limit. Confirmed: sending actions 'TEST_xxx_0..4' and {'x':1} created 6 new server_metrics types that showed up on the dashboard (probe docs deleted afterwards). A buggy or malicious client could flood the collection and the admin tables. Fix: whitelist known actions (bid, pass, capot, contre, surcontre, decline_surcontre, play, ready, pause_*, resume, leave, chat) and map everything else to 'ws: autre'."},
+      {"endpoint": "server_metrics.flush / shutdown", "issue": "There is no flush on shutdown and the batch is dropped if bulk_write raises. Each backend restart or deploy (and every uvicorn --reload in preview, which the WatchFiles log showed) loses up to 15s of buffered events. Fix: call flush(db) in the shutdown handler before client.close(), and merge the batch back into _pending on failure."},
+      {"endpoint": "admin_stats._event_rows", "issue": "Évts/joueur/min = n / player-minutes, but n includes unauthenticated requests (login/register, 401s) and player-minutes only counts attributed users. This inflates the figure for 'compte' (18.88 seen) and similar types. Fix: count attributed events separately (e.g. an n_auth field) and divide that instead."},
+      {"endpoint": "game_runtime.connect", "issue": "The initial state sent on connect goes through _send() directly, so it is not counted as 'ws: état envoyé'. Only broadcast() is counted. A small undercount of states sent; document it or record it in connect too."}
+    ]
+  },
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": [], "react_native_issues": []},
+  "test_report_links": ["/app/backend/tests/test_server_metrics.py", "/app/backend/tests/probe_ws_action_cardinality.py", "/app/test_reports/pytest/server_metrics.xml"],
+  "action_items": [
+    "Whitelist WS action names in the metrics record (server.py ws_game) so client strings can't create unlimited metric types",
+    "Flush server_metrics in the shutdown handler, and keep or merge the batch when bulk_write fails",
+    "Optional: base Évts/joueur/min on attributed events only; count the initial connect state as 'ws: état envoyé'"
+  ],
+  "critical_code_review_comments": [
+    "The middleware does not record when call_next raises (unhandled 500s are not counted). Acceptable, but those are the events most worth seeing.",
+    "_token_users is never invalidated on logout. Harmless for metrics, it only affects attribution.",
+    "server.py is 1008 lines (>700); consider splitting ws/matchmaking routes into modules."
+  ],
+  "updated_files": ["/app/backend/tests/test_server_metrics.py (new)", "/app/backend/tests/probe_ws_action_cardinality.py (new, standalone probe)"],
+  "success_rate": {"backend": "100% (14/14 new + 19/19 regression)", "frontend": "not tested (backend only)"},
+  "seed_data_creation": "No seed data. Created solo games for tester1, then marked them finished. Probe junk metric docs were deleted by _id.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Metrics flush every 15s, so wait >=17s. Editing files under /app/backend (including tests/) triggers a uvicorn reload that drops the unflushed metric buffer; create test files first and wait about 5s before generating traffic. Run with: pytest tests/test_server_metrics.py -v."
+}

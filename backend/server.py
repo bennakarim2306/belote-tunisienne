@@ -25,6 +25,8 @@ from admin_stats import render_stats_html
 from game_manager import GameManager
 from push import push_router
 
+import server_metrics
+
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
@@ -42,6 +44,7 @@ logger = logging.getLogger(__name__)
 app = FastAPI()
 api = APIRouter(prefix="/api")
 manager = GameManager(db)
+server_metrics.set_manager(manager)
 
 AVATAR_IDS = [f"av{i}" for i in range(1, 13)]
 USER_PUBLIC = {"_id": 0, "password_hash": 0}
@@ -155,6 +158,7 @@ async def user_from_token(token: str):
     if exp < datetime.now(timezone.utc):
         await db.user_sessions.delete_one({"session_token": token})
         return None
+    server_metrics.note_token(token, sess["user_id"])  # for per-player metrics
     return await db.users.find_one({"user_id": sess["user_id"]}, USER_PUBLIC)
 
 
@@ -925,6 +929,7 @@ async def ws_game(websocket: WebSocket, game_id: str):
         await websocket.close(code=4001)
         return
     await websocket.accept()
+    server_metrics.record("ws: connexion", user["user_id"])
     live = await manager.connect(game_id, user["user_id"], websocket)
     if not live:
         await websocket.send_json({"type": "error", "message": "game_not_found"})
@@ -934,8 +939,11 @@ async def ws_game(websocket: WebSocket, game_id: str):
         while True:
             msg = await websocket.receive_json()
             if msg.get("action") == "ping":
+                server_metrics.record("ws: ping", user["user_id"])
                 await websocket.send_json({"type": "pong"})
                 continue
+            server_metrics.record_ws(msg.get("action") or "?",
+                                     user["user_id"])
             await manager.handle_action(game_id, user["user_id"], msg, websocket)
     except WebSocketDisconnect:
         pass
@@ -962,6 +970,17 @@ app.add_middleware(
 )
 
 
+@app.middleware("http")
+async def record_server_metrics(request: Request, call_next):
+    response = await call_next(request)
+    ev_type = server_metrics.classify_path(request.url.path)
+    if ev_type:
+        auth = request.headers.get("Authorization", "")
+        token = auth[7:] if auth.startswith("Bearer ") else ""
+        server_metrics.record(ev_type, server_metrics.user_for_token(token))
+    return response
+
+
 @app.on_event("startup")
 async def startup():
     await db.users.create_index("email", unique=True)
@@ -981,8 +1000,13 @@ async def startup():
         {"$set": {"elo_duo": 1000, "elo_duo_history": []}})
     await db.users.create_index([("elo_duo", -1)])
     asyncio.create_task(manager.matchmaking_loop())
+    asyncio.create_task(server_metrics.metrics_loop(db))
 
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
+    try:
+        await server_metrics.flush(db)  # don't lose the buffered events
+    except Exception:
+        pass
     client.close()

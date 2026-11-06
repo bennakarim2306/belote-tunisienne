@@ -7,6 +7,40 @@ from datetime import datetime, timedelta, timezone
 
 from html import escape
 
+import server_metrics
+
+
+async def _event_rows(db, now_dt, minutes):
+    """Per-type event stats over the last <minutes>: total, /min, distinct
+    players, events per player per active minute."""
+    since = now_dt - timedelta(minutes=minutes)
+    totals = await db.server_metrics.aggregate([
+        {"$match": {"ts": {"$gte": since}}},
+        {"$project": {"type": 1, "n": 1,
+                      "pm": {"$size": {"$ifNull": ["$users", []]}}}},
+        {"$group": {"_id": "$type", "n": {"$sum": "$n"},
+                    "pm": {"$sum": "$pm"}}},
+    ]).to_list(300)
+    distinct = await db.server_metrics.aggregate([
+        {"$match": {"ts": {"$gte": since}}},
+        {"$unwind": "$users"},
+        {"$match": {"users": {"$ne": "_anon"}}},
+        {"$group": {"_id": {"t": "$type", "u": "$users"}}},
+        {"$group": {"_id": "$_id.t", "players": {"$sum": 1}}},
+    ]).to_list(300)
+    players = {r["_id"]: r["players"] for r in distinct}
+    rows = []
+    for r in sorted(totals, key=lambda x: -x["n"]):
+        pm = r["pm"]  # player-minutes: sum over minute buckets of active players
+        rows.append({
+            "type": r["_id"],
+            "n": r["n"],
+            "per_min": round(r["n"] / minutes, 2),
+            "players": players.get(r["_id"], 0),
+            "per_player_min": round(r["n"] / pm, 2) if pm else None,
+        })
+    return rows
+
 
 async def collect_stats(db):
     now = time.time()
@@ -120,6 +154,26 @@ async def collect_stats(db):
             names[u["user_id"]] = u.get("username", "?")
     s["top5"] = [(names.get(uid, uid), n) for uid, n in top5]
 
+    # ---- server usage ----
+    s["ws_connections"] = server_metrics.active_ws_connections()
+    s["ev60"] = await _event_rows(db, now_dt, 60)
+    s["ev24"] = await _event_rows(db, now_dt, 1440)
+    s["ev60_total"] = sum(r["n"] for r in s["ev60"])
+    s["ev24_total"] = sum(r["n"] for r in s["ev24"])
+    s["ai_server_24h"] = await _count([
+        {"$match": {"humans": {"$lte": 1}, "finished_at": {"$gt": iso_ago(1)}}}])
+    comp = await db.matches.aggregate(base + [
+        {"$group": {"_id": "$humans", "n": {"$sum": 1}}},
+        {"$sort": {"_id": -1}},
+    ]).to_list(10)
+    s["composition"] = [(r["_id"], r["n"]) for r in comp]
+    try:
+        st = await db.command("dbStats")
+        s["db_mb"] = round(
+            (st.get("dataSize", 0) + st.get("indexSize", 0)) / 1e6, 1)
+    except Exception:
+        s["db_mb"] = "—"
+
     s["generated_at"] = now_dt.strftime("%d/%m/%Y %H:%M UTC")
     return s
 
@@ -130,12 +184,33 @@ def _card(label, value, sub=""):
             f'<div class="lbl">{escape(label)}</div>{sub_html}</div>')
 
 
+def _ev_table(rows):
+    body = "".join(
+        f"<tr><td>{escape(str(r['type']))}</td><td>{r['n']}</td>"
+        f"<td>{r['per_min']}</td><td>{r['players'] or '—'}</td>"
+        f"<td>{r['per_player_min'] if r['per_player_min'] is not None else '—'}</td></tr>"
+        for r in rows
+    ) or '<tr><td colspan="5">Aucune donnée pour l’instant</td></tr>'
+    return ('<table class="wide"><tr><th>Type d’événement</th><th>Événements</th>'
+            '<th>Évts/min</th><th>Joueurs</th><th>Évts/joueur/min</th></tr>'
+            f'{body}</table>')
+
+
 async def render_stats_html(db):
     s = await collect_stats(db)
     top_rows = "".join(
         f"<tr><td>{i + 1}</td><td>{escape(name)}</td><td>{n}</td></tr>"
         for i, (name, n) in enumerate(s["top5"])
     ) or '<tr><td colspan="3">Aucune donnée</td></tr>'
+    comp_labels = {4: "4 humains — partie en ligne classique",
+                   3: "3 humains + 1 bot",
+                   2: "2 humains + 2 bots — duo contre IA / salon",
+                   1: "1 humain — ancien solo via serveur / tutoriel",
+                   0: "0 humain"}
+    comp_rows = "".join(
+        f"<tr><td>{escape(comp_labels.get(h, f'{h} humains'))}</td><td>{n}</td></tr>"
+        for h, n in s["composition"]
+    ) or '<tr><td colspan="2">Aucune donnée</td></tr>'
 
     return f"""<!DOCTYPE html>
 <html lang="fr"><head><meta charset="utf-8">
@@ -156,6 +231,7 @@ async def render_stats_html(db):
   .lbl {{ font-size:12.5px; color:rgba(245,234,209,.8); margin-top:4px; }}
   .sub {{ font-size:11px; color:rgba(245,234,209,.5); margin-top:2px; }}
   table {{ width:100%; max-width:480px; border-collapse:collapse; margin-top:6px; }}
+  table.wide {{ max-width:720px; }}
   td, th {{ text-align:left; padding:7px 10px; font-size:13.5px;
            border-bottom:1px solid rgba(233,196,106,.15); }}
   th {{ color:#e9c46a; font-size:12px; }}
@@ -200,11 +276,32 @@ async def render_stats_html(db):
   {_card("…dont hors-ligne", s["offline_total"], "télémétrie, nouvelles versions")}
 </div>
 
+<h2>Utilisation du serveur</h2>
+<div class="grid">
+  {_card("Connexions WS actives", s["ws_connections"], "sockets de jeu ouverts")}
+  {_card("Événements (60 min)", s["ev60_total"], "API + WebSocket")}
+  {_card("Événements (24 h)", s["ev24_total"], "API + WebSocket")}
+  {_card("Parties IA via serveur (24 h)", s["ai_server_24h"])}
+  {_card("Base de données (Mo)", s["db_mb"], "données + index")}
+</div>
+
+<h3 style="color:#e9c46a;font-size:13.5px;margin:18px 0 2px">Événements app ↔ serveur par type — 60 dernières minutes</h3>
+{_ev_table(s["ev60"])}
+
+<h3 style="color:#e9c46a;font-size:13.5px;margin:18px 0 2px">Événements app ↔ serveur par type — 24 dernières heures</h3>
+{_ev_table(s["ev24"])}
+
+<h3 style="color:#e9c46a;font-size:13.5px;margin:18px 0 2px">Parties serveur par composition (total)</h3>
+<table><tr><th>Composition</th><th>Parties</th></tr>{comp_rows}</table>
+
 <h2>Top 5 joueurs les plus actifs (30 j, tous modes serveur + hors-ligne)</h2>
 <table><tr><th>#</th><th>Joueur</th><th>Parties</th></tr>{top_rows}</table>
 
 <div class="note">ℹ️ « Contre l'IA » regroupe : les parties solo que les anciennes versions
 jouaient via le serveur (+ parties du tutoriel), et les parties hors-ligne remontées par la
 télémétrie des nouvelles versions de l'application. Les parties hors-ligne des anciennes
-versions restent invisibles (aucune donnée n'était envoyée).</div>
+versions restent invisibles (aucune donnée n'était envoyée).<br>
+ℹ️ « Évts/joueur/min » = événements divisés par les minutes d'activité réelles des joueurs
+(un joueur inactif ne dilue pas la moyenne). Les événements serveur sont conservés 7 jours
+et le comptage démarre au déploiement de cette version.</div>
 </body></html>"""
