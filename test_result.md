@@ -414,3 +414,17 @@ backend:
     working: "needs_test"
     file: "backend/server_metrics.py, backend/admin_stats.py, backend/server.py, backend/game_runtime.py, backend/elo_stats.py"
     comment: "NEW: server_metrics.py counts every API request (classified by path prefix into types like 'présence (pulse/ping)', 'matchmaking', 'amis', ...) and every WS message ('ws: connexion', 'ws: ping', 'ws: play', 'ws: état envoyé'...), buffered in memory, flushed to Mongo collection server_metrics every 15s as one doc per (minute, type) with n + users[] (TTL 7 days). Per-player attribution via token->user_id cache filled by user_from_token. Dashboard new section 'Utilisation du serveur': cards (Connexions WS actives, Événements 60min/24h, Parties IA via serveur 24h, DB size Mo) + 2 tables 'Événements app ↔ serveur par type' (60 min & 24 h: Événements, Évts/min, Joueurs, Évts/joueur/min) + table 'Parties serveur par composition' (4/3/2/1/0 humains). Also: elo_stats.py now persists 'origin' in match docs (additive). Full backend suite 146 passed + standalone e2e 29/29 (run alone: python3 tests/test_db_persistence_e2e.py — it is polluted if run after other tests)."
+
+backend:
+  - task: "Phase 1 efficiency: batched GET /api/sync endpoint + per-account rate limit + WS identical-state dedupe"
+    implemented: true
+    working: "needs_test"
+    file: "backend/server.py (/sync, middleware 429), backend/server_metrics.py (rate_limited, sync prefix), backend/game_runtime.py (broadcast dedupe)"
+    comment: "GET /api/sync?h=<hash>: acts as presence heartbeat (last_active), always returns {h, online, waiting}; includes data{friend_requests, invites, duo_invites, current_game} ONLY when md5 digest differs from client h (verified: full=410B, nothing-new=43B). /notifications and /games/current kept unchanged for old clients (now delegate to shared helpers). Rate limit: 80 req/10s per account -> 429 (verified: burst 100 = 80x200+20x429). WS broadcast skips sends when events empty AND state hash identical per socket (ws._bt_state_h)."
+
+frontend:
+  - task: "Phase 1 efficiency: single sync poll (NotificationsContext rewrite), background silence, degressive matchmaking poll"
+    implemented: true
+    working: "needs_test"
+    file: "frontend/src/context/NotificationsContext.tsx (rewritten: /sync poll 7s, slow 20s during online game, stops in background, resumes+immediate poll on active), frontend/src/context/AuthContext.tsx (presence ping removed), frontend/app/(tabs)/home.tsx (no own poll; online count + current game from context; local saved game still takes precedence), frontend/app/game/[id].tsx (onlineWaiting from context; setSlowMode(true) during online games), frontend/app/matchmaking.tsx (1.5s first 20s then 5s, no calls in background), frontend/app/room/[code].tsx (2s poll skipped in background)"
+    comment: "useNotifications() now also exposes online, waiting, currentGame, setSlowMode. refresh() forces a full payload (hash reset)."

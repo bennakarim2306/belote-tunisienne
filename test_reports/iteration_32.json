@@ -1,0 +1,44 @@
+{
+  "summary": "Iteration 32 — Phase 1 'Efficacité serveur'. Backend: new pytest file test_iter32_sync_ratelimit.py 8/8 pass (after fixing a bug in my own WS test). /sync works: it returns the full data on an empty or old h, the tiny {h,online,waiting} when nothing changed, a new h plus data after a friend request and after POST /solo (current_game.game_id), and 401 with no auth. /sync counts as the presence heartbeat. The legacy endpoints /notifications, /presence/ping, /presence/pulse and /games/current still return 200 with their original shapes. Rate limit: a 100-request burst gave exactly 80x200 + 20x429 {detail:'too_many_requests'}. A second account was not affected, the first account worked again after 10s, and the 429 carries CORS headers. WS dedupe: the first state arrives on connect, bids and plays come through as updates, and a played card leaves the hand. Admin stats returns 200 and shows 'sync (regroupé)' after the metrics flush. Full regression suite: 158 passed, 2 failed. Both failures are flaky and passed when re-run alone: test_ws_game (WS 'no close frame' under load) and test_capot_broken_ends_hand_immediately (depends on the deal; hand_scores [0,520] includes a +20 belote bonus, so the strict 'assert 500 in hand_scores' fails sometimes). Frontend (844x390 landscape): tester1 logs in, Home loads with no console errors, the badge (3) and the friend-request list appear, 'Partie en cours' resume shows and the online count shows. Over ~21s on Home there were exactly 3 /sync calls (~7.1s apart) and zero calls to legacy endpoints. Simulated background (document hidden) for 16s: 0 requests. On resume: an immediate /sync. Matchmaking: /matchmaking/status every ~1.55s for the first 20s, then every 5s; cancel calls DELETE /matchmaking/leave and returns Home.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "GET /api/sync", "issue": "A 'nothing new' reply only saves bandwidth. Every call still runs the full payload: last_active update, a users count_documents on last_active (that field has no index, so it scans the collection), a scan of mm_queue, the notifications queries (with an N+1 get_room per invite) and the live_games query. At 7s per online user, DB load is roughly the same as before."},
+      {"endpoint": "rate limiter (server_metrics.rate_limited)", "issue": "The counter is in memory and per process. With several workers or pods the real limit becomes 80 x N per process. It also only applies once the token is cached in _token_users (the first request after a restart is never limited). Acceptable for the current single worker."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter32_sync_ratelimit.py",
+    "/app/backend/tests/iter32_cors_429_probe.py",
+    "/app/backend/tests/iter32_fe_helper.py",
+    "/app/test_reports/pytest/iter32_sync.xml",
+    "/app/test_reports/pytest/iter32_full.xml"
+  ],
+  "action_items": [
+    "Optional: add an index on users.last_active (the online count runs on every /sync call).",
+    "Optional: make the 'nothing new' path cheaper on the server (e.g. cache the digest per user, or skip the notifications and current_game queries when nothing relevant changed).",
+    "Optional: loosen test_improvement_pack.py::test_capot_broken_ends_hand_immediately so it accepts 500 plus a belote bonus (e.g. max(hand_scores) >= 500)."
+  ],
+  "critical_code_review_comments": [
+    "NotificationsContext: the poll loop is correct. pollingRef prevents overlapping polls, the timer is cleared in the background and resumes on 'active', setSlowMode reschedules, and refresh() forces a full payload by clearing h.",
+    "game_runtime.broadcast dedupe only skips when there are no events AND the hash matches the last state sent on that socket. No missed updates were seen.",
+    "The 429 response from the outer middleware still includes Access-Control-Allow-Origin, so the web client sees a real 429."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iter32_sync_ratelimit.py (new)",
+    "/app/backend/tests/iter32_cors_429_probe.py (new)",
+    "/app/backend/tests/iter32_fe_helper.py (new)"
+  ],
+  "success_rate": {"backend": "100% of new tests (8/8); full suite 158/160 (2 flaky, pass when re-run)", "frontend": "100% (FE6, FE7 incl. background/resume)"},
+  "seed_data_creation": "Created TEST_ users (TEST_syncA/B/C/D, TEST_rlX/Y, TEST_wsA, TEST_fe*, TEST_c*) with *@belote.tn emails. Friend requests were declined (deleted) by id, including the TEST_fe request to tester1 (friendship f_04473067a8a7). Solo games were ended through the WS 'leave' action. The other pending friend requests to tester1 (Notif7303, seed0aceb) and tester1's current game existed before this run and were left alone.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Run test_iter32_sync_ratelimit.py on its own. Its rate-limit test uses fresh accounts and sleeps 2x10.5s. To simulate background on web, override document.visibilityState with a configurable getter and dispatch 'visibilitychange'. RN-web's AppState reads it. Landscape viewport is 844x390.",
+  "rca_of_issue": ""
+}

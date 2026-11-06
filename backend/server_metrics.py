@@ -44,6 +44,25 @@ def user_for_token(token):
     return _token_users.get(token)
 
 
+# ---- per-account rate limit (fixed window) ----
+RATE_LIMIT = 80     # max requests per account per window
+RATE_WINDOW = 10.0  # seconds
+
+_rate = {}  # user_id -> [window_start, count]
+
+
+def rate_limited(user_id):
+    now = time.time()
+    st = _rate.get(user_id)
+    if st is None or now - st[0] >= RATE_WINDOW:
+        if len(_rate) > 10000:  # safety cap
+            _rate.clear()
+        _rate[user_id] = [now, 1]
+        return False
+    st[1] += 1
+    return st[1] > RATE_LIMIT
+
+
 def record(ev_type, user_id=None):
     """Count one event (sync, in-memory — called from the event loop)."""
     bucket = time.strftime("%Y-%m-%dT%H:%M", time.gmtime())
@@ -70,6 +89,7 @@ def record_ws(action, user_id):
 
 # HTTP path -> event type shown on the dashboard (first prefix match wins)
 _PREFIXES = [
+    ("/api/sync", "sync (regroupé)"),
     ("/api/presence", "présence (pulse/ping)"),
     ("/api/matchmaking", "matchmaking"),
     ("/api/friends", "amis"),

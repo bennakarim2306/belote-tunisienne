@@ -1,5 +1,7 @@
 """Belote Tunisienne — FastAPI backend."""
 import asyncio
+import hashlib
+import json
 import logging
 import os
 import re
@@ -16,7 +18,7 @@ import jwt
 from dotenv import load_dotenv
 from fastapi import (APIRouter, FastAPI, HTTPException, Request, WebSocket,
                      WebSocketDisconnect)
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel, EmailStr, Field
 from starlette.middleware.cors import CORSMiddleware
@@ -611,7 +613,10 @@ async def friend_respond(body: FriendRespondBody, request: Request):
 async def notifications(request: Request):
     """Aggregated pending notifications: friend requests + game invites."""
     user = await get_current_user(request)
-    uid = user["user_id"]
+    return await _notifications_payload(user["user_id"])
+
+
+async def _notifications_payload(uid):
     fr_rows = await db.friendships.find(
         {"recipient_id": uid, "status": "pending"}, {"_id": 0}).to_list(20)
     briefs = await user_briefs([fr["requester_id"] for fr in fr_rows])
@@ -636,6 +641,34 @@ async def notifications(request: Request):
                    for v in await manager.pending_duo_invites_for(uid)]
     return {"friend_requests": friend_requests, "invites": invites,
             "duo_invites": duo_invites}
+
+
+@api.get("/sync")
+async def sync(request: Request, h: str = ""):
+    """One batched 'instant' poll replacing the separate presence ping/pulse,
+    notifications and current-game polls. Acts as the presence heartbeat,
+    always returns the tiny volatile counters (online/waiting) and includes
+    the heavy `data` block only when its digest differs from the client's
+    last-seen hash `h` — otherwise the response is a near-empty 'nothing new'."""
+    user = await get_current_user(request)
+    uid = user["user_id"]
+    now_ts = time.time()
+    await db.users.update_one({"user_id": uid},
+                              {"$set": {"last_active": now_ts}})
+    online = await db.users.count_documents(
+        {"last_active": {"$gt": now_ts - ONLINE_WINDOW_SECONDS},
+         "user_id": {"$ne": uid}})
+    entries = await db.mm_queue.find({}, {"players": 1}).to_list(200)
+    waiting = len({p["user_id"] for e in entries for p in e["players"]
+                   if p["user_id"] != uid})
+    data = await _notifications_payload(uid)
+    data["current_game"] = await _current_game_payload(uid)
+    digest = hashlib.md5(
+        json.dumps(data, sort_keys=True, default=str).encode()).hexdigest()[:12]
+    resp = {"h": digest, "online": online, "waiting": waiting}
+    if digest != h:
+        resp["data"] = data
+    return resp
 
 
 # ---------------- matchmaking ----------------
@@ -786,20 +819,24 @@ async def current_game(request: Request):
     """Ongoing (non-finished) live game the user is seated in — for rejoining.
     Newest first: a freshly started game takes precedence over older left-over ones."""
     user = await get_current_user(request)
+    return await _current_game_payload(user["user_id"]) or {"game_id": None}
+
+
+async def _current_game_payload(uid):
     rows = await db.live_games.find(
-        {"user_ids": user["user_id"], "phase": {"$ne": "finished"}},
+        {"user_ids": uid, "phase": {"$ne": "finished"}},
         {"state": 1, "created_at": 1}
     ).sort("created_at", -1).to_list(5)
     for doc in rows:
         g = doc["state"]
         me = next((p for p in g["players"]
-                   if p["user_id"] == user["user_id"] and not p["is_bot"]), None)
+                   if p["user_id"] == uid and not p["is_bot"]), None)
         if me:
             return {"game_id": g["game_id"], "match_type": g["match_type"],
                     "phase": g["phase"], "hand_number": g["hand_number"],
                     "match_scores": g["match_scores"], "target": g["target"],
                     "my_team": me["seat"] % 2}
-    return {"game_id": None}
+    return None
 
 
 # ---------------- private rooms ----------------
@@ -972,12 +1009,18 @@ app.add_middleware(
 
 @app.middleware("http")
 async def record_server_metrics(request: Request, call_next):
+    auth = request.headers.get("Authorization", "")
+    token = auth[7:] if auth.startswith("Bearer ") else ""
+    uid = server_metrics.user_for_token(token)
+    # per-account rate limit: protects the server from a broken or malicious
+    # client stuck in a request loop — far above any normal app usage
+    if uid and server_metrics.rate_limited(uid):
+        server_metrics.record("limité (429)", uid)
+        return JSONResponse({"detail": "too_many_requests"}, status_code=429)
     response = await call_next(request)
     ev_type = server_metrics.classify_path(request.url.path)
     if ev_type:
-        auth = request.headers.get("Authorization", "")
-        token = auth[7:] if auth.startswith("Bearer ") else ""
-        server_metrics.record(ev_type, server_metrics.user_for_token(token))
+        server_metrics.record(ev_type, uid)
     return response
 
 
@@ -986,6 +1029,7 @@ async def startup():
     await db.users.create_index("email", unique=True)
     await db.users.create_index("user_id", unique=True)
     await db.users.create_index([("elo", -1)])
+    await db.users.create_index("last_active")  # online counts on every /sync
     await db.user_sessions.create_index("session_token", unique=True)
     await db.user_sessions.create_index("user_id")
     await db.user_sessions.create_index("expires_at", expireAfterSeconds=0)

@@ -98,9 +98,10 @@ export default function MatchmakingScreen() {
   const cancelledRef = useRef(false);
 
   useEffect(() => {
-    let poll: ReturnType<typeof setInterval> | null = null;
+    let poll: ReturnType<typeof setTimeout> | null = null;
     let tick: ReturnType<typeof setInterval> | null = null;
     let checking = false;
+    let stopped = false;
 
     const checkStatus = async () => {
       if (cancelledRef.current || checking) return;
@@ -155,8 +156,19 @@ export default function MatchmakingScreen() {
         }
       }
       tick = setInterval(() => setSeconds((s) => s + 1), 1000);
-      poll = setInterval(checkStatus, 1500);
-      checkStatus(); // immediate first check (no 1.5s 'searching' flash in duo)
+      // degressive polling: fast for the first 20 s, then spaced out
+      // (an opponent found is still detected in <= 5 s); zero network calls
+      // while the app is in the background
+      const startedAt = Date.now();
+      const loop = async () => {
+        if (cancelledRef.current || stopped) return;
+        if (AppState.currentState === "active") await checkStatus();
+        if (cancelledRef.current || stopped) return;
+        const fast = Date.now() - startedAt < 20000;
+        poll = setTimeout(loop, fast ? 1500 : 5000);
+      };
+      await checkStatus(); // immediate first check (no 1.5s 'searching' flash in duo)
+      poll = setTimeout(loop, 1500);
     })();
 
     // on resume from background, check immediately (found ticket lives 10 min;
@@ -166,7 +178,8 @@ export default function MatchmakingScreen() {
     });
 
     return () => {
-      if (poll) clearInterval(poll);
+      stopped = true;
+      if (poll) clearTimeout(poll);
       if (tick) clearInterval(tick);
       sub.remove();
     };

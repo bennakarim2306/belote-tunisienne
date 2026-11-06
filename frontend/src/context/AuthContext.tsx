@@ -121,22 +121,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     })();
   }, [processSessionId]);
 
-  // Presence heartbeat — lets friends see us as "online" (green dot)
-  useEffect(() => {
-    if (!token) return;
-    const ping = () => {
-      api.post("/presence/ping", {}).catch(() => {});
-    };
-    ping();
-    const iv = setInterval(ping, 30000);
-    const sub = AppState.addEventListener("change", (s) => {
-      if (s === "active") ping();
-    });
-    return () => {
-      clearInterval(iv);
-      sub.remove();
-    };
-  }, [token]);
+  // Presence is now handled by the batched /sync poll (NotificationsContext)
 
   // Push registration — on login (dialog allowed, after ads consent settles)
   // and on app resume (silent: only refreshes the token if already granted)

@@ -6,6 +6,7 @@ processes so any server process/worker can serve any player (multi-process
 deployments, restarts). Each process keeps a local LiveGame cache holding its
 own sockets, lock and driver tasks."""
 import asyncio
+import json
 import logging
 import random
 import time
@@ -224,7 +225,12 @@ class GameRuntimeMixin:
                     await self._commit(live, events)
                 except StaleGameError:
                     events = []
-        await self._send(ws, self._coach_state(live.game, seat), [])
+        state = self._coach_state(live.game, seat)
+        await self._send(ws, state, [])
+        try:
+            ws._bt_state_h = hash(json.dumps(state, sort_keys=True, default=str))
+        except Exception:
+            pass
         if events:
             self.schedule(live)
         return live
@@ -284,11 +290,23 @@ class GameRuntimeMixin:
 
     async def broadcast(self, live, events):
         for user_id, conns in list(live.sockets.items()):
-            server_metrics.record("ws: état envoyé", user_id)
             seat = live.game.seat_of(user_id)
             state = self._coach_state(live.game, seat)
+            state_h = hash(json.dumps(state, sort_keys=True, default=str))
+            sent = False
             for ws in list(conns):
+                # no events and this socket already holds the exact same
+                # state: skip the redundant send (poller resyncs, reloads)
+                if not events and getattr(ws, "_bt_state_h", None) == state_h:
+                    continue
+                try:
+                    ws._bt_state_h = state_h
+                except Exception:
+                    pass
                 await self._send(ws, state, events)
+                sent = True
+            if sent:
+                server_metrics.record("ws: état envoyé", user_id)
 
     # ---------- player actions ----------
 

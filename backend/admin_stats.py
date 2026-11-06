@@ -303,5 +303,8 @@ télémétrie des nouvelles versions de l'application. Les parties hors-ligne de
 versions restent invisibles (aucune donnée n'était envoyée).<br>
 ℹ️ « Évts/joueur/min » = événements divisés par les minutes d'activité réelles des joueurs
 (un joueur inactif ne dilue pas la moyenne). Les événements serveur sont conservés 7 jours
-et le comptage démarre au déploiement de cette version.</div>
+et le comptage démarre au déploiement de cette version.<br>
+🎯 Cibles d'efficacité (après mise à jour de l'app) : « sync (regroupé) » remplace
+présence + amis + reprise de partie (&lt; 2 évts/joueur/min attendus), « ws: état envoyé »
+divisé par ~2, zéro appel quand l'app est en arrière-plan.</div>
 </body></html>"""

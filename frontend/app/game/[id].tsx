@@ -32,6 +32,7 @@ import PlayerSeat from "@/src/components/game/PlayerSeat";
 import TrickArea from "@/src/components/game/TrickArea";
 import PlayingCard, { SUIT_COLOR_ON_DARK, SUIT_SYMBOL, rankLabel } from "@/src/components/PlayingCard";
 import { useAuth } from "@/src/context/AuthContext";
+import { useNotifications } from "@/src/context/NotificationsContext";
 import { GamePlayer, useGameSocket } from "@/src/game/useGameSocket";
 import { isLocalGameId, newLocalGameId, useLocalGame } from "@/src/game/useLocalGame";
 import { TKey, useI18n } from "@/src/i18n";
@@ -141,7 +142,10 @@ export default function GameScreen() {
   const chatTimers = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
   const [coachMsg, setCoachMsg] = useState<{ text: string; key: number } | null>(null);
   const coachMsgTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [onlineWaiting, setOnlineWaiting] = useState(0);
+  const { waiting: queueWaiting, setSlowMode } = useNotifications();
+  // humans looking for an online game (from the batched /sync poll) — used to
+  // invite the solo player to join them (banner + match-end button)
+  const onlineWaiting = isLocal && user ? queueWaiting : 0;
   const [seekDismissed, setSeekDismissed] = useState(false);
   const [handEndReady, setHandEndReady] = useState(false);
   const prevPhaseRef = useRef<string | null>(null);
@@ -377,19 +381,13 @@ export default function GameScreen() {
     router.replace("/(tabs)/home");
   };
 
-  // while playing vs AI: poll for humans looking for an online game so we can
-  // invite the player to join them (banner + match-end button)
+  // during an online game the WebSocket covers gameplay: slow the social
+  // sync down (invites stay fresh enough, far fewer requests)
   useEffect(() => {
-    if (!isLocal || !user) return;
-    const check = () => {
-      api.get("/presence/pulse")
-        .then((p) => setOnlineWaiting(p.waiting ?? 0))
-        .catch(() => {});
-    };
-    check();
-    const iv = setInterval(check, 30000);
-    return () => clearInterval(iv);
-  }, [isLocal, user]);
+    if (isLocal) return;
+    setSlowMode(true);
+    return () => setSlowMode(false);
+  }, [isLocal, setSlowMode]);
 
   const goOnline = () => {
     // NOTE: no leave() — the offline game stays saved and resumable from home

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="8" time="68.594" timestamp="2026-11-06T12:22:31.867442+00:00" hostname="agent-env-a320a97f-2fac-4934-800c-f6ed51ca4594"><testcase classname="test_iter32_sync_ratelimit.TestSyncHash" name="test_full_then_nothing_new_then_change" time="1.721" /><testcase classname="test_iter32_sync_ratelimit.TestSyncHash" name="test_current_game_changes_hash" time="1.769" /><testcase classname="test_iter32_sync_ratelimit.TestSyncHash" name="test_sync_requires_auth" time="0.119" /><testcase classname="test_iter32_sync_ratelimit.TestSyncPresence" name="test_sync_marks_online" time="1.139" /><testcase classname="test_iter32_sync_ratelimit.TestBackwardCompat" name="test_legacy_shapes" time="0.637" /><testcase classname="test_iter32_sync_ratelimit.TestRateLimit" name="test_burst_429_then_recovers_and_independent" time="24.717" /><testcase classname="test_iter32_sync_ratelimit.TestWsAndAdmin" name="test_ws_solo_playable" time="20.740"><failure message="TimeoutError">/usr/local/lib/python3.11/asyncio/tasks.py:500: in wait_for
+    return fut.result()
+           ^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/websockets/asyncio/connection.py:305: in recv
+    return await self.recv_messages.get(decode)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/websockets/asyncio/messages.py:158: in get
+    frame = await self.frames.get(not self.closed)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/websockets/asyncio/messages.py:51: in get
+    await self.get_waiter
+E   asyncio.exceptions.CancelledError
+
+The above exception was the direct cause of the following exception:
+test_iter32_sync_ratelimit.py:214: in test_ws_solo_playable
+    n, played, after = asyncio.run(run())
+                       ^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/asyncio/runners.py:190: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/asyncio/base_events.py:654: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+test_iter32_sync_ratelimit.py:196: in run
+    msg = json.loads(await asyncio.wait_for(ws.recv(), timeout=20))
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/asyncio/tasks.py:502: in wait_for
+    raise exceptions.TimeoutError() from exc
+E   TimeoutError</failure></testcase><testcase classname="test_iter32_sync_ratelimit.TestWsAndAdmin" name="test_admin_stats_includes_sync" time="17.612" /></testsuite></testsuites>

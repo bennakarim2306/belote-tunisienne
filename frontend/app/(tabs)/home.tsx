@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useRouter } from "expo-router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Modal,
   Pressable,
@@ -67,7 +67,14 @@ export default function HomeScreen() {
   const router = useRouter();
   const { user, refreshUser } = useAuth();
   const { t } = useI18n();
-  const { invites, friendRequests, duoInvites, refresh } = useNotifications();
+  const {
+    invites,
+    friendRequests,
+    duoInvites,
+    refresh,
+    online: onlineNow,
+    currentGame: serverGame,
+  } = useNotifications();
 
   // pulsing neon glow on the hero card
   const glowPulse = useSharedValue(0);
@@ -94,11 +101,12 @@ export default function HomeScreen() {
   const [joinCode, setJoinCode] = useState("");
   const [joinError, setJoinError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [onlineNow, setOnlineNow] = useState(0);
   const [notifOpen, setNotifOpen] = useState(false);
   const [privateOpen, setPrivateOpen] = useState(false);
-  const [currentGame, setCurrentGame] = useState<CurrentGame | null>(null);
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // an unfinished offline solo game takes precedence over server games
+  const [localGame, setLocalGame] = useState<CurrentGame | null>(null);
+  const currentGame: CurrentGame | null =
+    localGame ?? (serverGame?.game_id ? (serverGame as CurrentGame) : null);
 
   // reset duo selections whenever the type modal closes
   useEffect(() => {
@@ -111,28 +119,10 @@ export default function HomeScreen() {
   useFocusEffect(
     useCallback(() => {
       refreshUser();
-      refresh();
-      const poll = async () => {
-        // social proof: other players online right now
-        api.get("/presence/pulse")
-          .then((p) => setOnlineNow(p.online ?? 0))
-          .catch(() => {});
-        // an unfinished offline solo game takes precedence over server games
-        const local = user ? await getSavedLocalGame(user.user_id) : null;
-        if (local) {
-          setCurrentGame(local);
-          return;
-        }
-        try {
-          const cur = await api.get("/games/current");
-          setCurrentGame(cur.game_id ? cur : null);
-        } catch {}
-      };
-      poll();
-      pollRef.current = setInterval(poll, 5000);
-      return () => {
-        if (pollRef.current) clearInterval(pollRef.current);
-      };
+      refresh(); // immediate batched sync (online count, invites, current game)
+      (async () => {
+        setLocalGame(user ? await getSavedLocalGame(user.user_id) : null);
+      })();
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []),
   );

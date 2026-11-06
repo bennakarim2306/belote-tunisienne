@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  AppState,
   Modal,
   Pressable,
   ScrollView,
@@ -64,6 +65,7 @@ export default function RoomScreen() {
   useEffect(() => {
     let poll: ReturnType<typeof setInterval> | null = null;
     const load = async () => {
+      if (AppState.currentState !== "active") return; // background = no calls
       try {
         const r = await api.get(`/rooms/${code}`);
         setRoom(r);
