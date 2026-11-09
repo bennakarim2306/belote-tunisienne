@@ -5,6 +5,7 @@ import { useCallback, useState } from "react";
 import {
   Linking,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -308,15 +309,17 @@ export default function ProfileScreen() {
           <Ionicons name="chevron-forward" size={16} color={C.ink3} />
         </Pressable>
 
-        <Pressable
-          testID="rate-app-link"
-          onPress={openStoreListing}
-          style={styles.sectionToggle}
-        >
-          <Ionicons name="star" size={18} color={C.gold} />
-          <Text style={styles.sectionToggleText}>{t("rateApp")}</Text>
-          <Ionicons name="open-outline" size={16} color={C.ink3} />
-        </Pressable>
+        {Platform.OS !== "ios" && (
+          <Pressable
+            testID="rate-app-link"
+            onPress={openStoreListing}
+            style={styles.sectionToggle}
+          >
+            <Ionicons name="star" size={18} color={C.gold} />
+            <Text style={styles.sectionToggleText}>{t("rateApp")}</Text>
+            <Ionicons name="open-outline" size={16} color={C.ink3} />
+          </Pressable>
+        )}
 
         <Pressable
           testID="privacy-policy-link"

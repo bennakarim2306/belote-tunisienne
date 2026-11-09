@@ -71,6 +71,12 @@ class GoogleSessionBody(BaseModel):
     session_id: str
 
 
+class AppleSessionBody(BaseModel):
+    identity_token: str
+    full_name: Optional[str] = None
+    email: Optional[str] = None
+
+
 class UpdateProfileBody(BaseModel):
     avatar_id: Optional[str] = None
     username: Optional[str] = Field(default=None, min_length=3, max_length=20)
@@ -221,6 +227,62 @@ async def login(body: LoginBody):
     return {"token": token, "user": user}
 
 
+# ---- Sign in with Apple (native, iOS builds) ----
+APPLE_JWKS_URL = "https://appleid.apple.com/auth/keys"
+APPLE_ISSUER = "https://appleid.apple.com"
+APPLE_AUDIENCES = [a.strip() for a in
+                   os.environ.get("APPLE_AUDIENCES", "").split(",") if a.strip()]
+_apple_jwk_client = None
+
+
+async def verify_apple_identity_token(token: str) -> dict:
+    """Verify an Apple identity token against Apple's JWKS (RS256,
+    issuer + audience + expiry). Returns the claims or raises 401."""
+    global _apple_jwk_client
+    if _apple_jwk_client is None:
+        _apple_jwk_client = jwt.PyJWKClient(APPLE_JWKS_URL)
+
+    def _verify():
+        key = _apple_jwk_client.get_signing_key_from_jwt(token).key
+        return jwt.decode(token, key, algorithms=["RS256"],
+                          audience=APPLE_AUDIENCES, issuer=APPLE_ISSUER)
+
+    try:
+        return await asyncio.to_thread(_verify)
+    except jwt.PyJWTError:
+        raise HTTPException(status_code=401, detail="invalid_apple_token")
+    except Exception:
+        raise HTTPException(status_code=401, detail="invalid_apple_token")
+
+
+@api.post("/auth/apple")
+async def apple_session(body: AppleSessionBody):
+    claims = await verify_apple_identity_token(body.identity_token)
+    apple_sub = claims["sub"]
+    email = (body.email or claims.get("email") or "").lower()
+    user = await db.users.find_one({"apple_sub": apple_sub}, USER_PUBLIC)
+    if not user and email:
+        # same email already registered (email/password or Google): link it
+        existing = await db.users.find_one({"email": email}, USER_PUBLIC)
+        if existing:
+            await db.users.update_one({"user_id": existing["user_id"]},
+                                      {"$set": {"apple_sub": apple_sub}})
+            user = existing
+    if not user:
+        base = (body.full_name or "").split(" ")[0] or (
+            email.split("@")[0] if email else "joueur")
+        username = await unique_username(base)
+        user = new_user_doc(email or f"apple_{apple_sub[:12]}@no-email.apple",
+                            username, name=body.full_name, provider="apple")
+        user["apple_sub"] = apple_sub
+        await db.users.insert_one(dict(user))
+        user.pop("password_hash", None)
+        user.pop("_id", None)
+    token = await create_session(user["user_id"])
+    user.pop("apple_sub", None)
+    return {"token": token, "user": user}
+
+
 @api.post("/auth/google/session")
 async def google_session(body: GoogleSessionBody):
     async with httpx.AsyncClient(timeout=15) as hc:
@@ -252,7 +314,7 @@ async def me(request: Request):
 @api.get("/datenschutzerklaerung", response_class=HTMLResponse)
 async def datenschutz():
     """Public privacy policy (Datenschutzerklärung) — required by Google Play."""
-    return (Path(__file__).parent / "datenschutzerklaerung.html").read_text(encoding="utf-8")
+    return (Path(__file__).parent / "privacy_policy.html").read_text(encoding="utf-8")
 
 
 @api.get("/account-deletion", response_class=HTMLResponse)

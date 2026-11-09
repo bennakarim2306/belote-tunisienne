@@ -1,3 +1,4 @@
+import * as AppleAuthentication from "expo-apple-authentication";
 import * as Linking from "expo-linking";
 import * as WebBrowser from "expo-web-browser";
 import React, {
@@ -38,6 +39,7 @@ interface AuthContextValue {
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, username: string) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
+  loginWithApple: () => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   setUser: (u: User) => void;
@@ -188,6 +190,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [processSessionId]);
 
+  // Sign in with Apple (iOS builds only — gated by isAvailableAsync in the UI)
+  const loginWithApple = useCallback(async () => {
+    const cred = await AppleAuthentication.signInAsync({
+      requestedScopes: [
+        AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+        AppleAuthentication.AppleAuthenticationScope.EMAIL,
+      ],
+    });
+    if (!cred.identityToken) throw new Error("no_identity_token");
+    // name + email are only provided by Apple on the FIRST sign-in
+    const fullName = [cred.fullName?.givenName, cred.fullName?.familyName]
+      .filter(Boolean)
+      .join(" ");
+    const res = await api.post("/auth/apple", {
+      identity_token: cred.identityToken,
+      full_name: fullName || null,
+      email: cred.email ?? null,
+    });
+    await applySession(res.token, res.user);
+  }, [applySession]);
+
   const logout = useCallback(async () => {
     try {
       await api.post("/auth/logout");
@@ -213,11 +236,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       login,
       register,
       loginWithGoogle,
+      loginWithApple,
       logout,
       refreshUser,
       setUser: setUserState,
     }),
-    [user, token, loading, login, register, loginWithGoogle, logout, refreshUser],
+    [user, token, loading, login, register, loginWithGoogle, loginWithApple, logout, refreshUser],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

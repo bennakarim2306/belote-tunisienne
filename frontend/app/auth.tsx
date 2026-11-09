@@ -1,10 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
+import * as AppleAuthentication from "expo-apple-authentication";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   ImageBackground,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -23,7 +25,7 @@ import { C, F, PATTERN_BG, R, SP } from "@/src/theme";
 export default function AuthScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { login, register, loginWithGoogle, user } = useAuth();
+  const { login, register, loginWithGoogle, loginWithApple, user } = useAuth();
   const { t, lang, setLang } = useI18n();
 
   const [mode, setMode] = useState<"login" | "register">("login");
@@ -33,6 +35,15 @@ export default function AuthScreen() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [googleBusy, setGoogleBusy] = useState(false);
+  const [appleAvailable, setAppleAvailable] = useState(false);
+
+  useEffect(() => {
+    if (Platform.OS === "ios") {
+      AppleAuthentication.isAvailableAsync()
+        .then(setAppleAvailable)
+        .catch(() => {});
+    }
+  }, []);
 
   // Google login lands here with a session processed by AuthContext (either
   // via openAuthSessionAsync result or a deep link) — leave once authenticated
@@ -72,6 +83,18 @@ export default function AuthScreen() {
       setError(mapError(e));
     } finally {
       setBusy(false);
+    }
+  };
+
+  const apple = async () => {
+    setError(null);
+    try {
+      await loginWithApple();
+    } catch (e) {
+      // user closed the native Apple sheet: not an error
+      if ((e as { code?: string })?.code !== "ERR_REQUEST_CANCELED") {
+        setError(t("error_generic"));
+      }
     }
   };
 
@@ -206,6 +229,17 @@ export default function AuthScreen() {
             <View style={styles.orLine} />
           </View>
 
+          {appleAvailable && (
+            <AppleAuthentication.AppleAuthenticationButton
+              testID="auth-apple-button"
+              buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+              buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE}
+              cornerRadius={21}
+              style={styles.appleBtn}
+              onPress={apple}
+            />
+          )}
+
           <Pressable
             testID="auth-google-button"
             onPress={google}
@@ -319,6 +353,7 @@ const styles = StyleSheet.create({
   },
   orLine: { flex: 1, height: 1, backgroundColor: C.border },
   orText: { fontFamily: F.text, color: C.ink3, fontSize: 12.5 },
+  appleBtn: { height: 42, marginBottom: SP.sm },
   googleBtn: {
     height: 42,
     borderRadius: R.pill,

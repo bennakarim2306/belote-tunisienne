@@ -10,7 +10,11 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.emergent.cardtableorient.b0nhgs"
+      "bundleIdentifier": "com.emergent.cardtableorient.b0nhgs",
+      "usesAppleSignIn": true,
+      "config": {
+        "usesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -51,10 +55,17 @@
         "react-native-google-mobile-ads",
         {
           "androidAppId": "ca-app-pub-5073907506851296~9016046511",
-          "iosAppId": "ca-app-pub-5073907506851296~2491413453"
+          "iosAppId": "ca-app-pub-5073907506851296~2491413453",
+          "userTrackingUsageDescription": "This identifier will be used to show you ads that are more relevant to you."
         }
       ],
-      "expo-audio",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": false
+        }
+      ],
+      "expo-apple-authentication",
       "expo-build-properties",
       "expo-notifications"
     ],
