@@ -20,8 +20,10 @@ import { AVATARS, avatarUrl } from "@/src/avatars";
 import Avatar from "@/src/components/Avatar";
 import MenuButton from "@/src/components/MenuButton";
 import ChunkyButton from "@/src/components/ChunkyButton";
+import FeedbackModal from "@/src/components/FeedbackModal";
 import { useAuth } from "@/src/context/AuthContext";
 import { useI18n } from "@/src/i18n";
+import { openStoreListing } from "@/src/review";
 import { isSoundEnabled, setSoundEnabled } from "@/src/sound";
 import { C, F, R, SP } from "@/src/theme";
 
@@ -37,6 +39,7 @@ export default function ProfileScreen() {
   const [soundOn, setSoundOn] = useState(isSoundEnabled());
   const [showDelete, setShowDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
 
   const toggleSound = (v: boolean) => {
     setSoundOn(v);
@@ -296,9 +299,29 @@ export default function ProfileScreen() {
         </View>
 
         <Pressable
+          testID="feedback-entry"
+          onPress={() => setShowFeedback(true)}
+          style={[styles.sectionToggle, { marginTop: SP.xl }]}
+        >
+          <Ionicons name="chatbox-ellipses" size={18} color={C.goldSoft} />
+          <Text style={styles.sectionToggleText}>{t("feedbackEntry")}</Text>
+          <Ionicons name="chevron-forward" size={16} color={C.ink3} />
+        </Pressable>
+
+        <Pressable
+          testID="rate-app-link"
+          onPress={openStoreListing}
+          style={styles.sectionToggle}
+        >
+          <Ionicons name="star" size={18} color={C.gold} />
+          <Text style={styles.sectionToggleText}>{t("rateApp")}</Text>
+          <Ionicons name="open-outline" size={16} color={C.ink3} />
+        </Pressable>
+
+        <Pressable
           testID="privacy-policy-link"
           onPress={openPrivacy}
-          style={[styles.sectionToggle, { marginTop: SP.xl }]}
+          style={styles.sectionToggle}
         >
           <Ionicons name="shield-checkmark" size={18} color={C.goldSoft} />
           <Text style={styles.sectionToggleText}>{t("privacyPolicy")}</Text>
@@ -322,6 +345,8 @@ export default function ProfileScreen() {
           <Text style={styles.deleteBtnText}>{t("deleteAccount")}</Text>
         </Pressable>
       </ScrollView>
+
+      <FeedbackModal visible={showFeedback} onClose={() => setShowFeedback(false)} />
 
       <Modal
         visible={showDelete}

@@ -15,8 +15,10 @@ import Animated, {
 import { SUIT_COLOR_ON_DARK, SUIT_SYMBOL } from "@/src/components/PlayingCard";
 import ChunkyButton from "@/src/components/ChunkyButton";
 import VictoryCelebration from "@/src/components/game/VictoryCelebration";
+import { useAuth } from "@/src/context/AuthContext";
 import { GameState, HandResult } from "@/src/game/useGameSocket";
 import { TKey } from "@/src/i18n";
+import { maybeAskStoreReview } from "@/src/review";
 import { playSound } from "@/src/sound";
 import { C, F, R, SP } from "@/src/theme";
 
@@ -185,10 +187,13 @@ export function MatchEndOverlay({
   const myTeam = state.my_seat % 2;
   const won = state.winner_team === myTeam;
   const eloDelta = state.elo_changes?.[myUserId] ?? 0;
+  const { user } = useAuth();
 
   // victory fanfare / defeat tone (once, when the overlay appears)
   useEffect(() => {
     playSound(won ? "victory" : "defeat", won ? 0.9 : 0.65);
+    // store-review nudge: only after a WIN, for loyal players (native builds)
+    if (won) maybeAskStoreReview(user?.games_played ?? 0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

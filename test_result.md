@@ -463,3 +463,16 @@ backend:
     working: "needs_test"
     file: "backend/bot_ai.py (new helpers: partner_bid_info/partner_strength/trumps_left/opps_may_have_trump/team_trump_control/is_sure_master/tricks_won_by_team/capot_potential/best_endgame_order; _lead rewritten with endgame-order at 2 cards, drain-first at <=3, capot mode, weak-trump open to strong partner; _tfaskira overtakes in capot mode; bot_play signature +bids), frontend/src/game/ai.ts (identical TS port, exported camelCase helpers), callers updated: backend/game_runtime.py + backend/coach.py + frontend/src/game/useLocalGame.ts now pass g.bids"
     comment: "tests/test_bot_ai_v2.py: 8 behaviour scenarios asserted on Python AND strict parity vs TS via tests/parity_runner.cjs (node+sucrase runs frontend/src/game/ai.ts on the same deals) — 10/10 passed. Self-play 60/60 full games finished without error. Coach uses the same code (better hints automatically). Existing suites green: tutorial_coach+tfaskira+void_deal+surcontre 47/47. KNOWN FLAKY (pre-existing): test_ws_game::test_ws_bidding_and_play right after backend restart."
+
+backend:
+  - task: "Feedback POST /api/feedback + email Resend + anti-spam"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    comment: "iteration_36: 5/5 backend. Correctifs post-rapport: IP réelle via X-Forwarded-For pour invités, purge anti-spam expirés only. tests/test_feedback.py repassé 5/5 (envoie 2 VRAIS emails/run)."
+frontend:
+  - task: "FeedbackModal profil + rate-app-link + store review natif après victoire"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/components/FeedbackModal.tsx"
+    comment: "iteration_36 OK (FR/EN, anti-spam UI, Play Store link). Correctifs: bouton Fermer 44px (btnSolo), KeyboardAvoidingView height sur Android. Prompt natif store review non testable hors build store."

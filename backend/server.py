@@ -23,6 +23,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel, EmailStr, Field
 from starlette.middleware.cors import CORSMiddleware
 
+import resend
 from admin_stats import render_stats_html
 from game_manager import GameManager
 from push import push_router
@@ -1074,6 +1075,103 @@ async def ws_game(websocket: WebSocket, game_id: str):
 @api.get("/")
 async def root():
     return {"message": "Belote Tunisienne API", "status": "ok"}
+
+
+# ---------------- player feedback (mood + message -> email via Resend) ----
+
+FEEDBACK_TO = "review-belote-tunisienne@karimbenna-itconsult.com"
+FEEDBACK_FROM = "Belote Tunisienne <no-reply@karimbenna-itconsult.com>"
+MOOD_EMOJI = {"sad": "😞", "neutral": "😐", "love": "😍"}
+FEEDBACK_COOLDOWN = 120.0  # seconds between two feedbacks per player
+_feedback_last: dict = {}  # key (user_id or ip) -> time.monotonic()
+
+
+class FeedbackBody(BaseModel):
+    mood: str
+    message: str = ""
+    lang: str = ""
+    platform: str = ""
+    app_version: str = ""
+
+
+async def _send_feedback_email(doc):
+    api_key = os.environ.get("RESEND_API_KEY", "")
+    if not api_key or api_key == "placeholder":
+        raise RuntimeError("resend_key_missing")
+    resend.api_key = api_key
+    emoji = MOOD_EMOJI[doc["mood"]]
+    rows = [("Humeur", f"{emoji} {doc['mood']}"),
+            ("Message", doc["message"] or "(aucun)"),
+            ("Pseudo", doc["username"]),
+            ("Email du compte", doc.get("user_email") or "(invité)"),
+            ("Langue", doc["lang"] or "?"),
+            ("Plateforme", doc["platform"] or "?"),
+            ("Version app", doc["app_version"] or "?")]
+    text = "\n".join(f"{k} : {v}" for k, v in rows)
+    html_rows = "".join(
+        f"<tr><td style='padding:4px 10px 4px 0;color:#777'>{html_escape(k)}"
+        f"</td><td style='padding:4px 0'>"
+        f"{html_escape(str(v)).replace(chr(10), '<br>')}</td></tr>"
+        for k, v in rows)
+    params = {
+        "from": FEEDBACK_FROM,
+        "to": [FEEDBACK_TO],
+        "subject": f"{emoji} Feedback Belote Tunisienne — {doc['username']}",
+        "text": text,
+        "html": f"<h3>{emoji} Feedback joueur</h3><table>{html_rows}</table>",
+    }
+    if doc.get("user_email"):
+        params["reply_to"] = doc["user_email"]
+    return await asyncio.wait_for(resend.Emails.send_async(params), timeout=12)
+
+
+@api.post("/feedback")
+async def submit_feedback(body: FeedbackBody, request: Request):
+    if body.mood not in MOOD_EMOJI:
+        raise HTTPException(status_code=400, detail="bad_mood")
+    auth = request.headers.get("Authorization", "")
+    user = await user_from_token(auth[7:]) if auth.startswith("Bearer ") else None
+    if user:
+        key = user["user_id"]
+    else:  # real client IP: the ingress address is shared by everyone
+        fwd = request.headers.get("X-Forwarded-For", "")
+        key = (fwd.split(",")[0].strip() if fwd
+               else request.client.host if request.client else "anon")
+    now = time.monotonic()
+    prev = _feedback_last.get(key)
+    if prev is not None and now - prev < FEEDBACK_COOLDOWN:
+        raise HTTPException(status_code=429, detail="feedback_too_soon")
+    if len(_feedback_last) > 2000:  # prune only EXPIRED entries
+        for k, ts in list(_feedback_last.items()):
+            if now - ts >= FEEDBACK_COOLDOWN:
+                del _feedback_last[k]
+    _feedback_last[key] = now
+    doc = {
+        "feedback_id": f"fb_{uuid.uuid4().hex[:12]}",
+        "mood": body.mood,
+        "message": (body.message or "").strip()[:2000],
+        "username": (user or {}).get("username") or "invité",
+        "user_id": (user or {}).get("user_id"),
+        "user_email": (user or {}).get("email"),
+        "lang": body.lang[:5],
+        "platform": body.platform[:16],
+        "app_version": body.app_version[:16],
+        "created_at": datetime.now(timezone.utc),
+        "status": "received",
+    }
+    await db.feedback.insert_one(dict(doc))
+    try:
+        sent = await _send_feedback_email(doc)
+        await db.feedback.update_one(
+            {"feedback_id": doc["feedback_id"]},
+            {"$set": {"status": "emailed",
+                      "resend_id": (sent or {}).get("id")}})
+    except Exception as e:  # keep the DB trace; thank the player anyway
+        logger.warning("feedback email failed: %s", e)
+        await db.feedback.update_one(
+            {"feedback_id": doc["feedback_id"]},
+            {"$set": {"status": "email_failed"}})
+    return {"ok": True}
 
 
 app.include_router(api)

@@ -1,0 +1,40 @@
+{
+  "summary": "Tested player feedback (POST /api/feedback + Resend email + anti-spam), the Profile feedback modal and 'Rate the game' link, FR/EN i18n, and regressions (solo vs AI game, /users/me/stats). Backend: 5/5 pytest passed. 2 real emails sent from backend tests (1 anonymous, 1 Tester1) and 1 from the UI (Tester1). With the main agent's own test, 4 emails were sent in total, all with status 'emailed'. Frontend: everything requested works: both entries show up, Send is disabled until a mood is picked, the thanks screen appears, the 429 error is localized in FR and EN, the modal is translated, and the rate link opens the Play Store page. Two problems: the close button on the thanks screen is only 60x17 px, and all anonymous players share one anti-spam bucket. No deprecated Expo packages found (no expo-av, expo-barcode-scanner or expo-background-fetch).",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/feedback", "issue": "The anonymous anti-spam key is request.client.host. Behind the ingress this is the ingress pod IP (backend logs show 10.201.x.x), because uvicorn runs without --proxy-headers or forwarded-allow-ips. All anonymous senders share one 120s bucket, so one guest feedback blocks every other guest for 2 minutes."},
+      {"endpoint": "POST /api/feedback", "issue": "_feedback_last.clear() runs when the map holds more than 2000 entries. This resets every player's cooldown at once. Low risk."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "FeedbackModal thanks screen - close button", "issue": "The 'Fermer' button measures only 60x17 px (should be at least 44 px tall and full width). styles.btn uses flex:1, which works in the button row but not inside the card's column layout: flexBasis 0 overrides height:44, so the button collapses to the size of its text. Fix: use a separate style without flex:1 (e.g. alignSelf:'stretch', height:44). Reference: /app/frontend/src/components/FeedbackModal.tsx:88-94,219-226", "testID": "feedback-close-button", "priority": "MEDIUM"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "FeedbackModal", "issues": ["KeyboardAvoidingView has behavior undefined on Android and there is no ScrollView. In landscape (about 390 px tall) the open keyboard can cover the input and the Send button. Consider behavior 'height' on Android or wrapping the card in a ScrollView."]}
+    ],
+    "react_native_issues": []
+  },
+  "test_report_links": ["/app/backend/tests/test_feedback.py", "/app/test_reports/pytest/pytest_feedback.xml"],
+  "action_items": [
+    "Fix the feedback-close-button size in FeedbackModal: don't reuse styles.btn (flex:1) inside the column card; use alignSelf:'stretch' with height:44.",
+    "Anti-spam for anonymous feedback: read the client IP from the first entry of X-Forwarded-For (falling back to request.client.host), or run uvicorn with --proxy-headers --forwarded-allow-ips='*'.",
+    "Optional: make the feedback modal usable with the Android keyboard open in landscape (ScrollView or KAV behavior 'height').",
+    "Optional: maybeAskStoreReview(user?.games_played) in HandEndModal may get a stale count if the user object isn't refreshed after the match. Check that it is updated."
+  ],
+  "critical_code_review_comments": [
+    "server.py feedback: validation (400 bad_mood) runs before the cooldown is set. Good: invalid requests don't use up the cooldown.",
+    "The cooldown is stored in memory and is per process. Fine with --workers 1, but it would not be shared across several workers or replicas.",
+    "The cooldown is used up even when the email fails (status 'email_failed'). Acceptable, since the player is thanked and the doc is kept.",
+    "review.ts: returns early on web and wraps everything in try/catch, so there is no crash risk on the web victory screen."
+  ],
+  "updated_files": ["/app/backend/tests/test_feedback.py (new)"],
+  "success_rate": {"backend": "100%", "frontend": "95% (all flows work; close button touch target too small)"},
+  "seed_data_creation": "3 feedback docs created (TEST_ messages) and then deleted by feedback_id. Those sends produced 3 real emails (2 from backend tests, 1 from the UI). One more UI send was answered by a Playwright mock, so no email went out.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "test_feedback.py sends up to 2 REAL emails per run. It skips when the cooldown is active (anonymous bucket = ingress IP, Tester1 bucket = 120s). To test the UI thanks screen without sending an email, mock the call with page.route('**/api/feedback') returning {ok:true}. Profile URL is /profile, viewport 844x390 (landscape). Solo regression: home play-solo-card > match-type-short > pass-button and hand-card-* work.",
+  "rca_of_issue": "Close button: styles.btn has flex:1 and height:44. In the column-direction card, flexBasis 0% overrides the height, so the button shrinks to fit its text (measured 60x17). Anonymous anti-spam: uvicorn only trusts forwarded headers from 127.0.0.1, so request.client.host is the ingress IP for every request."
+}
