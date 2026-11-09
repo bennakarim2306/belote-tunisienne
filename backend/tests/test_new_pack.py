@@ -158,7 +158,7 @@ async def test_private_room_timed_ws_state(http, tester1):
                                   open_timeout=15) as ws:
         first = await _first_update(ws)
         state = first["state"]
-        assert state["turn_timeout"] == 30, f"expected 30 got {state['turn_timeout']}"
+        assert state["turn_timeout"] == 20, f"expected 20 got {state['turn_timeout']}"
 
 
 # ---------------- Out-of-turn capot ----------------
@@ -291,8 +291,9 @@ async def test_matchmaking_game_has_30s_timer(http):
             if s.get("status") == "found":
                 gid = s.get("game_id")
             else:
+                # keep polling the other tokens: with the presence-confirm
+                # flow, polling IS how old clients auto-accept the match
                 all_found = False
-                break
         if all_found:
             game_id = gid
     assert game_id, "matchmaking never produced a game_id for all 4 players"
@@ -303,8 +304,8 @@ async def test_matchmaking_game_has_30s_timer(http):
                                   open_timeout=15) as ws:
         first = await _first_update(ws)
         state = first["state"]
-        assert state["turn_timeout"] == 30, \
-            f"matchmaking game should have 30s timer, got {state['turn_timeout']}"
+        assert state["turn_timeout"] == 20, \
+            f"matchmaking game should have 20s timer, got {state['turn_timeout']}"
         # deadline should be >0 and roughly now+30
         assert state["turn_deadline"] > time.time(), \
             f"deadline {state['turn_deadline']} not in future"
@@ -344,8 +345,9 @@ async def test_matchmaking_auto_action_fires_after_35s(http):
             if s.get("status") == "found":
                 gid = s.get("game_id")
             else:
+                # keep polling the other tokens: with the presence-confirm
+                # flow, polling IS how old clients auto-accept the match
                 all_found = False
-                break
         if all_found:
             game_id = gid
     assert game_id, "no matchmaking game formed"
@@ -373,7 +375,7 @@ async def test_matchmaking_auto_action_fires_after_35s(http):
                     if initial_turn is None:
                         initial_turn = s.get("turn")
                         initial_bids = len(s.get("bids") or [])
-                        assert s["turn_timeout"] == 30
+                        assert s["turn_timeout"] == 20
                     # Check for auto-action: turn changed OR bids grew OR phase changed
                     if (s.get("turn") != initial_turn
                             or len(s.get("bids") or []) > initial_bids

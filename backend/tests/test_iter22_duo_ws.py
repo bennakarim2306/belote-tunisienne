@@ -29,8 +29,16 @@ async def _connect_and_get_state(game_id, token):
 
 @pytest.mark.asyncio
 async def test_duo_vs_ai_both_ws_connect(tester1, tester2):
-    # Ensure friendship
-    requests.get(f"{API}/friends", headers=auth_headers(tester1["token"]), timeout=10)
+    # Ensure friendship (recreate it if a previous test run cleaned it up)
+    requests.post(f"{API}/friends/request",
+                  json={"user_id": tester2["user"]["user_id"]},
+                  headers=auth_headers(tester1["token"]), timeout=10)
+    notifs = requests.get(f"{API}/notifications",
+                          headers=auth_headers(tester2["token"]), timeout=10).json()
+    for fr in notifs.get("friend_requests", []):
+        requests.post(f"{API}/friends/respond",
+                      json={"friendship_id": fr["friendship_id"], "accept": True},
+                      headers=auth_headers(tester2["token"]), timeout=10)
     # Cancel any existing
     requests.delete(f"{API}/matchmaking/leave",
                     headers=auth_headers(tester1["token"]), timeout=10)

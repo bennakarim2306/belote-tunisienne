@@ -90,6 +90,15 @@ export default function MatchmakingScreen() {
   const { t } = useI18n();
   const [seconds, setSeconds] = useState(0);
   const [found, setFound] = useState(false);
+  const [confirm, setConfirm] = useState<{
+    target: number;
+    accepted: number;
+    total: number;
+    me: boolean;
+  } | null>(null);
+  const [warnMsg, setWarnMsg] = useState<string | null>(null);
+  const confirmRef = useRef(false);
+  confirmRef.current = confirm !== null;
   const [players, setPlayers] = useState<FoundPlayer[]>([]);
   const [eloRange, setEloRange] = useState(100);
   const [duoInfo, setDuoInfo] = useState<DuoStatusInfo | null>(null);
@@ -105,6 +114,14 @@ export default function MatchmakingScreen() {
   useEffect(() => {
     if (mmSignal) checkRef.current();
   }, [mmSignal]);
+
+  const acceptMatch = async () => {
+    try {
+      await api.post("/matchmaking/confirm");
+      setConfirm((c) => (c ? { ...c, me: true, accepted: c.accepted + 1 } : c));
+      checkRef.current();
+    } catch {}
+  };
 
   useEffect(() => {
     let poll: ReturnType<typeof setTimeout> | null = null;
@@ -123,8 +140,9 @@ export default function MatchmakingScreen() {
       }
       checking = true;
       try {
-        const st = await api.get("/matchmaking/status");
+        const st = await api.get("/matchmaking/status?v=2");
         if (st.status === "found" && st.game_id) {
+          setConfirm(null);
           cancelledRef.current = true;
           setFound(true);
           if (Platform.OS !== "web") {
@@ -133,11 +151,32 @@ export default function MatchmakingScreen() {
           setTimeout(() => {
             router.replace({ pathname: "/game/[id]", params: { id: st.game_id } });
           }, 700);
+        } else if (st.status === "confirm") {
+          // match found: everyone must accept within the window
+          setPendingPartner(null);
+          setConfirm((c) => ({
+            target: c?.target ?? Date.now() + (st.remaining ?? 10) * 1000,
+            accepted: st.accepted ?? 0,
+            total: st.total ?? 4,
+            me: !!st.me_accepted,
+          }));
+          setPlayers(st.players ?? []);
         } else if (st.status === "waiting") {
+          setConfirm(null);
           setPendingPartner(null);
           setPlayers(st.players ?? []);
           setEloRange(st.elo_range ?? 100);
           setDuoInfo(st.duo ?? null);
+        } else if (st.status === "removed_confirm" && !isDuo) {
+          // didn't accept in time: courteous warning + priority re-search
+          setConfirm(null);
+          setPlayers([]); // the old table's avatars are gone
+          setWarnMsg(t("mmRemovedWarn"));
+          setTimeout(() => setWarnMsg(null), 7000);
+          await api.post("/matchmaking/join", {
+            match_type: type === "long" ? "long" : "short",
+            priority: true,
+          });
         } else if (st.status === "duo_pending") {
           setPendingPartner(st.partner ?? null);
         } else if (isDuo) {
@@ -185,7 +224,8 @@ export default function MatchmakingScreen() {
         if (cancelledRef.current || stopped) return;
         if (AppState.currentState === "active") await checkStatus();
         if (cancelledRef.current || stopped) return;
-        const fast = Date.now() - startedAt < 20000;
+        // fast while young or during a confirmation window (10 s to accept)
+        const fast = Date.now() - startedAt < 20000 || confirmRef.current;
         poll = setTimeout(loop, fast ? 1500 : 5000);
       };
       await checkStatus(); // immediate first check (no 1.5s 'searching' flash in duo)
@@ -257,13 +297,39 @@ export default function MatchmakingScreen() {
         <Text style={styles.title} testID="matchmaking-status-text">
           {found
             ? t("matchFound")
-            : pendingPartner
-              ? t("duoWaitingPartner", { name: pendingPartner.username })
-              : t("searching")}
+            : confirm
+              ? t("mmConfirmTitle")
+              : pendingPartner
+                ? t("duoWaitingPartner", { name: pendingPartner.username })
+                : t("searching")}
         </Text>
         <Text style={styles.counter} testID="matchmaking-players-count">
           {t("playersCount", { n: foundCount, total: totalSlots })}
         </Text>
+
+        {confirm && !found && (
+          <View style={styles.confirmBox} testID="matchmaking-confirm-box">
+            {confirm.me ? (
+              <Text style={styles.confirmWait} testID="matchmaking-confirm-wait">
+                {t("mmAcceptWait", { n: confirm.accepted, m: confirm.total })}
+              </Text>
+            ) : (
+              <ChunkyButton
+                testID="matchmaking-accept-button"
+                label={`${t("mmAccept")} (${Math.max(
+                  0,
+                  Math.ceil((confirm.target - Date.now()) / 1000),
+                )}s)`}
+                onPress={acceptMatch}
+              />
+            )}
+          </View>
+        )}
+        {warnMsg && (
+          <Text style={styles.warnMsg} testID="matchmaking-warn">
+            {warnMsg}
+          </Text>
+        )}
 
         <View style={styles.slotsRow} testID="matchmaking-slots">
           <View style={styles.slot}>
@@ -385,6 +451,16 @@ const styles = StyleSheet.create({
   cardsRow: { flexDirection: "row", marginBottom: SP.xs },
   title: { fontFamily: F.display, fontSize: 18, color: C.cream },
   counter: { fontFamily: F.extra, fontSize: 20, color: C.gold, marginTop: 2 },
+  confirmBox: { marginTop: SP.sm, alignItems: "center" },
+  confirmWait: { fontFamily: F.bold, fontSize: 14, color: C.cream, opacity: 0.9 },
+  warnMsg: {
+    fontFamily: F.medium,
+    fontSize: 12,
+    color: "#E9C46A",
+    textAlign: "center",
+    maxWidth: 420,
+    marginTop: 6,
+  },
   slotsRow: {
     flexDirection: "row",
     gap: SP.lg,

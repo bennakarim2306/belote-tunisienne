@@ -19,7 +19,8 @@ import server_metrics
 logger = logging.getLogger(__name__)
 
 DISCONNECT_GRACE = 4          # seconds before a lost socket triggers the auto-pause
-DISCONNECT_PAUSE_SECONDS = 60  # network pause: bot substitutes after 1 min (seat stays reclaimable)
+DISCONNECT_PAUSE_SECONDS = 30  # network pause: bot substitutes after 30 s (seat stays reclaimable)
+AFK_MISSED_TURNS = 3  # consecutive missed turns before the bot takes over
 ABANDONED_CLEANUP_SECONDS = 600  # local cache eviction when nobody is connected
 POLL_INTERVAL = 0.5           # cross-process sync cadence
 CONN_FRESH_SECONDS = 20       # doc heartbeat freshness = "connected somewhere"
@@ -340,6 +341,18 @@ class GameRuntimeMixin:
                     events = g.apply_decline_surcontre(seat)
                 elif action == "play":
                     events = g.apply_play(seat, msg.get("card"))
+                elif action == "resume_seat":
+                    # the relayed/absent player takes their seat back — only
+                    # valid while a bot actually relays (afk/left), otherwise
+                    # it could be abused to reset the missed-turn counter
+                    p = g.players[seat]
+                    if not (p.get("afk") or p.get("left")):
+                        return
+                    p["afk"] = False
+                    p["left"] = False
+                    p["missed"] = 0
+                    g.version += 1
+                    events = [{"e": "afk_back", "seat": seat}]
                 elif action == "ready":
                     events = g.apply_ready(seat)
                 elif action == "pause_request":
@@ -382,6 +395,17 @@ class GameRuntimeMixin:
                         events = [{"e": "left", "seat": seat}]
                 else:
                     return
+                if action in ("bid", "pass", "capot", "contre", "surcontre",
+                              "decline_surcontre", "play", "ready"):
+                    # acting in time proves presence: reset the missed-turn
+                    # streak and hand the seat back if a bot was relaying
+                    p = g.players[seat]
+                    if p.get("missed") or p.get("afk"):
+                        was_afk = p.get("afk")
+                        p["missed"] = 0
+                        p["afk"] = False
+                        if was_afk:
+                            events.append({"e": "afk_back", "seat": seat})
                 await self._commit(live, events)
                 if action == "ready" and g.phase == "hand_end":
                     # only connected humans are required (a dropped player
@@ -497,8 +521,10 @@ class GameRuntimeMixin:
             last_trick_auto = g.phase == "playing" and len(g.hands[actor]) == 1
             if last_trick_auto:
                 delay = pause + 1.0
-            elif player["is_bot"] or player.get("left"):
-                delay = pause + random.uniform(1.0, 2.0)
+            elif player["is_bot"] or player.get("left") or player.get("afk"):
+                # bots and relayed seats play quickly (~1 s, readable pace)
+                delay = pause + (random.uniform(1.0, 2.0) if player["is_bot"]
+                                 else random.uniform(0.8, 1.3))
             else:
                 if not g.turn_timeout:
                     return  # untimed game: no auto-play for connected humans
@@ -508,8 +534,18 @@ class GameRuntimeMixin:
                 g = live.game
                 if g.version != version or g.phase not in ("bidding", "playing"):
                     return
-                events = self._auto_move(g, actor, forced_human=not (
-                    player["is_bot"] or player.get("left")))
+                forced = not (player["is_bot"] or player.get("left")
+                              or player.get("afk"))
+                events = self._auto_move(g, actor, forced_human=forced)
+                if forced:
+                    # the human let their turn expire
+                    p = g.players[actor]
+                    p["missed"] = p.get("missed", 0) + 1
+                    self._reliability(p["user_id"], "missed_turn")
+                    if p["missed"] >= AFK_MISSED_TURNS and not p.get("afk"):
+                        p["afk"] = True  # bot relays from now on
+                        events.append({"e": "afk_bot", "seat": actor})
+                        self._reliability(p["user_id"], "bot_takeover")
                 await self._commit(live, events)
             self.schedule(live)
         except asyncio.CancelledError:
@@ -519,6 +555,14 @@ class GameRuntimeMixin:
             self.schedule(live)
         except Exception:
             logger.exception("auto driver error for game %s", live.game.game_id)
+
+    def _reliability(self, user_id, kind):
+        """Fire-and-forget counter for the admin dashboard (absences)."""
+        from datetime import datetime, timezone
+        fut = asyncio.ensure_future(self.db.reliability_events.insert_one(
+            {"ts": datetime.now(timezone.utc), "user_id": user_id,
+             "kind": kind}))
+        fut.add_done_callback(lambda f: f.exception())  # never raise
 
     def _auto_move(self, g, seat, forced_human=False):
         if g.phase == "bidding":

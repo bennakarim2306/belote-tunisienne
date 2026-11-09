@@ -114,10 +114,13 @@ def seven_of_a_suit(hand) -> bool:
 class BeloteGame:
     """Authoritative state machine for one match (multiple hands to target score)."""
 
+    REDUCED_TURN_SECONDS = 10  # shorter turn after the player missed one
+
     def __init__(self, game_id, players, match_type, turn_timeout=30):
         # players: list of 4 dicts {user_id, username, avatar_id, is_bot, elo}, index == seat
         self.game_id = game_id
-        self.players = [dict(p, seat=i, left=False) for i, p in enumerate(players)]
+        self.players = [dict(p, seat=i, left=False, missed=0, afk=False)
+                        for i, p in enumerate(players)]
         self.match_type = match_type
         self.turn_timeout = turn_timeout  # seconds per move, None = unlimited
         self.target = 500 if match_type == "short" else 1000
@@ -144,7 +147,15 @@ class BeloteGame:
     def _turn_deadline_ts(self, extra=0.0):
         if not self.turn_timeout:
             return 0.0
-        return time.time() + extra + self.turn_timeout
+        t = self.turn_timeout
+        # a player who let their previous turn expire gets a shorter one
+        try:
+            p = self.players[self.turn]
+            if not p["is_bot"] and p.get("missed", 0) > 0:
+                t = min(t, self.REDUCED_TURN_SECONDS)
+        except (TypeError, IndexError, AttributeError):
+            pass
+        return time.time() + extra + t
 
 
     def _deal(self, rotate=True):
@@ -575,6 +586,8 @@ class BeloteGame:
             "turn": self.turn,
             "players": [{"seat": p["seat"], "user_id": p["user_id"], "username": p["username"],
                          "avatar_id": p["avatar_id"], "is_bot": p["is_bot"], "elo": p["elo"],
+                         "missed": p.get("missed", 0), "afk": bool(p.get("afk")),
+                         "left": bool(p.get("left")),
                          "card_count": len(self.hands[p["seat"]])} for p in self.players],
             "my_seat": seat,
             "hand": my_hand,

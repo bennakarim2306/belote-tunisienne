@@ -182,7 +182,8 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
       try {
         const msg = JSON.parse(e.data as string);
         if (msg.type === "sync") applySync(msg);
-        else if (msg.type === "mm_found" || msg.type === "mm_update") {
+        else if (msg.type === "mm_found" || msg.type === "mm_update"
+                 || msg.type === "mm_confirm") {
           setMmSignal(Date.now());
         }
       } catch {}

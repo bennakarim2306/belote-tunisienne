@@ -304,6 +304,12 @@ export default function GameScreen() {
         setBanner({ text: t("allPassed"), key: Date.now() });
       } else if (ev.e === "pause_declined") {
         setBanner({ text: t("pauseDeclined"), key: Date.now() });
+      } else if (ev.e === "afk_bot") {
+        const name = state?.players.find((p) => p.seat === ev.seat)?.username ?? "";
+        setBanner({ text: t("afkBotMsg", { name }), key: Date.now() });
+      } else if (ev.e === "afk_back") {
+        const name = state?.players.find((p) => p.seat === ev.seat)?.username ?? "";
+        setBanner({ text: t("afkBackMsg", { name }), key: Date.now() });
       } else if (ev.e === "trick_end") {
         // the completed trick rests 1s (so the 4th card is clearly seen),
         // then the collect animation plays (~1s) — see TrickArea HOLD_MS
@@ -974,6 +980,28 @@ export default function GameScreen() {
         </View>
       </Modal>
 
+      {/* my seat is relayed by a bot (missed turns / disconnect): reclaim it */}
+      {(() => {
+        const meP = state.players.find((p) => p.seat === mySeat);
+        if (!meP || !(meP.afk || meP.left) || state.phase === "finished") {
+          return null;
+        }
+        return (
+          <View style={styles.afkStrip} testID="afk-resume-strip">
+            <View style={{ flex: 1 }}>
+              <Text style={styles.afkStripTitle}>🤖 {t("afkYouReplaced")}</Text>
+              <Text style={styles.afkStripNote}>{t("afkWarnNote")}</Text>
+            </View>
+            <ChunkyButton
+              small
+              testID="afk-resume-button"
+              label={t("resumeSeat")}
+              onPress={() => send({ action: "resume_seat" })}
+            />
+          </View>
+        );
+      })()}
+
       {/* active pause overlay */}
       {state.paused && state.phase !== "finished" && (
         <PausedOverlay
@@ -1506,6 +1534,23 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255,255,255,0.3)",
   },
   pauseSentText: { fontFamily: F.bold, fontSize: 13, color: C.cream },
+  afkStrip: {
+    position: "absolute",
+    bottom: 8,
+    alignSelf: "center",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    maxWidth: 520,
+    backgroundColor: "rgba(10,8,2,0.92)",
+    borderRadius: R.lg,
+    borderWidth: 1,
+    borderColor: "rgba(233,196,106,0.55)",
+    paddingHorizontal: SP.lg,
+    paddingVertical: 8,
+  },
+  afkStripTitle: { fontFamily: F.bold, fontSize: 13, color: C.gold },
+  afkStripNote: { fontFamily: F.medium, fontSize: 11, color: C.cream, opacity: 0.8 },
   pausedScrim: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: "rgba(12,24,18,0.85)",

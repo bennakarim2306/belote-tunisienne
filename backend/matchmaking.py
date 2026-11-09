@@ -8,9 +8,13 @@ import asyncio
 import logging
 import time
 import uuid
+from datetime import datetime, timezone
+
+from pymongo import ReturnDocument
 
 from live_utils import elo_window, make_bots
-from push import maybe_send_peak_hour_push, maybe_send_queue_push
+from push import (maybe_send_match_found_push, maybe_send_peak_hour_push,
+                  maybe_send_queue_push)
 
 import sync_channel
 
@@ -21,6 +25,8 @@ DUO_INVITE_TTL = 120  # duo invites expire after 2 minutes
 MATCHED_TTL = 600     # "found" tickets stay readable for 10 minutes
 FEEDBACK_TTL = 30
 MM_LOCK_TTL = 6
+CONFIRM_SECONDS = 10  # window to press "Accept" when a match is found
+CONFIRM_GRACE = 2     # extra server-side slack before sweeping
 
 
 class MatchmakingMixin:
@@ -31,14 +37,17 @@ class MatchmakingMixin:
 
     # ---------- queues ----------
 
-    async def join_queue(self, player, match_type):
+    async def join_queue(self, player, match_type, priority=False):
         await self.leave_queue(player["user_id"])
         await self.db.mm_matched.delete_one({"_id": player["user_id"]})
         now = time.time()
+        # priority rejoin (after a failed confirmation): a modest head start —
+        # 30 s of virtual wait keeps the ELO window sane while moving them up
+        ts = now - 30 if priority else now
         await self.db.mm_queue.insert_one({
             "_id": f"q_{uuid.uuid4().hex[:10]}", "match_type": match_type,
             "players": [player], "user_ids": [player["user_id"]],
-            "duo": False, "ts": now, "last_seen": now})
+            "duo": False, "ts": ts, "last_seen": now})
 
     async def join_queue_duo(self, p1, p2, match_type):
         for p in (p1, p2):
@@ -62,6 +71,9 @@ class MatchmakingMixin:
                         await self._set_feedback(p["user_id"], "duo_cancelled")
                         await sync_channel.push_event([p["user_id"]],
                                                       {"type": "mm_update"})
+        # leaving during a confirmation window = explicit cancel (no blame)
+        await self.db.mm_pending.update_many(
+            {"humans": user_id}, {"$addToSet": {"cancelled": user_id}})
 
     async def clear_matched(self, user_id):
         await self.db.mm_matched.delete_one({"_id": user_id})
@@ -152,12 +164,33 @@ class MatchmakingMixin:
             return sum(p.get("elo_duo", 1000) for p in e["players"]) / 2
         return e["players"][0]["elo"]
 
-    async def queue_status(self, user_id):
+    async def queue_status(self, user_id, v=1):
         now = time.time()
         m = await self.db.mm_matched.find_one(
             {"_id": user_id, "ts": {"$gt": now - MATCHED_TTL}})
         if m:
             return {"status": "found", "game_id": m["game_id"]}
+        # match found, waiting for everyone to confirm presence
+        pm = await self.db.mm_pending.find_one({"humans": user_id})
+        if pm:
+            others = [{"username": p["username"], "avatar_id": p["avatar_id"],
+                       "elo": p.get("elo", 1000)}
+                      for e in pm["entries"] for p in e["players"]
+                      if p["user_id"] != user_id]
+            if v < 2:
+                # old app versions have no Accept button: actively polling
+                # during the window counts as acceptance (nobody is punished
+                # for not having updated)
+                await self.confirm_match(user_id)
+                return {"status": "waiting", "waited": 0,
+                        "match_type": pm["match_type"], "elo_range": 0,
+                        "players": others, "found_count": 4}
+            return {"status": "confirm", "match_type": pm["match_type"],
+                    "remaining": max(0, round(pm["ts"] + CONFIRM_SECONDS - now)),
+                    "accepted": len(pm["accepted"]),
+                    "total": len(pm["humans"]),
+                    "me_accepted": user_id in pm["accepted"],
+                    "players": others, "found_count": 4}
         fb = await self.db.mm_feedback.find_one_and_delete({"_id": user_id})
         if fb and now - fb["ts"] < FEEDBACK_TTL:
             return {"status": fb["status"]}
@@ -244,6 +277,8 @@ class MatchmakingMixin:
                     if res.deleted_count and e["duo"]:
                         for p in e["players"]:
                             await self._set_feedback(p["user_id"], "duo_cancelled")
+                # expire confirmation windows (requeue/remove players)
+                await self._sweep_pending_confirms(now)
                 for mt in ("short", "long"):
                     q = await self.db.mm_queue.find({"match_type": mt}).to_list(200)
                     while True:
@@ -303,6 +338,85 @@ class MatchmakingMixin:
         return None
 
     async def _make_match(self, batch, match_type):
+        """A full table was found: every player must confirm presence within
+        CONFIRM_SECONDS before the game actually starts (absent players are
+        filtered out instead of paralysing the table)."""
+        humans = [p["user_id"] for e in batch for p in e["players"]]
+        mid = f"pm_{uuid.uuid4().hex[:10]}"
+        await self.db.mm_pending.insert_one({
+            "_id": mid, "match_type": match_type, "ts": time.time(),
+            "entries": [{"players": e["players"], "user_ids": e["user_ids"],
+                         "duo": e["duo"], "ts": e["ts"]} for e in batch],
+            "humans": humans, "accepted": [], "cancelled": []})
+        await sync_channel.push_event(
+            humans, {"type": "mm_confirm", "remaining": CONFIRM_SECONDS})
+        # players whose app is backgrounded get a push notification
+        try:
+            await maybe_send_match_found_push(self.db, humans)
+        except Exception:
+            logger.exception("match found push error")
+        logger.info("pending match %s awaiting confirmation (%s)", mid, humans)
+
+    async def confirm_match(self, user_id):
+        """Mark the player as confirmed; start the game once everyone did."""
+        pm = await self.db.mm_pending.find_one_and_update(
+            {"humans": user_id},
+            {"$addToSet": {"accepted": user_id}},
+            return_document=ReturnDocument.AFTER)
+        if not pm:
+            return False
+        if set(pm["humans"]) <= set(pm["accepted"]):
+            # atomic take: only one caller creates the game
+            taken = await self.db.mm_pending.find_one_and_delete({"_id": pm["_id"]})
+            if taken:
+                await self._create_confirmed_match(taken["entries"],
+                                                   taken["match_type"])
+        return True
+
+    async def _sweep_pending_confirms(self, now):
+        """Expire confirmation windows: confirmed entries rejoin at the head
+        of the queue, silent players are removed (and counted)."""
+        expired = await self.db.mm_pending.find(
+            {"ts": {"$lt": now - CONFIRM_SECONDS - CONFIRM_GRACE}}).to_list(50)
+        for pm in expired:
+            taken = await self.db.mm_pending.find_one_and_delete({"_id": pm["_id"]})
+            if not taken:
+                continue
+            accepted = set(taken["accepted"])
+            cancelled = set(taken.get("cancelled") or [])
+            requeued, removed = [], []
+            for e in taken["entries"]:
+                members = [p["user_id"] for p in e["players"]]
+                if all(m in accepted and m not in cancelled for m in members):
+                    # everyone in this entry confirmed: head of the queue
+                    # (original ts kept = oldest = served first)
+                    await self.db.mm_queue.insert_one({
+                        "_id": f"q_{uuid.uuid4().hex[:10]}",
+                        "match_type": taken["match_type"],
+                        "players": e["players"], "user_ids": members,
+                        "duo": e["duo"], "ts": e["ts"], "last_seen": now})
+                    requeued += members
+                    continue
+                for m in members:
+                    if m in cancelled:
+                        continue  # explicit cancel: no blame, no requeue
+                    if m in accepted:  # duo partner let down by the other
+                        await self._set_feedback(m, "duo_cancelled")
+                        await sync_channel.push_event([m], {"type": "mm_update"})
+                    else:
+                        removed.append(m)
+                        await self._set_feedback(m, "removed_confirm")
+                        await self.db.reliability_events.insert_one(
+                            {"ts": datetime.now(timezone.utc),
+                             "user_id": m, "kind": "no_accept"})
+            if requeued:
+                await sync_channel.push_event(requeued, {"type": "mm_update"})
+            if removed:
+                await sync_channel.push_event(removed, {"type": "mm_update"})
+            logger.info("pending match %s expired: requeued=%s removed=%s",
+                        taken["_id"], requeued, removed)
+
+    async def _create_confirmed_match(self, batch, match_type):
         duos = [e for e in batch if e["duo"]]
         if len(duos) == 2:
             a, b = duos

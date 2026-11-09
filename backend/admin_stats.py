@@ -176,6 +176,19 @@ async def collect_stats(db):
     except Exception:
         s["db_mb"] = "—"
 
+    # ---- reliability / absence counters (Phase 1 inactivity plan) ----
+    rel = await db.reliability_events.aggregate([
+        {"$match": {"ts": {"$gte": now_dt - timedelta(days=7)}}},
+        {"$group": {"_id": "$kind", "n7": {"$sum": 1},
+                    "n1": {"$sum": {"$cond": [
+                        {"$gte": ["$ts", now_dt - timedelta(days=1)]},
+                        1, 0]}}}},
+    ]).to_list(10)
+    relmap = {r["_id"]: (r["n1"], r["n7"]) for r in rel}
+    s["rel_missed"] = relmap.get("missed_turn", (0, 0))
+    s["rel_takeover"] = relmap.get("bot_takeover", (0, 0))
+    s["rel_noaccept"] = relmap.get("no_accept", (0, 0))
+
     s["generated_at"] = now_dt.strftime("%d/%m/%Y %H:%M UTC")
     return s
 
@@ -296,6 +309,13 @@ async def render_stats_html(db):
 
 <h3 style="color:#e9c46a;font-size:13.5px;margin:18px 0 2px">Parties serveur par composition (total)</h3>
 <table><tr><th>Composition</th><th>Parties</th></tr>{comp_rows}</table>
+
+<h2>Fiabilité des joueurs (24 h / 7 j)</h2>
+<div class="grid">
+  {_card("Tours manqués", f"{s['rel_missed'][0]} / {s['rel_missed'][1]}", "tour expiré, carte jouée d'office")}
+  {_card("Relais par le bot", f"{s['rel_takeover'][0]} / {s['rel_takeover'][1]}", "3 tours manqués de suite")}
+  {_card("Non-acceptations", f"{s['rel_noaccept'][0]} / {s['rel_noaccept'][1]}", "match trouvé non accepté en 10 s")}
+</div>
 
 <h2>Top 5 joueurs les plus actifs (30 j, tous modes serveur + hors-ligne)</h2>
 <table><tr><th>#</th><th>Joueur</th><th>Parties</th></tr>{top_rows}</table>

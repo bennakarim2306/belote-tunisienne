@@ -66,6 +66,35 @@ async def send_push(recipients, data, idempotency_key=None):
     resp.raise_for_status()
 
 
+# ---------------- "match found" confirmation push ----------------
+
+BACKGROUND_THRESHOLD = 35  # s without presence heartbeat = app backgrounded
+
+
+async def maybe_send_match_found_push(db, user_ids):
+    """'Partie trouvée !' to matched players whose app looks backgrounded
+    (no presence heartbeat recently) so they can come back and accept."""
+    now = time.time()
+    rows = await db.users.find(
+        {"user_id": {"$in": list(user_ids)},
+         "last_active": {"$lt": now - BACKGROUND_THRESHOLD}},
+        {"user_id": 1}).to_list(10)
+    recipients = [r["user_id"] for r in rows]
+    if not recipients:
+        return
+    try:
+        await send_push(
+            recipients=recipients,
+            data={"title": "Belote Tunisienne",
+                  "message": "Partie trouvée ! Ouvre l’app pour accepter 🎴",
+                  "action_url": "/"},
+            idempotency_key=f"match_found_{int(now)}",
+        )
+        logger.info("match found push sent to %s", recipients)
+    except Exception as e:
+        logger.warning("match found push failed (non-blocking): %s", e)
+
+
 # ---------------- matchmaking queue nudge ----------------
 
 QUEUE_WAIT_BEFORE_NUDGE = 45        # someone must be genuinely waiting (s)

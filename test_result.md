@@ -442,3 +442,17 @@ frontend:
     working: "needs_test"
     file: "frontend/src/context/NotificationsContext.tsx (WS layer: onopen stops HTTP timer, onclose resumes polling + reconnect 3s/20s, ping 25s, background closes everything), frontend/app/matchmaking.tsx (mmSignal -> instant checkStatus via checkRef)"
     comment: "Verified in browser: after login exactly 1 WS to /api/ws/sync opens. mm_found/mm_update messages bump mmSignal; matchmaking screen then calls /matchmaking/status immediately (keeps all existing navigation logic). Degressive HTTP polling kept as safety net."
+
+backend:
+  - task: "Inactivity Phase 1: 20s/10s turn timers, bot relay after 3 missed turns, resume_seat, match-found confirmation (10s), reliability counters"
+    implemented: true
+    working: "needs_test"
+    file: "backend/game_logic.py (REDUCED_TURN_SECONDS=10 via _turn_deadline_ts, players get missed/afk, state_for exposes missed/afk/left), backend/game_manager.py (default turn_timeout 20), backend/rooms.py (timed rooms 20s), backend/game_runtime.py (DISCONNECT_PAUSE_SECONDS=30, AFK_MISSED_TURNS=3, driver increments missed + sets afk + events afk_bot/afk_back, action resume_seat, reset on timely action, _reliability inserts), backend/matchmaking.py (CONFIRM_SECONDS=10: _make_match creates mm_pending + mm_confirm push + maybe_send_match_found_push; confirm_match; _sweep_pending_confirms requeues acceptors at head / removes silent with feedback removed_confirm + no_accept event; queue_status(v): v<2 polling auto-accepts (old clients), v>=2 returns status 'confirm' {remaining, accepted, total, me_accepted, players}; join_queue priority flag), backend/push.py (maybe_send_match_found_push to users with last_active older than 35s), backend/server.py (POST /matchmaking/confirm, status ?v=, TTL index reliability_events 30d), backend/admin_stats.py (cards Fiabilité: tours manqués / relais bot / non-acceptations 24h/7j)"
+    comment: "Adjusted tests: test_new_pack (20s asserts + poll-all-tokens loops), test_pack2 (30s pause), test_duo_matchmaking (_make_match now needs confirm_match x4), test_iter33 (mm_confirm then confirm then mm_found), test_iter22_duo_ws (recreates friendship). All green: test_new_pack 10/10, pack2+ws_game+duo+elo 26/26, iter33+iter22 8/8."
+
+frontend:
+  - task: "Inactivity Phase 1 UI: Accept button (10s countdown), away/bot badges, afk banners, 'Reprendre ma place' strip, courteous warning + priority re-search"
+    implemented: true
+    working: "needs_test"
+    file: "frontend/app/matchmaking.tsx (status?v=2, 'confirm' branch, Accept ChunkyButton testID matchmaking-accept-button with countdown, waiting text matchmaking-confirm-wait, removed_confirm -> warning testID matchmaking-warn + auto re-join priority), frontend/src/components/game/PlayerSeat.tsx (testIDs seat-relay-{seat} 🤖 and seat-away-{seat} 💤), frontend/app/game/[id].tsx (events afk_bot/afk_back banners, afk-resume-strip + afk-resume-button sends resume_seat), frontend/src/game/useGameSocket.ts (GamePlayer missed/afk/left), frontend/src/context/NotificationsContext.tsx (mm_confirm bumps mmSignal), frontend/src/i18n.tsx (9 new keys FR/AR/EN)"
+    comment: "needs E2E: browser accept flow + badges"

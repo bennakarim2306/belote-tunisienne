@@ -120,7 +120,20 @@ export default function PlayerSeat({
             <Ionicons name="hardware-chip" size={9} color={C.cream} />
           </View>
         )}
-        {isTurn && showTimer && deadline ? <SeatTimer deadline={deadline} /> : null}
+        {!player.is_bot && (player.afk || player.left) && (
+          <View style={styles.relayBadge} testID={`seat-relay-${player.seat}`}>
+            <Text style={styles.relayText}>🤖</Text>
+          </View>
+        )}
+        {!player.is_bot && !player.afk && !player.left &&
+          (player.missed ?? 0) > 0 && (
+          <View style={styles.relayBadge} testID={`seat-away-${player.seat}`}>
+            <Text style={styles.relayText}>💤</Text>
+          </View>
+        )}
+        {isTurn && showTimer && deadline && !player.afk && !player.left ? (
+          <SeatTimer deadline={deadline} />
+        ) : null}
       </Pressable>
       <View style={styles.nameRow}>
         <Text style={styles.name} numberOfLines={1}>
@@ -219,6 +232,23 @@ const styles = StyleSheet.create({
     backgroundColor: C.ink2,
     alignItems: "center",
     justifyContent: "center",
+  },
+  relayBadge: {
+    position: "absolute",
+    top: 0,
+    left: 2,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: C.ink2,
+    borderWidth: 1,
+    borderColor: "rgba(233,196,106,0.5)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  relayText: {
+    fontSize: 10,
+    lineHeight: 13,
   },
   nameRow: {
     flexDirection: "row",

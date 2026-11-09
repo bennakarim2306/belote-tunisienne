@@ -79,7 +79,8 @@ def record(ev_type, user_id=None):
 # client is lumped into "ws: autre" so bad clients cannot flood the collection
 KNOWN_WS_ACTIONS = {"ping", "bid", "pass", "capot", "contre", "surcontre",
                     "decline_surcontre", "play", "ready", "pause_request",
-                    "pause_accept", "pause_decline", "resume", "chat", "leave"}
+                    "pause_accept", "pause_decline", "resume", "resume_seat",
+                    "chat", "leave"}
 
 
 def record_ws(action, user_id):

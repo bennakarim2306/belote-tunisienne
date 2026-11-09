@@ -1,56 +1,67 @@
-# Plan — Efficacité serveur de Belote Tunisienne (audit + optimisation orientée croissance)
+# Plan — Expérience en ligne face à l'inactivité (Belote Tunisienne)
 
-Belote Tunisienne est un jeu de belote mobile multijoueur en temps réel. Ce plan réduit fortement le coût serveur par joueur sans rien enlever à la réactivité ni aux fonctionnalités de l'application.
+Les parties en ligne ne doivent plus jamais être paralysées par un joueur absent : le bot prend vite et visiblement le relais, et les absents sont écartés avant même que la partie ne démarre.
 
 ## Pour qui
-Le propriétaire de l'application (coûts d'hébergement maîtrisés à mesure que les utilisateurs augmentent) et les joueurs (même qualité, batterie et données mobiles économisées).
+Les joueurs en ligne (fini les attentes de 30 secondes à chaque tour d'un absent) et le propriétaire de l'application (meilleure rétention : une mauvaise partie en ligne fait fuir les nouveaux joueurs).
 
-## Constat de l'audit (d'après les statistiques observées)
-- La charge absolue actuelle est faible (~0,3 requête/seconde), mais le **coût par joueur** est élevé et croît linéairement avec le nombre d'utilisateurs : c'est lui qu'il faut corriger avant la croissance. Remarque : les tableaux « 60 min » et « 24 h » affichaient les mêmes chiffres car le comptage venait de démarrer au redéploiement — il n'y a pas eu de pic anormal.
-- **Amis / notifications / invitations (368 évts/h, ~8,8 par joueur et par minute)** : chaque écran interroge le serveur séparément toutes les ~7 secondes. C'est le poste n° 1.
-- **États de jeu envoyés (365 évts/h, ~20 par joueur et par minute)** : chaque action (y compris chaque carte jouée par un bot) renvoie l'état complet de la partie à chaque joueur, même quand rien d'utile n'a changé pour lui.
-- **Présence (150 évts/h)** et **reprise de partie (28 évts/h)** : interrogations périodiques qui continuent même quand l'application est en arrière-plan.
-- **Matchmaking (~11,5 évts/joueur/min)** : vérification toutes les 1,5 s pendant toute l'attente.
-- Les anciennes versions (1.1.0, 1.0.4 : 7 utilisateurs actifs) jouent encore leurs parties solo via le serveur ; elles disparaîtront d'elles-mêmes avec les mises à jour.
+## Constat
+Aujourd'hui, un joueur connecté mais inactif fait attendre la table 30 secondes à CHAQUE tour, pendant tout le match, sans jamais être remplacé. Et rien n'indique aux autres si un siège est tenu par un vrai joueur ou par un bot. Enfin, une partie peut démarrer avec des joueurs qui ne sont déjà plus devant leur écran.
 
-## Principes (qualité garantie)
-- Aucune règle de jeu, aucune animation, aucun écran supprimé ; le jeu en ligne reste piloté par le serveur en temps réel.
-- Les infos sociales restent **quasi temps réel (~7 s)** comme aujourd'hui — on réduit le *nombre et le poids* des appels, pas la fraîcheur.
-- Compatibilité : les versions 1.2.2 et antérieures continuent de fonctionner telles quelles ; les gains s'appliquent aux joueurs qui mettent à jour.
+## Fonctionnement cible
 
-## Expérience et fonctionnement cible
-- **Un seul appel « instantané » regroupé** : au lieu de 4-6 appels séparés (amis, notifications, invitations, présence, partie en cours), l'application fait UN appel léger toutes les ~7 s qui renvoie tout — et le serveur répond « rien de nouveau » (réponse quasi vide) quand rien n'a changé. Même fraîcheur, ~70-80 % d'appels et de données en moins.
-- **Silence en arrière-plan** : application minimisée ou écran éteint = zéro appel ; reprise instantanée au retour.
-- **Matchmaking dégressif** : vérification rapide les 20 premières secondes, puis espacée ; un adversaire trouvé est détecté en 5 s maximum.
-- **États de jeu optimisés** : le serveur n'envoie plus d'état identique deux fois et compresse les séquences de bots, sans changer ce que le joueur voit.
+### Pendant la partie — temps de réflexion et relais par le bot
+- Temps par tour en ligne : **20 secondes** (au lieu de 30). Si le joueur a laissé expirer son tour précédent, son tour suivant passe à **10 secondes**.
+- Après **3 tours manqués de suite**, le bot prend le relais : il joue immédiatement, sans attente, pour le reste de l'absence. Un tour joué à temps remet le compteur à zéro.
+- Le joueur absent **reprend sa place immédiatement** à son retour (bouton « Reprendre ma place » sur son écran) et le compteur repart de zéro.
 
-## Parcours joueur (inchangé en apparence)
-Le joueur ouvre l'application, voit ses amis/invitations à jour, lance une partie, joue en temps réel, reçoit ses notifications — rien ne change visuellement. Seule différence mesurable : sur le tableau admin, « Évts/joueur/min » chute (objectif : amis < 2, états envoyés ≈ divisés par 2) ; sur téléphone, moins de batterie et de données consommées.
+### Transparence — qui joue vraiment ?
+- Siège d'un joueur qui laisse filer ses tours : badge **« 💤 absent »** visible par toute la table.
+- Siège repris par le bot : badge **« 🤖 bot »** clairement affiché tant que le bot joue.
+- Messages d'ambiance dans la partie : « X est absent — un bot le remplace », « X est de retour ». Plus aucune ambiguïté sur qui joue.
+
+### Avant la partie — vérification de présence
+- Quand un match est trouvé, chaque joueur voit un bouton **« Accepter » à presser sous 10 secondes**.
+- Si l'application est en arrière-plan à ce moment-là, une **notification push** est envoyée : « Partie trouvée ! Ouvre l'app pour accepter » (fonctionne sur les builds Android installés, pas sur Expo Go).
+- Ceux qui acceptent repartent automatiquement **en tête de file** si un autre joueur fait défaut ; celui qui n'accepte pas est retiré de la recherche.
+
+### Pédagogie plutôt que punition (pour l'instant)
+- Le joueur écarté (non-acceptation) ou remplacé par un bot reçoit à son retour un **message d'avertissement** courtois : respecter les parties en ligne, ne pas lancer une recherche si l'on n'est pas disponible.
+- Aucune sanction au premier incident. Les récidivistes seront traités en phase 2.
+
+## Parcours joueur
+Un joueur lance une recherche → match trouvé → il accepte en un tap (ou via la notification push s'il était ailleurs) → la partie démarre avec 4 joueurs réellement présents. Si quelqu'un décroche en cours de partie : 20 s, puis 10 s, puis le bot enchaîne sans attente avec un badge 🤖 visible ; le retour du joueur rend la main instantanément. La table ne subit au pire que ~50 secondes d'attente cumulée par absent, une seule fois, au lieu de 30 s à chaque tour.
+
+## UI/UX
+Aucun changement de design global : badges discrets sur les avatars (💤 / 🤖), bouton « Accepter » doré sur l'écran d'attente avec compte à rebours, bouton « Reprendre ma place » sobre pour le revenant, messages d'événements dans le fil existant de la partie. Tout est traduit (FR/AR/EN).
 
 ## Phases d'implémentation
 
 ### Phase 1 — MVP (construite maintenant)
-1. Endpoint « instantané » regroupé + réponses « rien de nouveau » ultra-légères ; l'application l'utilise pour amis, notifications, invitations, présence et partie en cours (fraîcheur ~7 s conservée).
-2. Arrêt total des appels quand l'application est en arrière-plan, reprise immédiate au premier plan.
-3. Matchmaking à rythme dégressif (rapide 20 s, puis espacé).
-4. Jeu : suppression des envois d'états strictement identiques et espacement raisonné pendant les séquences de bots (aucun changement visible).
-5. Garde-fous serveur : limite de débit par compte (protection contre un client défaillant ou malveillant) — sans impact sur un usage normal.
-6. Tableau admin : les nouvelles cibles d'efficacité restent mesurables (avant/après visibles sur « Évts/joueur/min »).
+1. Temps de tour en ligne : 20 s, puis 10 s après un tour manqué.
+2. Relais par le bot après 3 tours manqués consécutifs ; reprise immédiate au retour (« Reprendre ma place »).
+3. Badges 💤 / 🤖 sur les sièges + messages « absent / remplacé / de retour » visibles par toute la table.
+4. Vérification de présence au match trouvé : bouton « Accepter » (10 s) + notification push si l'app est en arrière-plan ; les joueurs confirmés repassent en tête de file.
+5. Message d'avertissement courtois au joueur écarté ou remplacé, à son retour.
+6. Tableau admin : compteurs d'absences (tours manqués, remplacements par bot, non-acceptations) pour suivre le phénomène.
 
-### Phase 2 — Temps réel poussé
-- Un canal de notification unique par joueur connecté (connexion légère permanente) : amis, invitations et « adversaire trouvé » sont poussés instantanément → fraîcheur meilleure qu'aujourd'hui avec quasi zéro interrogation périodique.
-- États de jeu différentiels (n'envoyer que ce qui a changé) pour diviser encore le volume par partie.
-- Alertes automatiques sur le tableau admin si le coût par joueur dépasse un seuil.
+### Phase 2 — Récidivistes et équité
+- Suivi de fiabilité par joueur (absences, abandons, non-acceptations sur les derniers jours).
+- Récidivistes : l'absence en partie classée compte comme une **défaite avec perte d'ELO**, précédée d'un dernier avertissement clair.
+- Statistiques admin enrichies (taux d'absence par jour, joueurs les moins fiables).
 
-### Phase 3 — Préparation à l'échelle
-- Mise en cache des données chaudes (classement, profils publics) et revue des index de base de données.
-- Archivage/purge automatique des vieilles données (métriques, parties anciennes) pour contenir la taille de la base.
-- Vérification de la montée en charge multi-instances (le jeu est déjà conçu pour) et tableau de capacité : « combien de joueurs simultanés le palier actuel supporte ».
+### Phase 3 — Fiabilité visible et matchmaking intelligent
+- Indicateur de fiabilité sur le profil public (discret, non humiliant).
+- Le matchmaking évite d'assembler les joueurs très fiables avec les récidivistes quand la file le permet.
+- Confort : possibilité pour la table de voir l'historique de connexion du revenant (anti-abus).
 
 ## Hypothèses retenues
-- Les gains principaux passent par une **nouvelle version de l'application** (choisi) : ils bénéficient aux joueurs à jour ; les 7 utilisateurs sur vieilles versions ne cassent rien mais ne profitent pas des gains.
-- Fraîcheur sociale maintenue à ~7 s (choisi « quasi temps réel ») : la réduction vient du regroupement et des réponses vides, pas du ralentissement.
-- La charge actuelle ne justifie aucun changement d'hébergement : l'objectif est l'efficacité par joueur en prévision de la croissance (585 inscrits, ~300 actifs).
-- Les notifications push existantes (joueurs en attente, heure de pointe) sont conservées telles quelles.
-- La rétention des métriques serveur reste à 7 jours (coût négligeable : base totale 1,8 Mo).
-- Aucun changement de design, de sons, de publicités ni de règles de jeu.
+- « 3 tours manqués » signifie 3 tours **consécutifs** : un tour joué à temps remet le compteur à zéro.
+- Les nouvelles durées (20 s / 10 s) s'appliquent aux parties **en ligne et salons privés** ; le solo contre l'IA et le tutoriel ne changent pas.
+- La pause réseau existante en cas de déconnexion brutale (socket perdu) est **réduite de 60 s à 30 s** pour rester cohérente avec la nouvelle réactivité ; au-delà, le bot prend le relais comme aujourd'hui, siège toujours récupérable.
+- Compatibilité anciennes versions : pour un joueur sur une ancienne version (sans bouton « Accepter »), le fait que son application interroge activement le serveur pendant la fenêtre de 10 s vaut acceptation automatique — personne n'est pénalisé pour ne pas avoir mis à jour.
+- Si un joueur tape la notification push après l'expiration des 10 s, le match est déjà parti : il est remis **en tête de file** automatiquement.
+- La notification push « Partie trouvée » utilise l'intégration push existante (builds Android déployés uniquement ; rien ne change pour iOS/Expo Go où seul le bouton s'applique).
+- Le message d'avertissement est purement informatif en phase 1 (aucun blocage, aucune perte d'ELO) ; la règle « récidiviste = défaite ELO » arrive en phase 2 avec un seuil défini à ce moment-là.
+- Le bot qui remplace un absent joue avec l'IA standard du jeu (même niveau que les bots actuels), instantanément (~1 s entre les coups pour rester lisible).
+- Les gains nécessitent une mise à jour de l'application (nouveau build) ; les parties entre anciennes versions gardent l'ancien comportement.

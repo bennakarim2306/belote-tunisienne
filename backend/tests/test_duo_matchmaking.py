@@ -93,6 +93,10 @@ async def test_make_match_duo_seats_and_duo_rating():
              _entry([_p(ub[0], elo_duo=1000), _p(ub[1], elo_duo=1000)],
                     duo=True)]
     await m._make_match(group, "short")
+    # presence-confirmation flow: every player must accept before the game
+    # is actually created
+    for uid in ua + ub:
+        assert await m.confirm_match(uid) is True
     matched = await m.db.mm_matched.find_one({"_id": ua[0]})
     assert matched, "matched ticket missing"
     gid = matched["game_id"]

@@ -78,6 +78,7 @@ class UpdateProfileBody(BaseModel):
 class MatchTypeBody(BaseModel):
     match_type: str = Field(pattern="^(short|long)$")
     turn_timer: bool = False
+    priority: bool = False  # head-of-queue rejoin after a failed confirmation
 
 
 class FriendRequestBody(BaseModel):
@@ -686,14 +687,23 @@ async def _sync_snapshot(uid):
 @api.post("/matchmaking/join")
 async def mm_join(body: MatchTypeBody, request: Request):
     user = await get_current_user(request)
-    await manager.join_queue(to_player(user), body.match_type)
+    await manager.join_queue(to_player(user), body.match_type,
+                             priority=bool(body.priority))
     return {"ok": True}
 
 
-@api.get("/matchmaking/status")
-async def mm_status(request: Request):
+@api.post("/matchmaking/confirm")
+async def mm_confirm(request: Request):
+    """Player presses 'Accept' during the match-found confirmation window."""
     user = await get_current_user(request)
-    return await manager.queue_status(user["user_id"])
+    ok = await manager.confirm_match(user["user_id"])
+    return {"ok": ok}
+
+
+@api.get("/matchmaking/status")
+async def mm_status(request: Request, v: int = 1):
+    user = await get_current_user(request)
+    return await manager.queue_status(user["user_id"], v)
 
 
 @api.delete("/matchmaking/leave")
@@ -1101,6 +1111,8 @@ async def startup():
     await db.users.create_index("user_id", unique=True)
     await db.users.create_index([("elo", -1)])
     await db.users.create_index("last_active")  # online counts on every /sync
+    await db.reliability_events.create_index(
+        "ts", expireAfterSeconds=30 * 86400)  # absence counters, kept 30 days
     await db.user_sessions.create_index("session_token", unique=True)
     await db.user_sessions.create_index("user_id")
     await db.user_sessions.create_index("expires_at", expireAfterSeconds=0)

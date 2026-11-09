@@ -118,7 +118,7 @@ class RoomsMixin:
                     bi += 1
             game_id = await self.create_game(
                 seats, room["match_type"], shuffle=False,
-                turn_timeout=30 if room.get("turn_timer") else None,
+                turn_timeout=20 if room.get("turn_timer") else None,
                 host_user_id=room["host_id"], origin="private")
             room["started"] = True
             room["game_id"] = game_id

@@ -1,0 +1,56 @@
+{
+  "summary": "Iteration 34 tested the Phase 1 inactivity features through the public URL at 844x390 landscape. BACKEND (all requested scenarios pass): 1) v=2 confirmation flow. 2) Old-client auto-accept (all 'found' after 4.7s). 3) Expiry: acceptors are requeued with their original ts, silent players get a single 'removed_confirm' then 'idle', and no_accept events are written. 4) Turn timers: turn_timeout=20, the first target turn had 18.5s left, then 10.0s after missed>=1, and the other players always got 20.0s. 5) After the 3rd miss: afk=true, afk_bot broadcast, relayed moves took 1.2s, and resume_seat cleared afk and missed and sent afk_back. 6) Regressions: solo turn_timeout None, duo vs_ai created at once with no confirmation, disconnect pause until-now <= 32s (assert added), and the admin page shows 'Fiabilité des joueurs' (Tours manqués 76, Relais bot 14, Non-acceptations 18). FRONTEND (all pass): FE7 shows the title 'Partie trouvée ! Accepte pour jouer' and the button 'Accepter (9s)' with a live countdown; clicking it shows matchmaking-confirm-wait and the app navigates to /game/. FE8 shows the courteous warning (matchmaking-warn) after 12.8s, the status goes back to 'Recherche de joueurs…', and a /matchmaking/join {priority:true} request is sent (tester1's queue entry is 604s old, no_accept recorded). FE9: the 💤 seat-away-{seat} badges appear after the 1st miss; after the 3rd miss the 🤖 seat-relay-0 badge, the banner 'Tester1 est absent — un bot le remplace' and the afk-resume-strip appear; clicking afk-resume-button shows the banner 'Tester1 est de retour !' and removes the badge. Environment finding: the preview ingress closes every WebSocket at exactly 60.2s after connect, whatever the traffic; on localhost:8001 the connection stays open 96s+. The browser reconnects by itself. Deprecated packages detected: none (no expo-av / expo-barcode-scanner / expo-background-fetch).",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/matchmaking/join {priority:true}", "issue": "Priority is faked with ts=now-600 (matchmaking.py:45). As a result, queue_status for that player returns waited≈600 and elo_range=elo_window(600)=6100 (matchmaking.py:202-203), so the ELO chip in the UI will show ±6100 once polling resumes. Their own ELO window is also unlimited. Suggestion: add a separate 'priority' sort key and keep the real ts for the waited/elo window."},
+      {"endpoint": "_find_group", "issue": "The 4-solo selection is sorted by ELO, not ts (matchmaking.py:329). Requeueing acceptors 'at the head' (original ts) only widens their ELO window. It does not guarantee they are served first when more than 4 compatible solos are queued."},
+      {"endpoint": "WS action resume_seat", "issue": "It is accepted when the player only has missed>0 (not afk/left) (game_runtime.py:347). It resets missed to 0 and broadcasts afk_back ('X est de retour !') even though no bot ever relayed the seat. A client could send it repeatedly to dodge the 10s reduced timer. Suggestion: require afk or left, or don't emit afk_back when the seat was not relayed."},
+      {"endpoint": "mm_pending", "issue": "Edge case: if a user calls /matchmaking/join while their confirmation window is open, they are marked cancelled but also inserted into the queue. They could then be in two mm_pending docs, and confirm_match/queue_status use find_one({'humans': uid}), which is ambiguous in that case."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "matchmaking confirm wait text", "issue": "Right after tapping Accept, the text shows 'En attente des autres joueurs… 0/4' (stale accepted count) until the next status call. Count the player's own acceptance optimistically (+1).", "testID": "matchmaking-confirm-wait", "priority": "low"},
+      {"component": "matchmaking after removed_confirm", "issue": "Under 'Recherche de joueurs…' the screen still shows '4/4 joueurs' and the 3 previous opponents' avatars, because players are not cleared on removed_confirm (matchmaking.tsx:168-176). This is confusing.", "testID": "matchmaking-players-count", "priority": "low"}
+    ],
+    "integration_issues": [
+      {"flow": "confirm window polling", "issue": "Polling drops to 5s after 20s of searching (matchmaking.tsx:224). If the realtime mm_confirm push is missed (for example during a WS reconnect; the preview ingress drops every WS at 60s), the player can see the Accept prompt up to 5s late out of a 10s window. Poll every ~1.5s while in the confirm state.", "affected_testIDs": ["matchmaking-accept-button"]}
+    ],
+    "design_issues": [
+      {"screen": "game/[id] (844x390)", "issues": ["The 'Capot' button covers the right seat's (seat 3) username plate; the name is cut to 'TI…'.", "afk-resume-button is 42px high, below the 44px minimum.", "afk-resume-strip covers the lower half of the player's hand (acceptable while relayed, but consider a smaller strip).", "A relayed seat still shows the 10s countdown ring while the bot plays in ~1s (cosmetic)."]}
+    ],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter34_presence_afk.py",
+    "/app/backend/tests/iter34_fe_filler.py",
+    "/app/backend/tests/iter34_ws_lifetime_probe.py",
+    "/app/test_reports/pytest/iter34_presence.xml",
+    "/app/test_reports/pytest/iter34_regress.xml"
+  ],
+  "action_items": [
+    "(minor) Priority rejoin: use a separate priority flag/sort key instead of ts=now-600, so the waited/elo_range shown is not ±6100 and the ELO window is not unlimited (matchmaking.py:45,202).",
+    "(minor) resume_seat: only accept it when afk or left, or skip the afk_back event when the seat was never relayed (game_runtime.py:347).",
+    "(minor) matchmaking.tsx: clear players on removed_confirm, count the player's own acceptance optimistically (+1), and poll every ~1.5s while the confirm state is active.",
+    "(design) The Capot button overlaps the right seat's name plate at 844x390; afk-resume-button needs minHeight 44.",
+    "(info) The preview ingress cuts every WS at 60s; make sure game/sync reconnects never trigger the 30s disconnect pause (the browser reconnected cleanly in testing)."
+  ],
+  "critical_code_review_comments": [
+    "_reliability now uses asyncio.ensure_future, and there were no new driver errors during this run. The old 'a coroutine was expected, got Future' tracebacks in the log (10:34-10:37) come from before the fix.",
+    "In _sweep_pending_confirms, a cancelled member of a solo entry is skipped silently (no feedback). This is fine, but a duo partner of a cancelled member gets duo_cancelled; that branch was not tested.",
+    "queue_status v<2 calls confirm_match on every poll during the window, which is idempotent through $addToSet. Fine."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iter34_presence_afk.py (new)",
+    "/app/backend/tests/iter34_fe_filler.py (new FE helper)",
+    "/app/backend/tests/iter34_ws_lifetime_probe.py (new probe)",
+    "/app/backend/tests/test_pack2_rejoin_notifications_seats.py (added pause upper-bound assert <=32s)"
+  ],
+  "success_rate": {"backend": "100% (5/5 new + 4/4 regression)", "frontend": "100% (FE7, FE8, FE9 flows pass; minor UI notes)"},
+  "seed_data_creation": "About 28 TEST_ accounts (emails test_it34_* / test_fe34_*). Their live_games docs (6) were deleted. mm_queue and mm_pending are empty. reliability_events rows from the tests were kept, because the admin dashboard counts rely on them.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "1) Cleanup: setting live_games.phase='finished' in Mongo does NOT stop a game; the in-memory runtime overwrites it on the next commit. Delete the live_games doc by _id instead, and the driver stops on its next commit. 2) The preview ingress kills every WS at exactly 60.2s, so scripted WS clients must reconnect (iter34_fe_filler.py does). 3) All 4 players must poll status v=2 and then POST /matchmaking/confirm; polling without v auto-accepts. 4) An AFK cycle where only the target never acts takes about 50s (20s + 10s + 10s plus bot moves).",
+  "rca_of_issue": "WS drop RCA: iter34_ws_lifetime_probe.py shows that through the public URL all 3 variants (default ping, no ping, app message every 5s) end with ConnectionClosedError(None, None) at 60.2s. Through ws://localhost:8001 the connection stays open 96s+. So this is an ingress connection-lifetime limit, not an app bug."
+}

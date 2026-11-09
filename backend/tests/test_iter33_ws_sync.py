@@ -191,6 +191,16 @@ async def test_mm_found_push(t1):
                                   headers=_h(o["token"]), timeout=15)
                 assert r.status_code == 200
             t0 = time.time()
+            # presence-confirmation flow: mm_confirm first, everyone accepts,
+            # then the game is created and mm_found is pushed
+            _, conf = await c.wait_for(lambda m: m.get("type") == "mm_confirm",
+                                       8, since=t0 - 2)
+            assert conf is not None, \
+                f"no mm_confirm; msgs={[x[1].get('type') for x in c.msgs]}"
+            for acc in [t1] + others:
+                r = requests.post(f"{API}/matchmaking/confirm",
+                                  headers=_h(acc["token"]), timeout=15)
+                assert r.status_code == 200
             ts, m = await c.wait_for(lambda m: m.get("type") == "mm_found", 8,
                                      since=t0 - 2)
             assert m is not None, f"no mm_found; msgs={[x[1].get('type') for x in c.msgs]}"

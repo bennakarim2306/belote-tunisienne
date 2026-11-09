@@ -12,6 +12,9 @@ export interface GamePlayer {
   is_bot: boolean;
   elo: number;
   card_count: number;
+  missed?: number; // consecutive missed turns (💤 badge)
+  afk?: boolean; // bot relays this seat after 3 missed turns (🤖 badge)
+  left?: boolean; // disconnected, bot relays (🤖 badge)
 }
 
 export interface TrickCard {

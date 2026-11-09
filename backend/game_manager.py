@@ -22,7 +22,7 @@ class GameManager(GameRuntimeMixin, EloStatsMixin, MatchmakingMixin, RoomsMixin)
         self.games = {}  # game_id -> LiveGame (local cache; truth = live_games)
 
     async def create_game(self, humans, match_type, shuffle=True, ranked=True,
-                          turn_timeout=30, host_user_id=None, origin="online",
+                          turn_timeout=20, host_user_id=None, origin="online",
                           elo_mode="solo", coach=False):
         players = list(humans)
         bots = make_bots(4 - len(players), {p["username"] for p in players})
