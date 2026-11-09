@@ -589,7 +589,8 @@ class GameRuntimeMixin:
             card = bot_ai.bot_play(g.hands[seat], g.trick, g.trump, seat,
                                    getattr(g, "play_history", None),
                                    g.current_bid["seat"] % 2
-                                   if g.current_bid else None)
+                                   if g.current_bid else None,
+                                   getattr(g, "bids", None))
         return g.apply_play(seat, card)
 
     async def _delayed_remove(self, game_id, delay):

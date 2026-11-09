@@ -157,6 +157,182 @@ function safeDiscard(
   ]);
 }
 
+// ------------------------------------------------- team knowledge (v2)
+
+export function partnerBidInfo(
+  bids: BidEntry[] | null | undefined,
+  seat: number,
+  trump: string | null,
+): { level: number; bid_trump: boolean } {
+  const partner = (seat + 2) % 4;
+  let level = 0;
+  let bidTrump = false;
+  for (const b of bids ?? []) {
+    if (b.seat !== partner) continue;
+    if (b.type === "bid" && b.suit === trump) {
+      bidTrump = true;
+      level = Math.max(level, b.value ?? 0);
+    } else if (b.type === "capot" && b.suit === trump) {
+      bidTrump = true;
+      level = Math.max(level, 160);
+    }
+  }
+  return { level, bid_trump: bidTrump };
+}
+
+export function partnerStrength(
+  bids: BidEntry[] | null | undefined,
+  seat: number,
+  trump: string | null,
+  hand: string[],
+  mem: BotMemory,
+): number {
+  // Estimated partner trump strength 0..3 from the auction — NEVER cheating:
+  // top trumps I hold or already played are excluded from what the partner
+  // can still hold (their strength is then elsewhere).
+  if (trump === null) return 0;
+  const partner = (seat + 2) % 4;
+  if (mem.voids[partner].has(trump)) return 0; // partner shown OUT of trump
+  const info = partnerBidInfo(bids, seat, trump);
+  if (!info.bid_trump) return 0;
+  const jFree = !hand.includes("J" + trump) && !mem.played.has("J" + trump);
+  const nFree = !hand.includes("9" + trump) && !mem.played.has("9" + trump);
+  if (info.level >= 100 && jFree && nFree) return 3;
+  if (info.level >= 90 && (jFree || nFree)) return 2;
+  return 1;
+}
+
+export function trumpsLeft(mem: BotMemory, hand: string[], trump: string | null): number {
+  if (trump === null) return 0;
+  return 8 - mem.trumps_out - suitLen(hand, trump);
+}
+
+export function oppsMayHaveTrump(
+  mem: BotMemory,
+  seat: number,
+  hand: string[],
+  trump: string | null,
+): boolean {
+  if (trump === null || trumpsLeft(mem, hand, trump) <= 0) return false;
+  const opps = [(seat + 1) % 4, (seat + 3) % 4];
+  return !opps.every((o) => mem.voids[o].has(trump));
+}
+
+export function teamTrumpControl(
+  hand: string[],
+  mem: BotMemory,
+  trump: string | null,
+  seat: number,
+  bids: BidEntry[] | null | undefined,
+): boolean {
+  if (trump === null) return false;
+  if (hand.some((c) => suitOf(c) === trump && isMaster(c, hand, mem, trump))) {
+    return true;
+  }
+  return partnerStrength(bids, seat, trump, hand, mem) >= 2;
+}
+
+export function isSureMaster(
+  card: string,
+  hand: string[],
+  mem: BotMemory,
+  trump: string | null,
+  seat: number,
+): boolean {
+  // Master of its suit AND no opponent can take it any more: a trump master,
+  // all other trumps out, or both opponents known out of trump.
+  if (!isMaster(card, hand, mem, trump)) return false;
+  const s = suitOf(card);
+  if (s === trump || trump === null) return true;
+  if (trumpsLeft(mem, hand, trump) <= 0) return true;
+  const opps = [(seat + 1) % 4, (seat + 3) % 4];
+  return opps.every((o) => mem.voids[o].has(trump));
+}
+
+export function tricksWonByTeam(
+  history: TrickCard[] | null | undefined,
+  trump: string | null,
+): [number, number] {
+  const won: [number, number] = [0, 0];
+  const hist = history ?? [];
+  for (let i = 0; i + 3 < hist.length; i += 4) {
+    const chunk = hist.slice(i, i + 4);
+    won[trickWinner(chunk, trump) % 2] += 1;
+  }
+  return won;
+}
+
+export function capotPotential(
+  hand: string[],
+  mem: BotMemory,
+  trump: string | null,
+  seat: number,
+  bids: BidEntry[] | null | undefined,
+  history: TrickCard[] | null | undefined,
+): boolean {
+  // Taking ALL the tricks is plausible: opponents took none yet, the team
+  // controls trump, and (almost) every side suit I hold is headed by a
+  // master. Dies the moment an opponent wins a trick. Public info only.
+  if (trump === null) return false;
+  const won = tricksWonByTeam(history, trump);
+  if (won[(seat + 1) % 2] > 0) return false;
+  if (!teamTrumpControl(hand, mem, trump, seat, bids)) return false;
+  let uncovered = 0;
+  for (const s of SUITS) {
+    if (s === trump) continue;
+    const cards = hand.filter((c) => suitOf(c) === s);
+    if (cards.length) {
+      const top = pyMax(cards, (c) => [plainStr(c)]);
+      if (!isMaster(top, hand, mem, trump)) uncovered++;
+    }
+  }
+  const allowance = partnerStrength(bids, seat, trump, hand, mem) >= 2 ? 1 : 0;
+  return uncovered <= allowance;
+}
+
+export function bestEndgameOrder(
+  hand: string[],
+  mem: BotMemory,
+  trump: string | null,
+  seat: number,
+): string {
+  // Exactly 2 cards left and I lead: compare both orders explicitly
+  // (sure tricks, then securing the last trick (+10), then points kept) and
+  // return the card to play FIRST.
+  const [a, b] = [...hand].sort();
+
+  const winChance = (card: string, trumpMasterLedBefore: boolean): number => {
+    if (!isMaster(card, hand, mem, trump)) return 0;
+    const s = suitOf(card);
+    if (s === trump) return 2;
+    let tl = trumpsLeft(mem, hand, trump);
+    if (trumpMasterLedBefore && tl > 0) tl -= 1;
+    const opps = [(seat + 1) % 4, (seat + 3) % 4];
+    if (tl <= 0 || opps.every((o) => mem.voids[o].has(trump as string))) return 2;
+    if (opps.some((o) => mem.voids[o].has(s) && !mem.voids[o].has(trump as string))) {
+      return 0;
+    }
+    return 1;
+  };
+
+  const orderScore = (x: string, y: string): number[] => {
+    const wx = winChance(x, false);
+    const drained = trump !== null && suitOf(x) === trump && isMaster(x, hand, mem, trump);
+    const wy = winChance(y, drained);
+    const pts =
+      (wx >= 1 ? cardPoints(x, trump) : 0) + (wy >= 1 ? cardPoints(y, trump) : 0);
+    return [wx + wy, wy >= 2 ? 1 : 0, pts];
+  };
+
+  const sa = orderScore(a, b);
+  const sb = orderScore(b, a);
+  for (let i = 0; i < sa.length; i++) {
+    if (sa[i] > sb[i]) return a;
+    if (sa[i] < sb[i]) return b;
+  }
+  return a; // tie: same as Python's >=
+}
+
 // ---------------------------------------------------------------- bidding
 
 export function handBidLevel(hand: string[], suit: string): number {
@@ -255,29 +431,74 @@ function lead(
   seat: number,
   mem: BotMemory,
   bidTeam: number | null,
+  bids: BidEntry[] | null = null,
+  history: TrickCard[] | null = null,
 ): string {
   const partner = (seat + 2) % 4;
   const opps = [(seat + 1) % 4, (seat + 3) % 4];
   const masters = legal.filter((c) => isMaster(c, hand, mem, trump));
 
-  // §6 endgame: cash the guaranteed tricks
+  // §6 endgame: on the very last tricks the ORDER of the cards matters
+  if (hand.length === 2 && legal.length === 2) {
+    return bestEndgameOrder(hand, mem, trump, seat);
+  }
   if (hand.length <= 3 && masters.length) {
-    return pyMax(masters, (c) => [cardPoints(c, trump), strength(c, trump)]);
+    // drain the last opponent trump FIRST when it frees a side master
+    const trumpMasters = masters.filter((c) => suitOf(c) === trump);
+    const vulnerable = masters.filter(
+      (c) => suitOf(c) !== trump && !isSureMaster(c, hand, mem, trump, seat),
+    );
+    if (trumpMasters.length && vulnerable.length && oppsMayHaveTrump(mem, seat, hand, trump)) {
+      return pyMax(trumpMasters, (c) => [trumpStr(c)]);
+    }
+    // otherwise cash the sure masters first, highest points
+    const sure = masters.filter((c) => isSureMaster(c, hand, mem, trump, seat));
+    const pool = sure.length ? sure : masters;
+    return pyMax(pool, (c) => [cardPoints(c, trump), strength(c, trump)]);
   }
 
-  // §3 draw trumps when my team owns the contract and I'm strong at trump
-  if (trump !== null && bidTeam !== null && bidTeam === seat % 2) {
+  const capotMode = capotPotential(hand, mem, trump, seat, bids, history);
+
+  // §3 keep drawing trump while the team controls it and the opponents may
+  // still hold some — protects our future side masters. No blind rule:
+  // requires depth (J / 3+ trumps), a side master to protect, or capot mode.
+  if (trump !== null && (capotMode || (bidTeam !== null && bidTeam === seat % 2))) {
     const myTrumps = hand.filter((c) => suitOf(c) === trump);
-    const oppMayHave =
-      8 - mem.trumps_out - myTrumps.length > 0 &&
-      !opps.every((o) => mem.voids[o].has(trump));
     const trumpMasters = myTrumps.filter((c) => isMaster(c, hand, mem, trump));
+    if (trumpMasters.length && oppsMayHaveTrump(mem, seat, hand, trump)) {
+      const sideToProtect = hand.some(
+        (c) =>
+          suitOf(c) !== trump &&
+          isMaster(c, hand, mem, trump) &&
+          !isSureMaster(c, hand, mem, trump, seat),
+      );
+      if (
+        hand.includes("J" + trump) ||
+        myTrumps.length >= 3 ||
+        sideToProtect ||
+        capotMode
+      ) {
+        return pyMax(trumpMasters, (c) => [trumpStr(c)]);
+      }
+    }
+    // §2 team trump control read from the auction: even weak at trump, open
+    // a small one toward the strong partner so the opponents spend theirs
     if (
-      oppMayHave &&
-      trumpMasters.length &&
-      (hand.includes("J" + trump) || myTrumps.length >= 3)
+      !trumpMasters.length &&
+      myTrumps.length >= 2 &&
+      oppsMayHaveTrump(mem, seat, hand, trump) &&
+      partnerStrength(bids, seat, trump, hand, mem) >= 2
     ) {
-      return pyMax(trumpMasters, (c) => [trumpStr(c)]);
+      const small = myTrumps.filter((c) => rankOf(c) !== "J" && rankOf(c) !== "9");
+      if (small.length) return pyMin(small, (c) => [trumpStr(c)]);
+    }
+  }
+
+  // capot mode: secure every trick — sure masters before anything else
+  if (capotMode && masters.length) {
+    const sure = masters.filter((c) => isSureMaster(c, hand, mem, trump, seat));
+    if (sure.length) {
+      return pyMax(sure, (c) => [cardPoints(c, trump), strength(c, trump)]);
     }
   }
 
@@ -321,6 +542,7 @@ function tfaskira(
   oppsToPlay: number[],
   leadSuit: string,
   seat: number,
+  capotMode = false,
 ): string {
   const partner = (seat + 2) % 4;
   const pc = trick.find((t) => t.seat === partner)!.card;
@@ -344,6 +566,13 @@ function tfaskira(
       return pyMax(bankable, (c) => [cardPoints(c, trump), -suitLen(hand, suitOf(c))]);
     }
   }
+  if (capotMode && !secure) {
+    // a capot tolerates zero lost tricks: overtake the partner if we can
+    const winning = legal.filter(
+      (c) => trickWinner([...trick, { seat, card: c }], trump) === seat,
+    );
+    if (winning.length) return weakest(winning, trump);
+  }
   return safeDiscard(legal, hand, mem, trump);
 }
 
@@ -354,13 +583,16 @@ export function botPlay(
   seat: number,
   history?: TrickCard[] | null,
   bidTeam: number | null = null,
+  bids: BidEntry[] | null = null,
 ): string {
   const legal = legalMoves(hand, trick, trump, seat);
   if (legal.length === 1) return legal[0];
   const mem = buildMemory(history, trick, trump);
   const partner = (seat + 2) % 4;
 
-  if (!trick.length) return lead(hand, legal, trump, seat, mem, bidTeam);
+  if (!trick.length) {
+    return lead(hand, legal, trump, seat, mem, bidTeam, bids, history ?? null);
+  }
 
   const playedSeats = new Set(trick.map((t) => t.seat));
   const oppsToPlay = [0, 1, 2, 3].filter(
@@ -369,7 +601,9 @@ export function botPlay(
   const leadSuit = suitOf(trick[0].card);
 
   if (trickWinner(trick, trump) === partner) {
-    return tfaskira(hand, legal, trick, trump, mem, oppsToPlay, leadSuit, seat);
+    const capotMode = capotPotential(hand, mem, trump, seat, bids, history);
+    return tfaskira(hand, legal, trick, trump, mem, oppsToPlay, leadSuit, seat,
+      capotMode);
   }
 
   const winning = legal.filter(

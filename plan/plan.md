@@ -1,67 +1,72 @@
-# Plan — Expérience en ligne face à l'inactivité (Belote Tunisienne)
+# Plan — Des bots qui jouent comme un vrai partenaire de Belote
 
-Les parties en ligne ne doivent plus jamais être paralysées par un joueur absent : le bot prend vite et visiblement le relais, et les absents sont écartés avant même que la partie ne démarre.
+Amélioration de l'intelligence des bots de Belote Tunisienne pendant le jeu de la carte : gestion de l'atout, coopération avec le partenaire, reconnaissance du Capot et fin de manche. Les annonces restent inchangées ; c'est leur exploitation pendant le jeu qui s'améliore.
 
 ## Pour qui
-Les joueurs en ligne (fini les attentes de 30 secondes à chaque tour d'un absent) et le propriétaire de l'application (meilleure rétention : une mauvaise partie en ligne fait fuir les nouveaux joueurs).
+Tous les joueurs : en solo hors-ligne, en Duo contre IA, dans les salons avec bots, dans le mode Apprenti (conseils du Coach) et lorsqu'un bot relaie un joueur absent en ligne.
 
-## Constat
-Aujourd'hui, un joueur connecté mais inactif fait attendre la table 30 secondes à CHAQUE tour, pendant tout le match, sans jamais être remplacé. Et rien n'indique aux autres si un siège est tenu par un vrai joueur ou par un bot. Enfin, une partie peut démarrer avec des joueurs qui ne sont déjà plus devant leur écran.
+## Précision importante sur l'architecture (réponse à votre question)
+Le jeu possède **deux moteurs de bots identiques** :
+- sur le **téléphone** pour le solo hors-ligne (le jeu marche sans connexion) ;
+- sur le **serveur** pour tout le jeu en ligne (Duo contre IA, salons, remplacement d'un absent) — c'est volontaire : en ligne, le serveur reste l'arbitre pour empêcher la triche et pour que la partie continue même si un joueur coupe sa connexion.
+Les deux moteurs sont déjà des copies strictes l'un de l'autre, et le resteront : **chaque amélioration est appliquée aux deux**, le comportement des bots sera identique partout. Le Coach du mode Apprenti, qui s'appuie sur la même logique, donnera automatiquement de meilleurs conseils.
 
-## Fonctionnement cible
+## Ce qui existe déjà (et sera réutilisé, pas réécrit)
+- Les annonces (90–130, soutien du partenaire) : jugées satisfaisantes, non modifiées.
+- Une mémoire publique par bot : cartes déjà jouées, joueurs « coupés » dans une couleur, nombre d'atouts sortis, détection des cartes maîtresses.
+- Des heuristiques de base : tirer l'atout quand l'équipe a le contrat, encaisser les maîtres, protéger les 10 secs, signaux indirects, jeu de fin de manche simple.
+Les améliorations sont des extensions légères de ces briques — pas de moteur probabiliste, pas de simulation Monte-Carlo.
 
-### Pendant la partie — temps de réflexion et relais par le bot
-- Temps par tour en ligne : **20 secondes** (au lieu de 30). Si le joueur a laissé expirer son tour précédent, son tour suivant passe à **10 secondes**.
-- Après **3 tours manqués de suite**, le bot prend le relais : il joue immédiatement, sans attente, pour le reste de l'absence. Un tour joué à temps remet le compteur à zéro.
-- Le joueur absent **reprend sa place immédiatement** à son retour (bouton « Reprendre ma place » sur son écran) et le compteur repart de zéro.
+## Cœur des améliorations
 
-### Transparence — qui joue vraiment ?
-- Siège d'un joueur qui laisse filer ses tours : badge **« 💤 absent »** visible par toute la table.
-- Siège repris par le bot : badge **« 🤖 bot »** clairement affiché tant que le bot joue.
-- Messages d'ambiance dans la partie : « X est absent — un bot le remplace », « X est de retour ». Plus aucune ambiguïté sur qui joue.
+### 1. Gestion de l'atout en équipe
+Le bot estime en continu : atouts sortis / restants, sa propre force à l'atout, la force probable du partenaire (déduite des annonces), et si les adversaires en ont probablement encore. Si l'équipe contrôle l'atout et que les adversaires en détiennent encore, le bot **continue de faire tomber l'atout** quand cela protège ses futures cartes maîtresses — sans règle aveugle « fort à l'atout = toujours jouer atout » : préserver l'atout reste possible quand c'est meilleur.
 
-### Avant la partie — vérification de présence
-- Quand un match est trouvé, chaque joueur voit un bouton **« Accepter » à presser sous 10 secondes**.
-- Si l'application est en arrière-plan à ce moment-là, une **notification push** est envoyée : « Partie trouvée ! Ouvre l'app pour accepter » (fonctionne sur les builds Android installés, pas sur Expo Go).
-- Ceux qui acceptent repartent automatiquement **en tête de file** si un autre joueur fait défaut ; celui qui n'accepte pas est retiré de la recherche.
+### 2. Exploiter les annonces pendant le jeu
+L'historique des enchères reste disponible pendant la carte. Exemple : le partenaire a annoncé 90 Cœur et a été soutenu → le bot raisonne en **contrôle d'atout d'équipe** : même faible à l'atout, il peut ouvrir atout pour faire dépenser les adversaires et laisser son partenaire prendre.
 
-### Pédagogie plutôt que punition (pour l'instant)
-- Le joueur écarté (non-acceptation) ou remplacé par un bot reçoit à son retour un **message d'avertissement** courtois : respecter les parties en ligne, ne pas lancer une recherche si l'on n'est pas disponible.
-- Aucune sanction au premier incident. Les récidivistes seront traités en phase 2.
+### 3. Estimation du partenaire sans jamais tricher
+L'estimation du partenaire exclut toujours les cartes que le bot a en main et celles déjà jouées. S'il tient lui-même Valet + 9 d'atout alors que le partenaire a annoncé fort, la force du partenaire est forcément ailleurs : longueur d'atout, As, 10 protégés, belles couleurs annexes. Estimation de force globale, jamais une main exacte inventée.
+
+### 4. Reconnaissance du Capot
+Pas de règle du type « 90 → 100 → 110 = Capot ». Le potentiel de Capot est évalué à partir de : ma main réelle + force estimée du partenaire + cartes déjà tombées. Il devient plausible quand l'équipe contrôle l'atout, peut assécher celui des adversaires, et couvre les autres couleurs sans pli perdant inévitable. **Dès qu'un adversaire prend un pli, le mode Capot s'éteint immédiatement.** Quand le potentiel est très élevé, le bot privilégie la sécurisation de chaque pli plutôt que les points immédiats.
+
+### 5. Fin de manche : raisonner sur l'ORDRE des cartes
+Sur les 2-3 derniers plis, le bot distingue « maître de sa couleur » et « maître sûr » (imprenable compte tenu des atouts restants), puis choisit l'ordre qui sécurise le plus :
+- garder l'atout maître pour le dernier pli (+10) quand le dépenser ferait perdre la dernière levée ;
+- ou au contraire jouer l'atout maître D'ABORD pour assécher le dernier atout adverse, puis encaisser tranquillement la carte devenue imprenable.
+À exactement 2 cartes, le bot **compare explicitement les deux ordres possibles** (A→B contre B→A) : plis garantis, chance de tout prendre, protection contre la coupe, bonus du dernier pli, points.
+
+### 6. Connaissance mise à jour à chaque pli
+Après chaque pli : atouts restants, cartes connues, qui peut encore couper, maîtres par couleur, estimation du partenaire, contrôle d'équipe, potentiel de Capot. Uniquement à partir d'informations publiques — le bot ne voit jamais les mains cachées.
 
 ## Parcours joueur
-Un joueur lance une recherche → match trouvé → il accepte en un tap (ou via la notification push s'il était ailleurs) → la partie démarre avec 4 joueurs réellement présents. Si quelqu'un décroche en cours de partie : 20 s, puis 10 s, puis le bot enchaîne sans attente avec un badge 🤖 visible ; le retour du joueur rend la main instantanément. La table ne subit au pire que ~50 secondes d'attente cumulée par absent, une seule fois, au lieu de 30 s à chaque tour.
+Rien ne change dans l'interface. La différence se sent à la table : les bots assèchent l'atout au bon moment, laissent la main au partenaire annoncé fort, ne gaspillent plus leur atout maître en fin de manche, et savent viser (ou défendre) un Capot. Le Coach donne des conseils alignés sur cette logique.
 
 ## UI/UX
-Aucun changement de design global : badges discrets sur les avatars (💤 / 🤖), bouton « Accepter » doré sur l'écran d'attente avec compte à rebours, bouton « Reprendre ma place » sobre pour le revenant, messages d'événements dans le fil existant de la partie. Tout est traduit (FR/AR/EN).
+Aucun changement visuel, sonore ou de règles. Aucune nouvelle option.
 
 ## Phases d'implémentation
 
 ### Phase 1 — MVP (construite maintenant)
-1. Temps de tour en ligne : 20 s, puis 10 s après un tour manqué.
-2. Relais par le bot après 3 tours manqués consécutifs ; reprise immédiate au retour (« Reprendre ma place »).
-3. Badges 💤 / 🤖 sur les sièges + messages « absent / remplacé / de retour » visibles par toute la table.
-4. Vérification de présence au match trouvé : bouton « Accepter » (10 s) + notification push si l'app est en arrière-plan ; les joueurs confirmés repassent en tête de file.
-5. Message d'avertissement courtois au joueur écarté ou remplacé, à son retour.
-6. Tableau admin : compteurs d'absences (tours manqués, remplacements par bot, non-acceptations) pour suivre le phénomène.
+1. Helpers réutilisables ajoutés aux deux moteurs (mêmes noms, même logique) : estimation du partenaire depuis les annonces (en excluant cartes vues/tenues), atouts restants, contrôle d'atout d'équipe, décision « tirer l'atout ou pas », distinction maître de couleur / maître sûr, potentiel de Capot avec extinction au premier pli perdu.
+2. Intégration dans la sélection de carte existante : poursuite du tirage d'atout, ouverture d'atout faible vers le partenaire fort, protection des maîtres vulnérables, priorité « tous les plis » en mode Capot.
+3. Fin de manche : évaluation d'ordre sur les 2-3 dernières cartes, comparaison explicite des deux ordres à 2 cartes.
+4. Les 8 scénarios de test demandés, reproduits à l'identique sur les DEUX moteurs + vérification de parité Python/TypeScript (mêmes décisions sur les mêmes donnes).
+5. Le Coach profite automatiquement de la nouvelle logique (même code).
 
-### Phase 2 — Récidivistes et équité
-- Suivi de fiabilité par joueur (absences, abandons, non-acceptations sur les derniers jours).
-- Récidivistes : l'absence en partie classée compte comme une **défaite avec perte d'ELO**, précédée d'un dernier avertissement clair.
-- Statistiques admin enrichies (taux d'absence par jour, joueurs les moins fiables).
+### Phase 2 — Réglage par la télémétrie
+- Suivi anonyme des performances des bots (taux de contrats réussis, Capots tentés/réussis) pour ajuster les seuils des heuristiques.
+- Fichier de paramètres ajustable sans nouvelle version de l'app pour les bots côté serveur.
 
-### Phase 3 — Fiabilité visible et matchmaking intelligent
-- Indicateur de fiabilité sur le profil public (discret, non humiliant).
-- Le matchmaking évite d'assembler les joueurs très fiables avec les récidivistes quand la file le permet.
-- Confort : possibilité pour la table de voir l'historique de connexion du revenant (anti-abus).
+### Phase 3 — Niveaux de difficulté
+- Profils de bots (débutant / normal / expert) en modulant les heuristiques (mémoire partielle, prudence Capot), choix du niveau en solo.
 
 ## Hypothèses retenues
-- « 3 tours manqués » signifie 3 tours **consécutifs** : un tour joué à temps remet le compteur à zéro.
-- Les nouvelles durées (20 s / 10 s) s'appliquent aux parties **en ligne et salons privés** ; le solo contre l'IA et le tutoriel ne changent pas.
-- La pause réseau existante en cas de déconnexion brutale (socket perdu) est **réduite de 60 s à 30 s** pour rester cohérente avec la nouvelle réactivité ; au-delà, le bot prend le relais comme aujourd'hui, siège toujours récupérable.
-- Compatibilité anciennes versions : pour un joueur sur une ancienne version (sans bouton « Accepter »), le fait que son application interroge activement le serveur pendant la fenêtre de 10 s vaut acceptation automatique — personne n'est pénalisé pour ne pas avoir mis à jour.
-- Si un joueur tape la notification push après l'expiration des 10 s, le match est déjà parti : il est remis **en tête de file** automatiquement.
-- La notification push « Partie trouvée » utilise l'intégration push existante (builds Android déployés uniquement ; rien ne change pour iOS/Expo Go où seul le bouton s'applique).
-- Le message d'avertissement est purement informatif en phase 1 (aucun blocage, aucune perte d'ELO) ; la règle « récidiviste = défaite ELO » arrive en phase 2 avec un seuil défini à ce moment-là.
-- Le bot qui remplace un absent joue avec l'IA standard du jeu (même niveau que les bots actuels), instantanément (~1 s entre les coups pour rester lisible).
-- Les gains nécessitent une mise à jour de l'application (nouveau build) ; les parties entre anciennes versions gardent l'ancien comportement.
+- Les améliorations s'appliquent partout (deux moteurs identiques) : solo hors-ligne, Duo contre IA, salons, relais d'absent — conformément à la contrainte de parité existante du projet.
+- Le Coach du mode Apprenti conseille avec la nouvelle logique (votre choix) ; les leçons scriptées du tutoriel ne changent pas.
+- Les annonces elles-mêmes ne sont pas modifiées (consigne) ; seul leur usage pendant le jeu est ajouté.
+- Approche strictement heuristique et légère (consigne) : pas de Monte-Carlo, pas de refonte, pas de code dupliqué — extension de la mémoire et de la sélection de carte existantes.
+- Aucune modification de l'interface, des règles, des sons ou des publicités.
+- La force accrue des bots vaut pour tous les matchs actuels (pas d'option pour garder « l'ancienne IA ») ; les niveaux de difficulté arrivent en phase 3.
+- Les joueurs profitent du nouveau comportement hors-ligne après mise à jour de l'app ; en ligne (bots serveur), dès le redéploiement.

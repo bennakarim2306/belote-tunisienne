@@ -86,7 +86,7 @@ function botMove(g: BeloteEngine, seat: number): GameEvent[] {
   return g.applyPlay(
     seat,
     botPlay(g.hands[seat], g.trick, g.trump!, seat, g.play_history,
-      g.current_bid ? g.current_bid.seat % 2 : null),
+      g.current_bid ? g.current_bid.seat % 2 : null, g.bids),
   );
 }
 

@@ -1,0 +1,42 @@
+{
+  "summary": "Bot AI v2 (Phase 1) verified. BACKEND 1: test_bot_ai_v2 10/10. Added randomized parity fuzz (test_bot_parity_fuzz.py): 600 self-played deals = 19,200 card decisions, Python vs TS identical play + partner_strength/capot/trumps_left/control (0 mismatches), every Python decision legal. BACKEND 2: duo vs_ai server game (tester1+tester2, 2 bots) driven over WS: bidding -> playing -> 32 plays -> hand_end (contract 90 H made, 130-40), no WS errors, no new 'auto driver error' in backend logs (the 7 existing ones are from 10:34-10:37, before a game_runtime reload; the cause, create_task on a Future in _reliability, is already fixed with ensure_future). BACKEND 3 + REGRESSION 5: tutorial_coach + tfaskira + void_deal + surcontre_window 47/47 green. FRONTEND 4: tester1 login at 844x390, then offline solo (Jouer contre l'IA > short). Bidding pass, bots bid (partner 90 D), I played 3 cards, bots replied, tricks resolved, illegal cards dimmed, no red screen, no JS errors (only a library warning about the transform-origin DOM prop). One logic gap found: partner estimation ignores the partner's public trump void (see backend_issues.minor). No deprecated Expo packages detected.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "bot_ai.partner_strength / team_trump_control (and TS partnerStrength/teamTrumpControl)", "issue": "The 'honest partner estimation' excludes J/9 that I hold or that were played, but it ignores PUBLIC voids. If the partner has already shown a trump void (did not follow a trump lead), partner_strength still returns 3 and team_trump_control returns True. Repro: trump H, partner seat2 bid 100 H, history [AD,7D,8D,9D | KH(s1),7C(s2 void H),AH,QH], hand [7H,8H,KD,QS,7S,8C]. Result: strength=3, control=True, bot leads 7H toward a partner with no trump, which feeds the opponents' J/9. Both engines behave the same (parity holds). Fix: return 0 when trump is in mem['voids'][partner] (optionally cap at 1 when J and 9 are both out of the partner's reach). Apply the fix in both engines and add a scenario."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_bot_ai_v2.py",
+    "/app/backend/tests/test_bot_parity_fuzz.py",
+    "/app/backend/tests/test_iter35_server_bot_hand.py",
+    "/app/backend/tests/test_tutorial_coach.py",
+    "/app/backend/tests/test_tfaskira.py",
+    "/app/backend/tests/test_void_deal.py",
+    "/app/backend/tests/test_surcontre_window.py"
+  ],
+  "action_items": [
+    "partner_strength (bot_ai.py:127 and ai.ts partnerStrength): return 0 when the partner is publicly void in trump (mem voids[partner] has trump). This also fixes team_trump_control, the weak-trump open toward partner (bot_ai.py:385) and the capot allowance. Keep TS parity and add a scenario test."
+  ],
+  "critical_code_review_comments": [
+    "best_endgame_order: 'tl -= 1' after a trump-master lead is conservative because every trump holder must follow, and tl also counts the partner's trumps. Acceptable heuristic, not a bug.",
+    "_lead safe_masters (bot_ai.py:401) excludes suits an opponent is void in, even when that opponent is known to have no trump left. Slightly conservative.",
+    "The parity_runner.cjs approach (sucrase-transpiled ai.ts) is solid. Consider keeping the fuzz parity test in CI because it covers far more states than the 9 hand-written scenarios."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_bot_parity_fuzz.py (new)",
+    "/app/backend/tests/test_iter35_server_bot_hand.py (new)"
+  ],
+  "success_rate": {"backend": "100% (61/61 tests incl. new fuzz + server hand)", "frontend": "100% (offline solo smoke)"},
+  "seed_data_creation": "None. The duo vs_ai game g_1764573e63ed was cancelled by the host 'leave' at the end of the test. Note: tester1 and tester2 each still have an unrelated in-progress server game in bidding (g_e92251d3001b, g_d4a0ff168637), probably created by the regression suites or earlier runs. Left untouched.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Run FUZZ_DEALS=600 pytest tests/test_bot_parity_fuzz.py for a large parity check (about 2s). test_iter35_server_bot_hand.py drives tester1+tester2 in a duo vs_ai server game for one full hand (about 50s): tester1 bids 90 only to avoid a void deal, otherwise both humans pass. Offline solo: home play-solo-card > match-type-short > /game/local_*; testIDs pass-button, hand-card-<card>, bidding-panel.",
+  "rca_of_issue": "partner_strength only checks hand + mem['played'] for J/9 of trump and never checks mem['voids'][partner], so a public 'partner has no trump' fact is ignored."
+}

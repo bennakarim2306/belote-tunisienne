@@ -1550,7 +1550,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   afkStripTitle: { fontFamily: F.bold, fontSize: 13, color: C.gold },
-  afkStripNote: { fontFamily: F.medium, fontSize: 11, color: C.cream, opacity: 0.8 },
+  afkStripNote: { fontFamily: F.text, fontSize: 11, color: C.cream, opacity: 0.8 },
   pausedScrim: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: "rgba(12,24,18,0.85)",

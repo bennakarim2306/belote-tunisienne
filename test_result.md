@@ -456,3 +456,10 @@ frontend:
     working: "needs_test"
     file: "frontend/app/matchmaking.tsx (status?v=2, 'confirm' branch, Accept ChunkyButton testID matchmaking-accept-button with countdown, waiting text matchmaking-confirm-wait, removed_confirm -> warning testID matchmaking-warn + auto re-join priority), frontend/src/components/game/PlayerSeat.tsx (testIDs seat-relay-{seat} 🤖 and seat-away-{seat} 💤), frontend/app/game/[id].tsx (events afk_bot/afk_back banners, afk-resume-strip + afk-resume-button sends resume_seat), frontend/src/game/useGameSocket.ts (GamePlayer missed/afk/left), frontend/src/context/NotificationsContext.tsx (mm_confirm bumps mmSignal), frontend/src/i18n.tsx (9 new keys FR/AR/EN)"
     comment: "needs E2E: browser accept flow + badges"
+
+backend:
+  - task: "Bot AI v2 (Phase 1): team trump management, auction exploitation, honest partner estimate, capot recognition w/ extinction, endgame order reasoning — strict Python/TS parity"
+    implemented: true
+    working: "needs_test"
+    file: "backend/bot_ai.py (new helpers: partner_bid_info/partner_strength/trumps_left/opps_may_have_trump/team_trump_control/is_sure_master/tricks_won_by_team/capot_potential/best_endgame_order; _lead rewritten with endgame-order at 2 cards, drain-first at <=3, capot mode, weak-trump open to strong partner; _tfaskira overtakes in capot mode; bot_play signature +bids), frontend/src/game/ai.ts (identical TS port, exported camelCase helpers), callers updated: backend/game_runtime.py + backend/coach.py + frontend/src/game/useLocalGame.ts now pass g.bids"
+    comment: "tests/test_bot_ai_v2.py: 8 behaviour scenarios asserted on Python AND strict parity vs TS via tests/parity_runner.cjs (node+sucrase runs frontend/src/game/ai.ts on the same deals) — 10/10 passed. Self-play 60/60 full games finished without error. Coach uses the same code (better hints automatically). Existing suites green: tutorial_coach+tfaskira+void_deal+surcontre 47/47. KNOWN FLAKY (pre-existing): test_ws_game::test_ws_bidding_and_play right after backend restart."

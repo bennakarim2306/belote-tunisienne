@@ -454,7 +454,7 @@ const styles = StyleSheet.create({
   confirmBox: { marginTop: SP.sm, alignItems: "center" },
   confirmWait: { fontFamily: F.bold, fontSize: 14, color: C.cream, opacity: 0.9 },
   warnMsg: {
-    fontFamily: F.medium,
+    fontFamily: F.text,
     fontSize: 12,
     color: "#E9C46A",
     textAlign: "center",

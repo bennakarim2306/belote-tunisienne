@@ -105,6 +105,157 @@ def _safe_discard(legal, hand, mem, trump):
                                     _strength(c, trump)))
 
 
+# ------------------------------------------------- team knowledge (v2)
+
+def partner_bid_info(bids, seat, trump):
+    """Public auction facts about my partner in the trump suit."""
+    partner = (seat + 2) % 4
+    level = 0
+    bid_trump = False
+    for b in (bids or []):
+        if b.get("seat") != partner:
+            continue
+        if b.get("type") == "bid" and b.get("suit") == trump:
+            bid_trump = True
+            level = max(level, b.get("value") or 0)
+        elif b.get("type") == "capot" and b.get("suit") == trump:
+            bid_trump = True
+            level = max(level, 160)
+    return {"level": level, "bid_trump": bid_trump}
+
+
+def partner_strength(bids, seat, trump, hand, mem):
+    """Estimated partner trump strength 0..3 from the auction — NEVER
+    cheating: the top trumps I hold or that were already played are excluded
+    from what the partner can still hold (their strength is then elsewhere:
+    length, side aces...). 0 none, 1 bid trump, 2 likely J or 9, 3 likely both."""
+    if trump is None:
+        return 0
+    partner = (seat + 2) % 4
+    if trump in mem["voids"][partner]:
+        return 0  # the partner publicly showed they are OUT of trump
+    info = partner_bid_info(bids, seat, trump)
+    if not info["bid_trump"]:
+        return 0
+    j_free = ("J" + trump) not in hand and ("J" + trump) not in mem["played"]
+    n_free = ("9" + trump) not in hand and ("9" + trump) not in mem["played"]
+    if info["level"] >= 100 and j_free and n_free:
+        return 3
+    if info["level"] >= 90 and (j_free or n_free):
+        return 2
+    return 1
+
+
+def trumps_left(mem, hand, trump):
+    """Trumps still hidden in the three other hands."""
+    if trump is None:
+        return 0
+    return 8 - mem["trumps_out"] - _suit_len(hand, trump)
+
+
+def opps_may_have_trump(mem, seat, hand, trump):
+    if trump is None or trumps_left(mem, hand, trump) <= 0:
+        return False
+    opps = [(seat + 1) % 4, (seat + 3) % 4]
+    return not all(trump in mem["voids"][o] for o in opps)
+
+
+def team_trump_control(hand, mem, trump, seat, bids):
+    """My side plausibly controls trump: I hold a trump master, or the
+    partner announced strong and the top trumps can still be theirs."""
+    if trump is None:
+        return False
+    if any(suit_of(c) == trump and is_master(c, hand, mem, trump)
+           for c in hand):
+        return True
+    return partner_strength(bids, seat, trump, hand, mem) >= 2
+
+
+def is_sure_master(card, hand, mem, trump, seat):
+    """Master of its suit AND no opponent can take it any more: a trump
+    master, all other trumps out, or both opponents known out of trump."""
+    if not is_master(card, hand, mem, trump):
+        return False
+    s = suit_of(card)
+    if s == trump or trump is None:
+        return True
+    if trumps_left(mem, hand, trump) <= 0:
+        return True
+    opps = [(seat + 1) % 4, (seat + 3) % 4]
+    return all(trump in mem["voids"][o] for o in opps)
+
+
+def tricks_won_by_team(history, trump):
+    """[team0, team1] tricks taken so far this hand — public info only."""
+    won = [0, 0]
+    hist = history or []
+    for i in range(0, len(hist) - 3, 4):
+        chunk = hist[i:i + 4]
+        won[trick_winner(chunk, trump) % 2] += 1
+    return won
+
+
+def capot_potential(hand, mem, trump, seat, bids, history):
+    """Taking ALL the tricks is plausible: the opponents took none yet, the
+    team controls trump, and (almost) every side suit I hold is headed by a
+    master — a strong partner may cover one uncovered suit. Judged from my
+    hand + public info only; dies the moment an opponent wins a trick."""
+    if trump is None:
+        return False
+    won = tricks_won_by_team(history, trump)
+    if won[(seat + 1) % 2] > 0:
+        return False  # an opponent already took a trick: capot is off
+    if not team_trump_control(hand, mem, trump, seat, bids):
+        return False
+    uncovered = 0
+    for s in SUITS:
+        if s == trump:
+            continue
+        cards = [c for c in hand if suit_of(c) == s]
+        if cards and not is_master(max(cards, key=plain_str), hand, mem, trump):
+            uncovered += 1
+    allowance = 1 if partner_strength(bids, seat, trump, hand, mem) >= 2 else 0
+    return uncovered <= allowance
+
+
+def best_endgame_order(hand, mem, trump, seat):
+    """Exactly 2 cards left and I lead: compare both orders explicitly
+    (sure tricks, then securing the last trick (+10), then points kept) and
+    return the card to play FIRST. E.g. keep the trump master for the last
+    trick, or on the contrary lead it FIRST to drain the last opponent trump
+    and free a side master."""
+    a, b = sorted(hand)
+
+    def win_chance(card, trump_master_led_before):
+        # 2 = sure win, 1 = master of the suit but ruffable, 0 = likely lost
+        if not is_master(card, hand, mem, trump):
+            return 0
+        s = suit_of(card)
+        if s == trump:
+            return 2
+        tl = trumps_left(mem, hand, trump)
+        if trump_master_led_before and tl > 0:
+            tl -= 1  # my trump lead drained one more
+        opps = [(seat + 1) % 4, (seat + 3) % 4]
+        if tl <= 0 or all(trump in mem["voids"][o] for o in opps):
+            return 2
+        if any(s in mem["voids"][o] and trump not in mem["voids"][o]
+               for o in opps):
+            return 0  # a known cutter is waiting
+        return 1
+
+    def order_score(x, y):
+        wx = win_chance(x, False)
+        drained = (trump is not None and suit_of(x) == trump
+                   and is_master(x, hand, mem, trump))
+        wy = win_chance(y, drained)
+        pts = ((card_points(x, trump) if wx >= 1 else 0)
+               + (card_points(y, trump) if wy >= 1 else 0))
+        return (wx + wy, 1 if wy >= 2 else 0, pts)
+
+    return a if order_score(a, b) >= order_score(b, a) else b
+
+
 # ---------------------------------------------------------------- bidding
 
 def hand_bid_level(hand, suit):
@@ -190,26 +341,64 @@ def bot_bidding_action(hand, current_bid, seat, bids=None):
 
 # ---------------------------------------------------------------- playing
 
-def _lead(hand, legal, trump, seat, mem, bid_team):
+def _lead(hand, legal, trump, seat, mem, bid_team, bids=None, history=None):
     partner = (seat + 2) % 4
     opps = [(seat + 1) % 4, (seat + 3) % 4]
     masters = [c for c in legal if is_master(c, hand, mem, trump)]
 
-    # §6 endgame: cash the guaranteed tricks
+    # §6 endgame: on the very last tricks the ORDER of the cards matters
+    if len(hand) == 2 and len(legal) == 2:
+        return best_endgame_order(hand, mem, trump, seat)
     if len(hand) <= 3 and masters:
-        return max(masters, key=lambda c: (card_points(c, trump),
-                                           _strength(c, trump)))
+        # drain the last opponent trump FIRST when it frees a side master
+        trump_masters = [c for c in masters if suit_of(c) == trump]
+        vulnerable = [c for c in masters if suit_of(c) != trump
+                      and not is_sure_master(c, hand, mem, trump, seat)]
+        if (trump_masters and vulnerable
+                and opps_may_have_trump(mem, seat, hand, trump)):
+            return max(trump_masters, key=trump_str)
+        # otherwise cash the sure masters first, highest points
+        sure = [c for c in masters
+                if is_sure_master(c, hand, mem, trump, seat)]
+        pool = sure or masters
+        return max(pool, key=lambda c: (card_points(c, trump),
+                                        _strength(c, trump)))
 
-    # §3 draw trumps when my team owns the contract and I'm strong at trump
-    if trump is not None and bid_team is not None and bid_team == seat % 2:
+    capot_mode = capot_potential(hand, mem, trump, seat, bids, history)
+
+    # §3 keep drawing trump while the team controls it and the opponents may
+    # still hold some — protects our future side masters. No blind rule:
+    # requires depth (J / 3+ trumps), a side master to protect, or capot mode.
+    if trump is not None and (capot_mode or (bid_team is not None
+                                             and bid_team == seat % 2)):
         my_trumps = [c for c in hand if suit_of(c) == trump]
-        opp_may_have = ((8 - mem["trumps_out"] - len(my_trumps)) > 0
-                        and not all(trump in mem["voids"][o] for o in opps))
         trump_masters = [c for c in my_trumps
                          if is_master(c, hand, mem, trump)]
-        if (opp_may_have and trump_masters
-                and (("J" + trump) in hand or len(my_trumps) >= 3)):
-            return max(trump_masters, key=trump_str)
+        if trump_masters and opps_may_have_trump(mem, seat, hand, trump):
+            side_to_protect = any(
+                suit_of(c) != trump and is_master(c, hand, mem, trump)
+                and not is_sure_master(c, hand, mem, trump, seat)
+                for c in hand)
+            if (("J" + trump) in hand or len(my_trumps) >= 3
+                    or side_to_protect or capot_mode):
+                return max(trump_masters, key=trump_str)
+        # §2 team trump control read from the auction: even weak at trump,
+        # open a small one toward the strong partner so the opponents spend
+        # theirs and the partner takes the lead
+        if (not trump_masters and len(my_trumps) >= 2
+                and opps_may_have_trump(mem, seat, hand, trump)
+                and partner_strength(bids, seat, trump, hand, mem) >= 2):
+            small = [c for c in my_trumps if rank_of(c) not in ("J", "9")]
+            if small:
+                return min(small, key=trump_str)
+
+    # capot mode: secure every trick — sure masters before anything else
+    if capot_mode and masters:
+        sure = [c for c in masters
+                if is_sure_master(c, hand, mem, trump, seat)]
+        if sure:
+            return max(sure, key=lambda c: (card_points(c, trump),
+                                            _strength(c, trump)))
 
     # cash a side master in a suit no opponent can ruff
     safe_masters = [c for c in masters if suit_of(c) != trump and not any(
@@ -232,9 +421,11 @@ def _lead(hand, legal, trump, seat, mem, bid_team):
     return _safe_discard(legal, hand, mem, trump)
 
 
-def _tfaskira(hand, legal, trick, trump, mem, opps_to_play, lead_suit, seat):
+def _tfaskira(hand, legal, trick, trump, mem, opps_to_play, lead_suit, seat,
+              capot_mode=False):
     """Partner currently wins the trick: bank points when the trick is safe
-    (dry 10 first), otherwise throw the cheapest harmless card."""
+    (dry 10 first), otherwise throw the cheapest harmless card. In capot
+    mode an insecure trick must be overtaken, never given away."""
     partner = (seat + 2) % 4
     pc = next(t["card"] for t in trick if t["seat"] == partner)
     if len(trick) == 3:
@@ -253,10 +444,17 @@ def _tfaskira(hand, legal, trick, trump, mem, opps_to_play, lead_suit, seat):
             # highest points; the dry ten (shortest suit) goes first
             return max(bankable, key=lambda c: (card_points(c, trump),
                                                 -_suit_len(hand, suit_of(c))))
+    if capot_mode and not secure:
+        # a capot tolerates zero lost tricks: overtake the partner if we can
+        winning = [c for c in legal
+                   if trick_winner(trick + [{"seat": seat, "card": c}],
+                                   trump) == seat]
+        if winning:
+            return weakest(winning, trump)
     return _safe_discard(legal, hand, mem, trump)
 
 
-def bot_play(hand, trick, trump, seat, history=None, bid_team=None):
+def bot_play(hand, trick, trump, seat, history=None, bid_team=None, bids=None):
     legal = legal_moves(hand, trick, trump, seat)
     if len(legal) == 1:
         return legal[0]
@@ -264,7 +462,7 @@ def bot_play(hand, trick, trump, seat, history=None, bid_team=None):
     partner = (seat + 2) % 4
 
     if not trick:
-        return _lead(hand, legal, trump, seat, mem, bid_team)
+        return _lead(hand, legal, trump, seat, mem, bid_team, bids, history)
 
     played_seats = {t["seat"] for t in trick}
     opps_to_play = [s for s in range(4) if s not in played_seats
@@ -272,8 +470,9 @@ def bot_play(hand, trick, trump, seat, history=None, bid_team=None):
     lead_suit = suit_of(trick[0]["card"])
 
     if trick_winner(trick, trump) == partner:
+        capot_mode = capot_potential(hand, mem, trump, seat, bids, history)
         return _tfaskira(hand, legal, trick, trump, mem,
-                         opps_to_play, lead_suit, seat)
+                         opps_to_play, lead_suit, seat, capot_mode)
 
     winning = [c for c in legal
                if trick_winner(trick + [{"seat": seat, "card": c}],
