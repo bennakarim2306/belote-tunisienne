@@ -14,7 +14,7 @@ import { SUIT_COLOR_ON_DARK, SUIT_SYMBOL } from "@/src/components/PlayingCard";
 import { GamePlayer } from "@/src/game/useGameSocket";
 import { C, F, R } from "@/src/theme";
 
-function SeatTimer({ deadline }: { deadline: number }) {
+function SeatTimer({ deadline, side = "right" }: { deadline: number; side?: "left" | "right" }) {
   const [remaining, setRemaining] = useState(() =>
     Math.max(0, Math.round(deadline - Date.now() / 1000)),
   );
@@ -27,7 +27,11 @@ function SeatTimer({ deadline }: { deadline: number }) {
   }, [deadline]);
   return (
     <View
-      style={[styles.timerPill, remaining <= 10 && styles.timerPillUrgent]}
+      style={[
+        styles.timerPill,
+        side === "left" ? styles.timerLeft : styles.timerRight,
+        remaining <= 10 && styles.timerPillUrgent,
+      ]}
       testID="seat-timer"
     >
       <Text style={styles.timerText}>{remaining}s</Text>
@@ -49,6 +53,8 @@ interface Props {
   size?: number;
   /** where announce/contract/chat bubbles are anchored (default above avatar) */
   bubbleSide?: "top" | "right";
+  /** which side of the avatar the turn countdown sits on (default right) */
+  timerSide?: "left" | "right";
   /** tapping the avatar (online games: opens the add-friend player card) */
   onPress?: () => void;
 }
@@ -66,6 +72,7 @@ export default function PlayerSeat({
   isMe,
   size = 46,
   bubbleSide = "top",
+  timerSide = "right",
   onPress,
 }: Props) {
   const pulse = useSharedValue(0);
@@ -87,6 +94,12 @@ export default function PlayerSeat({
   // when both a chat message and a bid/contract bubble are visible, the chat
   // bubble is stacked ABOVE the bid bubble instead of overlapping behind it
   const hasBid = !!(contractLabel || bidLabel);
+  // right-side bubbles must leave room for the countdown sitting beside the
+  // avatar, otherwise the contract pill covers the timer
+  const timerVisible = !!(
+    isTurn && showTimer && deadline && !player.afk && !player.left
+  );
+  const rightBubbleShift = timerVisible ? 44 : 0;
 
   return (
     <View style={styles.wrap} testID={`seat-${player.seat}`}>
@@ -131,8 +144,8 @@ export default function PlayerSeat({
             <Text style={styles.relayText}>💤</Text>
           </View>
         )}
-        {isTurn && showTimer && deadline && !player.afk && !player.left ? (
-          <SeatTimer deadline={deadline} />
+        {timerVisible && deadline ? (
+          <SeatTimer deadline={deadline} side={timerSide} />
         ) : null}
       </Pressable>
       <View style={styles.nameRow}>
@@ -154,7 +167,11 @@ export default function PlayerSeat({
             hasBid && bubbleSide === "top" && { top: -60 },
             bubbleSide === "right" && [
               styles.bubbleRight,
-              { top: ringSize / 2 - 16 - (hasBid ? 28 : 0), zIndex: 13 },
+              {
+                top: ringSize / 2 - 16 - (hasBid ? 28 : 0),
+                zIndex: 13,
+                left: 82 + rightBubbleShift,
+              },
             ],
           ]}
           testID={`chat-bubble-${player.seat}`}
@@ -169,12 +186,15 @@ export default function PlayerSeat({
           style={[
             styles.bubble,
             styles.contractBubble,
-            bubbleSide === "right" && [styles.bubbleRight, { top: ringSize / 2 - 12 }],
+            bubbleSide === "right" && [
+              styles.bubbleRight,
+              { top: ringSize / 2 - 12, left: 82 + rightBubbleShift },
+            ],
           ]}
           testID={`contract-holder-${player.seat}`}
         >
           <Ionicons name="ribbon" size={11} color="#1A1200" />
-          <Text style={[styles.bubbleText, { color: "#1A1200" }]}>
+          <Text style={[styles.bubbleText, { color: "#1A1200" }]} numberOfLines={1}>
             {" "}
             {contractLabel.text}
             <Text style={{ color: contractLabel.suit === "H" || contractLabel.suit === "D" ? "#B3261E" : "#1A1200" }}>
@@ -187,11 +207,14 @@ export default function PlayerSeat({
         <Animated.View
           style={[
             styles.bubble,
-            bubbleSide === "right" && [styles.bubbleRight, { top: ringSize / 2 - 12 }],
+            bubbleSide === "right" && [
+              styles.bubbleRight,
+              { top: ringSize / 2 - 12, left: 82 + rightBubbleShift },
+            ],
           ]}
           entering={undefined}
         >
-          <Text style={styles.bubbleText}>
+          <Text style={styles.bubbleText} numberOfLines={1}>
             {bidLabel}
             {bidSuit ? (
               <Text style={{ color: SUIT_COLOR_ON_DARK[bidSuit] }}> {SUIT_SYMBOL[bidSuit]}</Text>
@@ -313,7 +336,8 @@ const styles = StyleSheet.create({
   chatText: { fontFamily: F.bold, fontSize: 12, color: C.ink },
   timerPill: {
     position: "absolute",
-    bottom: -8,
+    top: "50%",
+    marginTop: -10,
     backgroundColor: "rgba(0,0,0,0.65)",
     borderRadius: R.pill,
     paddingHorizontal: 8,
@@ -322,6 +346,9 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255,255,255,0.35)",
     zIndex: 5,
   },
+  // beside the avatar (never between avatar and name, where there is no room)
+  timerRight: { left: "100%", marginLeft: 2 },
+  timerLeft: { right: "100%", marginRight: 2 },
   timerPillUrgent: {
     backgroundColor: C.error,
     borderColor: C.cream,

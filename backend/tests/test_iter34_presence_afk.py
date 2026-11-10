@@ -14,6 +14,7 @@ from pymongo import MongoClient
 from dotenv import load_dotenv
 
 from conftest import API, UA, auth_headers
+from matchmaking import CONFIRM_GRACE, CONFIRM_SECONDS
 
 load_dotenv("/app/backend/.env")
 _db = MongoClient(os.environ["MONGO_URL"])[os.environ["DB_NAME"]]
@@ -98,7 +99,7 @@ def test_confirm_flow_new_clients():
         st = _wait_all(accs, lambda s: s["status"] == "confirm", timeout=20)
         for i, s in st.items():
             assert s["status"] == "confirm", s
-            assert 0 <= s["remaining"] <= 10
+            assert 25 <= s["remaining"] <= 30, s  # CONFIRM_SECONDS=30
             assert s["total"] == 4 and s["me_accepted"] is False
             assert len(s["players"]) == 3
         _confirm(accs[0])
@@ -152,7 +153,7 @@ def test_confirm_expiry_requeue_and_remove():
         _wait_all(accs, lambda s: s["status"] == "confirm", timeout=20)
         _confirm(accs[0])
         _confirm(accs[1])
-        time.sleep(15)
+        time.sleep(CONFIRM_SECONDS + CONFIRM_GRACE + 3)
         for a in accs[:2]:
             s = _status(a)
             assert s["status"] == "waiting", s

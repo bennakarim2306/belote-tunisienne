@@ -47,7 +47,6 @@ function SurcontreCountdown({ deadline }: { deadline: number }) {
 export default function BiddingPanel({ state, t, onAction }: Props) {
   const [suit, setSuit] = useState<string | null>(null);
   const [value, setValue] = useState<number | null>(null);
-  const [capotOpen, setCapotOpen] = useState(false);
 
   const myTurn = state.phase === "bidding" && state.turn === state.my_seat;
   const minValue = state.contract?.value ? state.contract.value + 10 : 90;
@@ -89,11 +88,6 @@ export default function BiddingPanel({ state, t, onAction }: Props) {
     setValue(null);
   }, [state.hand_number]);
 
-  // close the out-of-turn capot picker whenever the auction context changes
-  useEffect(() => {
-    setCapotOpen(false);
-  }, [state.phase, state.turn, state.hand_number]);
-
   if (state.phase === "surcontre") {
     if (state.can_surcontre) {
       return (
@@ -129,50 +123,8 @@ export default function BiddingPanel({ state, t, onAction }: Props) {
 
   if (state.phase !== "bidding") return null;
 
-  if (!myTurn) {
-    // out-of-turn actions: contre (defending team) + capot (anyone, any time)
-    return (
-      <Animated.View entering={FadeInDown} style={styles.floatCol} pointerEvents="box-none">
-        {capotOpen && (
-          <Animated.View entering={FadeInDown} style={styles.capotSuitRow}>
-            {SUITS.map((s) => (
-              <Pressable
-                key={s}
-                testID={`capot-suit-${s}`}
-                onPress={() => {
-                  setCapotOpen(false);
-                  onAction({ action: "capot", suit: s });
-                }}
-                style={styles.capotSuitBtn}
-              >
-                <Text style={[styles.capotSuitText, { color: s === "H" || s === "D" ? "#FF7A66" : "#FFFFFF" }]}>
-                  {SUIT_SYMBOL[s]}
-                </Text>
-              </Pressable>
-            ))}
-          </Animated.View>
-        )}
-        <View style={styles.floatRow}>
-          <Pressable
-            testID="capot-float-button"
-            onPress={() => setCapotOpen((v) => !v)}
-            style={[styles.contreBtn, { backgroundColor: C.gold }]}
-          >
-            <Text style={[styles.contreBtnText, { color: "#1A1200" }]}>{t("capot")}</Text>
-          </Pressable>
-          {state.can_contre && (
-            <Pressable
-              testID="contre-button"
-              onPress={() => onAction({ action: "contre" })}
-              style={styles.contreBtn}
-            >
-              <Text style={styles.contreBtnText}>{t("contre")}</Text>
-            </Pressable>
-          )}
-        </View>
-      </Animated.View>
-    );
-  }
+  // out-of-turn actions (contre/capot) live in the DeclareDock, bottom right
+  if (!myTurn) return null;
 
   const canAnnounce = suit !== null && value !== null && value >= minValue;
 
@@ -264,6 +216,75 @@ export default function BiddingPanel({ state, t, onAction }: Props) {
           </Text>
         </Pressable>
       </View>
+    </Animated.View>
+  );
+}
+
+// Out-of-turn auction actions (contre + capot), docked bottom-right above the
+// "last trick"/chat buttons in a bordered block so they never cover a player.
+export function DeclareDock({ state, t, onAction }: Props) {
+  const [capotOpen, setCapotOpen] = useState(false);
+
+  // close the capot suit picker only when the auction context truly changes —
+  // not on every bot move, or a slow player keeps losing the open picker
+  useEffect(() => {
+    setCapotOpen(false);
+  }, [state.phase, state.hand_number]);
+
+  const myTurn = state.phase === "bidding" && state.turn === state.my_seat;
+  if (state.phase !== "bidding" || myTurn) return null;
+
+  return (
+    <Animated.View entering={FadeInDown} style={styles.dock} testID="declare-dock">
+      {capotOpen && (
+        <Animated.View entering={FadeInDown} style={styles.dockSuitRow}>
+          {SUITS.map((s) => (
+            <Pressable
+              key={s}
+              testID={`capot-suit-${s}`}
+              onPress={() => {
+                setCapotOpen(false);
+                onAction({ action: "capot", suit: s });
+              }}
+              style={styles.dockSuitBtn}
+            >
+              <Text style={[styles.dockSuitText, { color: s === "H" || s === "D" ? "#FF7A66" : "#FFFFFF" }]}>
+                {SUIT_SYMBOL[s]}
+              </Text>
+            </Pressable>
+          ))}
+        </Animated.View>
+      )}
+      <Pressable
+        testID="capot-float-button"
+        onPress={() => setCapotOpen((v) => !v)}
+        style={[styles.dockBtn, { backgroundColor: C.gold }]}
+      >
+        <Text
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.7}
+          style={[styles.dockBtnText, { color: "#1A1200" }]}
+        >
+          {t("capot")}
+        </Text>
+      </Pressable>
+      {state.can_contre && (
+        <Pressable
+          testID="contre-button"
+          onPress={() => onAction({ action: "contre" })}
+          style={[styles.dockBtn, { backgroundColor: C.error }]}
+        >
+          <Text
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.7}
+            style={styles.dockBtnText}
+          >
+            {t("contre")}
+          </Text>
+        </Pressable>
+      )}
     </Animated.View>
   );
 }
@@ -361,50 +382,40 @@ const styles = StyleSheet.create({
     paddingHorizontal: SP.sm,
   },
   bigActionText: { fontFamily: F.display, fontSize: 12, color: C.onBrand },
-  floatCol: {
-    alignItems: "flex-end",
-    paddingRight: SP.lg,
-    gap: SP.sm,
+  dock: {
+    width: "100%",
+    backgroundColor: "rgba(10,8,2,0.85)",
+    borderRadius: R.md,
+    borderWidth: 1.5,
+    borderColor: "rgba(233,196,106,0.6)",
+    padding: 6,
+    gap: 6,
+    alignItems: "stretch",
   },
-  floatRow: {
-    flexDirection: "row",
-    gap: SP.sm,
+  dockBtn: {
+    height: 32,
+    borderRadius: R.pill,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: SP.sm,
   },
-  capotSuitRow: {
+  dockBtnText: { fontFamily: F.display, fontSize: 12.5, color: C.onBrand },
+  dockSuitRow: {
     flexDirection: "row",
-    gap: SP.sm,
+    justifyContent: "space-between",
     backgroundColor: "rgba(250,248,245,0.97)",
     borderRadius: R.pill,
-    padding: SP.sm,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
-    elevation: 6,
+    padding: 4,
   },
-  capotSuitBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+  dockSuitBtn: {
+    width: 29,
+    height: 29,
+    borderRadius: 15,
     backgroundColor: C.card,
     borderWidth: 1.5,
     borderColor: C.borderStrong,
     alignItems: "center",
     justifyContent: "center",
   },
-  capotSuitText: { fontSize: 19 },
-  contreBtn: {
-    backgroundColor: C.error,
-    borderRadius: R.pill,
-    paddingHorizontal: SP.lg,
-    height: 36,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
-    elevation: 6,
-  },
-  contreBtnText: { fontFamily: F.display, fontSize: 12.5, color: C.onBrand },
+  dockSuitText: { fontSize: 16 },
 });

@@ -25,7 +25,7 @@ DUO_INVITE_TTL = 120  # duo invites expire after 2 minutes
 MATCHED_TTL = 600     # "found" tickets stay readable for 10 minutes
 FEEDBACK_TTL = 30
 MM_LOCK_TTL = 6
-CONFIRM_SECONDS = 10  # window to press "Accept" when a match is found
+CONFIRM_SECONDS = 30  # window to press "Accept" when a match is found
 CONFIRM_GRACE = 2     # extra server-side slack before sweeping
 
 

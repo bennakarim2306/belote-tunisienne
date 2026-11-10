@@ -1,0 +1,46 @@
+{
+  "summary": "Checked the 4 UI/UX fixes at 844x390 landscape, plus the backend matchmaking with the 30s confirmation window. Backend: test_iter34_presence_afk.py, test_duo_matchmaking.py, test_new_pack.py and test_iter33_ws_sync::test_mm_found_push all pass (26/26) after I fixed one outdated assertion. GET /matchmaking/status returns status=confirm with remaining=30, and the WS pushes mm_confirm {remaining:30} then mm_found. Frontend: (1) DeclareDock works. It shows bottom right with a gold border, holds Capot and Contrer (Contrer only after an opponent bids), and sits directly above chat-button. Even fully open (suit picker + Capot + Contrer, 127px tall) it does not cover the right seat's name (dock top 201 vs seat bottom 184). capot-suit-H sends the capot: the 'Capot !' banner, the bubble on my seat and the 'Capot ♥' contract pill all appear. (2) seat-timer, checked in a private room with the timer on: beside the avatar on the right for seats 0, 1 and 2, on the LEFT for the right-hand seat (seat 3), and vertically centered on the avatar, never between avatar and name. (3) Matchmaking fallback is 30. (4) Checked in the code only: afkStrip has zIndex 900 / elevation 900 and renders at the root after the hand. New bug found: my own seat's timer is hidden under the contract pill when I hold the contract during play. No deprecated Expo packages in the files reviewed.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "tests/test_iter34_presence_afk.py::test_confirm_flow_new_clients", "issue": "The test still asserted remaining <= 10 and failed with 'assert 30 <= 10'. The backend is correct; I updated the test to 25 <= remaining <= 30."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "PlayerSeat SeatTimer vs contract/bid bubble (bubbleSide='right')", "issue": "Reproduced live in a timed private room. When I hold the contract (160♠) and it is my turn to play, contract-holder-0 at [94,310,51,54] sits on top of seat-timer at [89,312,38,18], so the countdown cannot be seen. Cause: timerRight (left:100%) and bubbleRight (left:82) are at the same height on the right side of the avatar. The top seat (seat 2) also uses bubbleSide='right', and in a 2nd bidding round the bid label (e.g. '100♣' / 'Passe') will overlap the timer the same way. Fix: when a right-side bubble is present, move the bubble further right (left: 82 + timer width) or put the timer above/below the ring.", "testID": "seat-timer / contract-holder-0", "priority": "MEDIUM"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "game/[id] (contract bubble)", "issues": ["The contract-holder bubble on my seat wraps onto 2 lines ('🎗160' then '♠' below it, 51x54) instead of staying on one line. Add numberOfLines={1} or a minWidth."]},
+      {"screen": "game/[id] DeclareDock", "issues": ["Fully open (suit row + Capot + Contrer) the dock is 127px tall and its top is at y=201. The right seat has been seen at y=102 (bottom 207) in some states, so the dock can come within about 6px of the right seat's card-count pill, or touch it. No overlap was seen in this run, but there is almost no margin. Optional: shrink the suit buttons a little or reduce the dock padding."]}
+    ],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter34_presence_afk.py",
+    "/app/backend/tests/test_iter33_ws_sync.py",
+    "/app/backend/tests/test_duo_matchmaking.py",
+    "/app/backend/tests/test_new_pack.py",
+    "/app/test_reports/pytest/iter37_afk.xml",
+    "/app/test_reports/pytest/iter37_regress.xml"
+  ],
+  "action_items": [
+    "Fix the seat-timer / right-side bubble overlap in PlayerSeat.tsx: the contract pill and bid label (bubbleRight left:82) cover the timer (timerRight left:100%) on seats 0 and 2. Offset the bubble when the timer is shown, or move the timer.",
+    "Optional: keep the contract bubble on one line (it currently wraps the suit symbol to a second line)."
+  ],
+  "critical_code_review_comments": [
+    "DeclareDock resets capotOpen when phase/turn/hand_number changes, which is good. But because bot turns change state.turn every ~1s, the suit picker closes on every bot move, so a slow user can lose the open picker. Consider resetting only on phase/hand_number changes.",
+    "afkStrip (zIndex/elevation 900) renders at the root after the HandFan (whose card zIndex is at most 100), so it will draw on top. Checked in the code only; the live 3-missed-turns scenario was not reproduced."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iter34_presence_afk.py (remaining assertion updated to the 30s window)",
+    "/app/backend/tests/test_iter33_ws_sync.py (added assert mm_confirm remaining == 30)"
+  ],
+  "success_rate": {"backend": "100% (26/26 after the test fix)", "frontend": "90% (all 4 fixes verified; 1 new overlap bug: seat timer hidden by the contract bubble)"},
+  "seed_data_creation": "pytest registers its own temporary TEST accounts. The UI tests created 4 private timed rooms with bots for tester1@belote.tn; those games were left running on the server.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Credentials are tester1@belote.tn / Belote123! (the review request's tester1@test.com / Test1234! is wrong). To get the seat timer: POST /api/rooms {match_type:'short', turn_timer:true} with a Bearer token, then POST /api/rooms/{code}/start and open /game/{game_id} (bots fill the seats, turn_timeout=20). The solo game has no timer. DeclareDock appears right after you press pass-button during a bot's bidding turn. Note: the browser tool rewrites f-string screenshot paths, so use literal filenames.",
+  "rca_of_issue": "Timer overlap: in PlayerSeat.tsx the SeatTimer is absolutely positioned at left:100% of the avatar Pressable, at about x=77 in the 92px-wide wrap. The bid/contract bubble with bubbleRight sits at left:82 and the same top (ringSize/2-12) with zIndex 12, higher than the timer's 5. So it renders over the timer on seats using bubbleSide='right' (my seat and the top seat)."
+}

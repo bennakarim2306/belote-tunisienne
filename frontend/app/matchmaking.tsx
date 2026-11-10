@@ -155,7 +155,7 @@ export default function MatchmakingScreen() {
           // match found: everyone must accept within the window
           setPendingPartner(null);
           setConfirm((c) => ({
-            target: c?.target ?? Date.now() + (st.remaining ?? 10) * 1000,
+            target: c?.target ?? Date.now() + (st.remaining ?? 30) * 1000,
             accepted: st.accepted ?? 0,
             total: st.total ?? 4,
             me: !!st.me_accepted,
@@ -224,7 +224,7 @@ export default function MatchmakingScreen() {
         if (cancelledRef.current || stopped) return;
         if (AppState.currentState === "active") await checkStatus();
         if (cancelledRef.current || stopped) return;
-        // fast while young or during a confirmation window (10 s to accept)
+        // fast while young or during a confirmation window (30 s to accept)
         const fast = Date.now() - startedAt < 20000 || confirmRef.current;
         poll = setTimeout(loop, fast ? 1500 : 5000);
       };

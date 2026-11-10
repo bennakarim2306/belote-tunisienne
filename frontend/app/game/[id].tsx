@@ -23,7 +23,7 @@ import {
   preloadInterstitial,
   showInterstitialAfterMatch,
 } from "@/src/ads/interstitial";
-import BiddingPanel from "@/src/components/game/BiddingPanel";
+import BiddingPanel, { DeclareDock } from "@/src/components/game/BiddingPanel";
 import CoachBubble from "@/src/components/game/CoachBubble";
 import DealAnimation from "@/src/components/game/DealAnimation";
 import { HandEndModal, MatchEndOverlay } from "@/src/components/game/HandEndModal";
@@ -710,6 +710,7 @@ export default function GameScreen() {
             chatText={chatBubbles[rightP.seat]?.text}
             deadline={state.turn_deadline}
             showTimer={seatTimerOn}
+            timerSide="left"
             onPress={seatPress(rightP)}
           />
         </View>
@@ -766,6 +767,7 @@ export default function GameScreen() {
               <Text style={[styles.turnPillText, { color: "#1A1200" }]}>{t("reconnecting")}</Text>
             </View>
           )}
+          {!dealing && <DeclareDock state={state} t={t} onAction={send} />}
           <View style={{ flexDirection: "row", gap: SP.sm }}>
             {state.last_trick && state.phase === "playing" && (
               <Pressable
@@ -1548,6 +1550,8 @@ const styles = StyleSheet.create({
     borderColor: "rgba(233,196,106,0.55)",
     paddingHorizontal: SP.lg,
     paddingVertical: 8,
+    zIndex: 900,
+    elevation: 900,
   },
   afkStripTitle: { fontFamily: F.bold, fontSize: 13, color: C.gold },
   afkStripNote: { fontFamily: F.text, fontSize: 11, color: C.cream, opacity: 0.8 },

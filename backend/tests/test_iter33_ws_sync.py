@@ -197,6 +197,9 @@ async def test_mm_found_push(t1):
                                        8, since=t0 - 2)
             assert conf is not None, \
                 f"no mm_confirm; msgs={[x[1].get('type') for x in c.msgs]}"
+            # iter37: confirmation window is 30 s (CONFIRM_SECONDS)
+            assert conf.get("remaining") == 30, conf
+            print("mm_confirm payload:", conf)
             for acc in [t1] + others:
                 r = requests.post(f"{API}/matchmaking/confirm",
                                   headers=_h(acc["token"]), timeout=15)
