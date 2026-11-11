@@ -25,7 +25,8 @@ import { LanguageProvider } from "@/src/i18n";
 if (Platform.OS !== "web") {
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
-      shouldShowAlert: true,
+      shouldShowBanner: true,
+      shouldShowList: true,
       shouldPlaySound: true,
       shouldSetBadge: false,
     }),
@@ -37,6 +38,37 @@ const openPushUrl = (data: Record<string, unknown>) => {
   if (!url) return;
   if (url.startsWith("http")) Linking.openURL(url);
   else router.push(url as never);
+};
+
+// Android can replay the LAST tapped notification on every cold start, which
+// used to yank the user away from whatever screen they had just opened (e.g.
+// Profile flashing then disappearing). Each response is handled exactly once.
+const PUSH_SEEN_KEY = "lastPushResponseSeen";
+let handledPushId: string | null = null; // in-memory guard against double fire
+const handlePushResponse = async (
+  response: Notifications.NotificationResponse,
+  coldStart = false,
+) => {
+  try {
+    const id = `${response.notification.request.identifier}:${response.notification.date ?? ""}`;
+    if (handledPushId === id) return; // tap listener + cold-start replay race
+    handledPushId = id;
+    if (coldStart) {
+      const seen = await AsyncStorage.getItem(PUSH_SEEN_KEY);
+      if (seen === id) return; // stale tap replayed by the OS — ignore it
+      // a genuine launch-by-tap is recent; anything older is a replay
+      const ageMs = Date.now() - (Number(response.notification.date) || 0) * 1000;
+      if (Number.isFinite(ageMs) && ageMs > 2 * 60 * 1000) {
+        await AsyncStorage.setItem(PUSH_SEEN_KEY, id);
+        return;
+      }
+    }
+    await AsyncStorage.setItem(PUSH_SEEN_KEY, id);
+    try {
+      Notifications.clearLastNotificationResponse();
+    } catch {}
+    openPushUrl(response.notification.request.content.data || {});
+  } catch {}
 };
 
 
@@ -114,15 +146,16 @@ export default function RootLayout() {
     try {
       tapSub = Notifications.addNotificationResponseReceivedListener(
         (response) => {
-          openPushUrl(response.notification.request.content.data || {});
+          handlePushResponse(response);
         },
       );
     } catch {}
 
-    // cold-start tap — app was killed when the notification was tapped
+    // cold-start tap — only act on a response never handled before (the OS
+    // keeps returning the last tapped notification on later launches too)
     Notifications.getLastNotificationResponseAsync()
       .then((response) => {
-        if (response) openPushUrl(response.notification.request.content.data || {});
+        if (response) handlePushResponse(response, true);
       })
       .catch(() => {});
 

@@ -124,7 +124,7 @@ export default function HomeScreen() {
         setLocalGame(user ? await getSavedLocalGame(user.user_id) : null);
       })();
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []),
+    }, [user?.user_id]),
   );
 
   const chooseType = async (matchType: "short" | "long") => {

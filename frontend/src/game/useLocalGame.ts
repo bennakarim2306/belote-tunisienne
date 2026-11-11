@@ -304,10 +304,10 @@ export function useLocalGame(gameId: string | undefined) {
           commit(g.resume(0));
           break;
         case "leave":
-          // host leaving ends the offline game (same as backend solo games)
+          // pause the offline match: stop the loop but KEEP the saved game
+          // so the player can resume it from the Home screen (resume pill)
           activeRef.current = false;
           if (timerRef.current) clearTimeout(timerRef.current);
-          AsyncStorage.removeItem(STORAGE_KEY).catch(() => {});
           break;
         default:
           break;

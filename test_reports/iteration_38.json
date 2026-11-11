@@ -1,0 +1,37 @@
+{
+  "summary": "Frontend-only retest (web preview 844x390, tester1). REGRESSION 1 fix works in-session: quitting a solo vs-AI game keeps local_solo_game, resume-game-button ('Partie en cours Nous 0 · 0 Eux') appears, tapping it reopens the SAME game id with the same contract/hand number/hand (UI cards = saved hand), bots continue and the human can play. A new solo game correctly overwrites the save (pill -> new id). Finishing the match (forced by setting doc.target=10 in storage, then playing a full hand) removes local_solo_game, shows the match-end overlay, and the pill disappears on Home. NEW BUG: after a full page reload ON /home the save still exists but the pill is NOT shown (even after navigating Profile -> Home); it only shows when the app boots via '/' (index splash -> redirect). Root cause: home.tsx useFocusEffect(useCallback(..., [])) captures user=null because (tabs)/_layout renders the tabs while auth is still loading. BUG 2: Profile screen stays visible 6-7s in 4 scenarios (right after login, second open, after cold start via '/', reload on /profile), no ejection. The native push dedup logic was reviewed in code only; it is correct in principle but has a race and uses deprecated APIs (see review comments).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "Home resume pill after reload", "issue": "If the page is reloaded (or the tabs are mounted) while AuthContext is still loading, resume-game-button never appears even though local_solo_game is still in storage. Refocusing Home does not fix it. Reproduce: start a solo game, quit, reload on /home, and the pill is missing. Opening '/' shows it. Cause: app/(tabs)/home.tsx:119-128 calls useFocusEffect(useCallback(() => {... getSavedLocalGame(user.user_id) ...}, [])), so the stale closure keeps user=null, and app/(tabs)/_layout.tsx:29-31 renders TabsInner while loading. The same stale closure also means a logout followed by a login as another user without unmounting Home reads the previous user.", "testID": "resume-game-button", "priority": "MEDIUM"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Home (after quit from game)", "issues": ["After quit(), which calls router.replace('/(tabs)/home') from the root-stack game screen, the DOM holds 2 home-screen instances (one hidden). A second (tabs) navigator may be stacked, which doubles focus effects and polling. Worth checking with router.dismissTo / router.back."]}
+    ],
+    "react_native_issues": [
+      {"component": "expo-notifications deprecated APIs", "issue": "getLastNotificationResponseAsync is @deprecated in expo-notifications 0.32.17; use getLastNotificationResponse() (sync) plus clearLastNotificationResponse() after handling. This is the official way to stop the OS replaying a stale tap. Reference: /app/frontend/app/_layout.tsx:143"},
+      {"component": "expo-notifications shouldShowAlert", "issue": "NotificationBehavior.shouldShowAlert is deprecated. shouldShowBanner and shouldShowList are required fields in 0.32.x types. Reference: /app/frontend/app/_layout.tsx:27-31"},
+      {"component": "Push dedup race", "issue": "On an Android cold start from a tap, both the response listener (which navigates and calls setItem without awaiting it) and getLastNotificationResponseAsync (coldStart=true, which awaits getItem) can handle the SAME response. getItem can resolve before setItem finishes, which causes a double router.push. Also, on the first launch after the update the key is absent, so the old stale tap is replayed once more. Reference: /app/frontend/app/_layout.tsx:46-59,134-147"}
+    ]
+  },
+  "test_report_links": ["browser_automation scripts (inline, this run)"],
+  "action_items": [
+    "home.tsx:119-128: make the focus callback depend on user (useCallback(..., [user?.user_id])) or add a useEffect on user?.user_id that re-runs getSavedLocalGame, so the resume pill shows after a reload or a late auth load.",
+    "_layout.tsx push: add a module-level in-memory Set/lastHandledId that is checked synchronously before any await, await the AsyncStorage.setItem, and call Notifications.clearLastNotificationResponse() after handling. Switch to getLastNotificationResponse() (non-deprecated).",
+    "_layout.tsx:27: replace shouldShowAlert with shouldShowBanner: true, shouldShowList: true.",
+    "Optional: check the duplicate home-screen instance after quit (router.replace from game to /(tabs)/home)."
+  ],
+  "critical_code_review_comments": [
+    "useLocalGame 'leave' now only stops the loop (activeRef=false, timer cleared). The save is kept because every commit() persists. Correct.",
+    "persist() removes the key on phase==='finished' and getSavedLocalGame also ignores finished docs. Verified end-to-end.",
+    "Resume after quit replays the dealing animation for an already dealt hand (cosmetic)."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (skipped)", "frontend": "90% (resume in-session, overwrite, finish clear and Profile stability pass; reload-on-/home resume fails)"},
+  "seed_data_creation": "Created several local solo games (localStorage only). One finished offline match was reported to POST /api/telemetry/offline-match for tester1 (statistics row). No online games were created.",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Use ':visible' selectors on the web: after quit the DOM has 2 home-screen/play-solo-card instances (one hidden). Flow: play-solo-card -> match-type-short -> game; quit-game-button -> quit-confirm-button. Read game state from localStorage 'local_solo_game' (doc.phase/turn/hands[0]/current_bid). To finish quickly, set doc.target=10 in storage, resume, and play one hand; the match-end overlay has back-home-button. A web dev overlay 'Uncaught Error 6000ms timeout exceeded' (font observer) sometimes appears; click 'Dismiss'. Reload directly on /home reproduces the missing-pill bug, while goto('/') does not.",
+  "rca_of_issue": "Missing resume pill after reload: TabsLayout renders Home while useAuth().loading is true (user=null). Home's useFocusEffect callback is memoized with [] deps, so it permanently captures user=null and setLocalGame(null) runs on every focus. On native the cold start goes through app/index.tsx (splash until loading=false), so the usual native path is probably fine. It breaks on a web reload, deep links into tabs, or any mount before auth resolves."
+}
