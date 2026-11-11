@@ -39,6 +39,10 @@
             "enableProguardInReleaseBuilds": true,
             "enableShrinkResourcesInReleaseBuilds": true,
             "extraProguardRules": "# Keep JNI bridge classes (React Native native calls)\n-keep class com.facebook.jni.** { *; }\n# Google Mobile Ads — safety net on top of the SDK's own consumer rules\n-keep public class com.google.android.gms.ads.** { public *; }"
+          },
+          "ios": {
+            "useFrameworks": "static",
+            "buildReactNativeFromSource": true
           }
         }
       ],
@@ -66,7 +70,6 @@
         }
       ],
       "expo-apple-authentication",
-      "expo-build-properties",
       "expo-notifications"
     ],
     "experiments": {
