@@ -860,7 +860,7 @@ export default function GameScreen() {
       )}
 
       {/* quick chat modal */}
-      <Modal visible={chatOpen} transparent animationType="slide">
+      <Modal visible={chatOpen} transparent animationType="slide" supportedOrientations={["landscape", "portrait"]}>
         <Pressable style={styles.chatScrim} onPress={() => setChatOpen(false)}>
           <Pressable style={styles.chatSheet} onPress={() => {}} testID="chat-panel">
             <View style={styles.sheetHandle} />
@@ -893,7 +893,7 @@ export default function GameScreen() {
         </Pressable>
       </Modal>
 
-      <Modal visible={lastTrickOpen} transparent animationType="fade">
+      <Modal visible={lastTrickOpen} transparent animationType="fade" supportedOrientations={["landscape", "portrait"]}>
         <Pressable style={styles.quitScrim} onPress={() => setLastTrickOpen(false)}>
           <Pressable style={styles.quitCard} onPress={() => {}} testID="last-trick-modal">
             <Text style={styles.quitTitle}>{t("lastTrick")}</Text>
@@ -945,7 +945,7 @@ export default function GameScreen() {
       )}
 
       {/* pause: accept/decline for the other players */}
-      <Modal visible={pauseAskMe} transparent animationType="fade">
+      <Modal visible={pauseAskMe} transparent animationType="fade" supportedOrientations={["landscape", "portrait"]}>
         <View style={styles.quitScrim}>
           <View style={styles.quitCard} testID="pause-request-modal">
             <Ionicons
@@ -1021,7 +1021,7 @@ export default function GameScreen() {
       )}
 
       {/* score history (tap on the header score) */}
-      <Modal visible={scoresOpen} transparent animationType="fade">
+      <Modal visible={scoresOpen} transparent animationType="fade" supportedOrientations={["landscape", "portrait"]}>
         <Pressable style={styles.quitScrim} onPress={() => setScoresOpen(false)}>
           <Pressable
             style={[styles.quitCard, { maxHeight: "75%" }]}
@@ -1089,7 +1089,7 @@ export default function GameScreen() {
       </Modal>
 
       {/* player card: add an online player as friend */}
-      <Modal visible={!!playerCard} transparent animationType="fade">
+      <Modal visible={!!playerCard} transparent animationType="fade" supportedOrientations={["landscape", "portrait"]}>
         <Pressable style={styles.quitScrim} onPress={() => setPlayerCard(null)}>
           <Pressable
             style={[styles.quitCard, styles.playerCard]}
@@ -1153,7 +1153,7 @@ export default function GameScreen() {
       </Modal>
 
       {/* quit confirm */}
-      <Modal visible={quitOpen} transparent animationType="fade">
+      <Modal visible={quitOpen} transparent animationType="fade" supportedOrientations={["landscape", "portrait"]}>
         <View style={styles.quitScrim}>
           <View style={styles.quitCard}>
             <Text style={styles.quitTitle}>{t("quitGame")}</Text>

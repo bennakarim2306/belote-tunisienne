@@ -72,7 +72,7 @@ export default function FeedbackModal({
   };
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={close}>
+    <Modal visible={visible} transparent animationType="fade" supportedOrientations={["landscape", "portrait"]} onRequestClose={close}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.scrim}

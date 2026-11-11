@@ -69,7 +69,7 @@ export default function ShareSheet({ visible, onClose, title, message, url }: Pr
   ];
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType="slide" supportedOrientations={["landscape", "portrait"]} onRequestClose={onClose}>
       <Pressable style={styles.scrim} onPress={onClose}>
         <Pressable style={styles.sheet} onPress={() => {}} testID="share-sheet">
           <View style={styles.handle} />

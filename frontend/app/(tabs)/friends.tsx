@@ -320,7 +320,7 @@ export default function FriendsScreen() {
       )}
 
       {/* invite an online friend to a duo game */}
-      <Modal visible={inviteFor !== null} transparent animationType="fade">
+      <Modal visible={inviteFor !== null} transparent animationType="fade" supportedOrientations={["landscape", "portrait"]}>
         <Pressable style={styles.inviteScrim} onPress={() => setInviteFor(null)}>
           <Pressable style={styles.inviteCard} onPress={() => {}} testID="invite-game-modal">
             <Text style={styles.inviteTitle}>{t("inviteToGame")}</Text>

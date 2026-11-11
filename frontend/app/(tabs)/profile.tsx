@@ -355,6 +355,7 @@ export default function ProfileScreen() {
         visible={showDelete}
         transparent
         animationType="fade"
+        supportedOrientations={["landscape", "portrait"]}
         onRequestClose={() => setShowDelete(false)}
       >
         <View style={styles.modalScrim}>

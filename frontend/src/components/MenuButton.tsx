@@ -55,7 +55,7 @@ export default function MenuButton() {
         )}
       </Pressable>
 
-      <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
+      <Modal visible={open} transparent animationType="fade" supportedOrientations={["landscape", "portrait"]} onRequestClose={() => setOpen(false)}>
         <Pressable style={styles.scrim} onPress={() => setOpen(false)}>
           <Animated.View
             entering={SlideInLeft.duration(200)}

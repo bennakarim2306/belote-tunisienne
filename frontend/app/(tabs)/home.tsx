@@ -453,7 +453,7 @@ export default function HomeScreen() {
       </View>
 
       {/* private game: join by code or create */}
-      <Modal visible={privateOpen} transparent animationType="fade">
+      <Modal visible={privateOpen} transparent animationType="fade" supportedOrientations={["landscape", "portrait"]}>
         <Pressable style={styles.modalScrim} onPress={() => setPrivateOpen(false)}>
           <Pressable style={styles.modalSheet} onPress={() => {}} testID="private-game-modal">
             <View style={styles.sheetHandle} />
@@ -499,7 +499,7 @@ export default function HomeScreen() {
         </Pressable>
       </Modal>
 
-      <Modal visible={notifOpen} transparent animationType="slide">
+      <Modal visible={notifOpen} transparent animationType="slide" supportedOrientations={["landscape", "portrait"]}>
         <Pressable style={styles.modalScrim} onPress={() => setNotifOpen(false)}>
           <Pressable style={styles.modalSheet} onPress={() => {}} testID="notifications-panel">
             <View style={styles.sheetHandle} />
@@ -596,7 +596,7 @@ export default function HomeScreen() {
         </Pressable>
       </Modal>
 
-      <Modal visible={typeModal !== null} transparent animationType="fade">
+      <Modal visible={typeModal !== null} transparent animationType="fade" supportedOrientations={["landscape", "portrait"]}>
         <Pressable style={styles.modalScrim} onPress={() => setTypeModal(null)}>
           <Pressable style={[styles.modalSheet, { maxHeight: "88%" }]} onPress={() => {}}>
             <View style={styles.sheetHandle} />

@@ -275,7 +275,7 @@ export default function RoomScreen() {
         url={roomLink(code ?? "")}
       />
 
-      <Modal visible={seatAction !== null} transparent animationType="fade">
+      <Modal visible={seatAction !== null} transparent animationType="fade" supportedOrientations={["landscape", "portrait"]}>
         <Pressable style={styles.actionScrim} onPress={() => setSeatAction(null)}>
           <Pressable style={styles.actionCard} onPress={() => {}} testID="seat-action-modal">
             <Text style={styles.actionTitle}>
@@ -307,7 +307,7 @@ export default function RoomScreen() {
         </Pressable>
       </Modal>
 
-      <Modal visible={inviteOpen} transparent animationType="slide">
+      <Modal visible={inviteOpen} transparent animationType="slide" supportedOrientations={["landscape", "portrait"]}>
         <Pressable style={styles.modalScrim} onPress={() => setInviteOpen(false)}>
           <Pressable style={styles.modalSheet} onPress={() => {}}>
             <View style={styles.sheetHandle} />
