@@ -273,41 +273,32 @@ export default function HomeScreen() {
             </Text>
           </View>
           <View style={styles.headerMiddle}>
-            {currentGame ? (
-              <Pressable
-                testID="resume-game-button"
-                onPress={() =>
-                  router.push({ pathname: "/game/[id]", params: { id: currentGame.game_id } })
-                }
-                style={({ pressed }) => [styles.resumePill, pressed && { opacity: 0.85 }]}
-              >
-                <Ionicons name="play-circle" size={20} color={C.onBrand} />
-                <View style={{ minWidth: 0, flexShrink: 1 }}>
-                  <Text style={styles.resumePillTitle} numberOfLines={1}>
-                    {t("resumeGame")}
-                  </Text>
-                  <Text style={styles.resumePillDesc} numberOfLines={1}>
-                    {t("us")} {currentGame.match_scores[currentGame.my_team]}
-                    {" · "}
-                    {currentGame.match_scores[1 - currentGame.my_team]} {t("them")}
-                  </Text>
-                </View>
-                <Ionicons name="chevron-forward" size={16} color={C.onBrand} />
-              </Pressable>
-            ) : (
-              <View style={styles.suitsDeco} pointerEvents="none">
-                {SUIT_DECO.map((d) => (
-                  <Text key={d.s} style={[styles.suitDecoText, { color: d.c }]}>
-                    {d.s}
-                  </Text>
-                ))}
-              </View>
-            )}
+            <View style={styles.suitsDeco} pointerEvents="none">
+              {SUIT_DECO.map((d) => (
+                <Text key={d.s} style={[styles.suitDecoText, { color: d.c }]}>
+                  {d.s}
+                </Text>
+              ))}
+            </View>
           </View>
           <View style={styles.eloPill} testID="home-elo-pill">
             <Ionicons name="flame" size={15} color={C.gold} />
             <Text style={styles.eloText}>{user?.elo ?? 1000}</Text>
           </View>
+          {currentGame && (
+            <Pressable
+              testID="resume-game-button"
+              onPress={() =>
+                router.push({ pathname: "/game/[id]", params: { id: currentGame.game_id } })
+              }
+              style={({ pressed }) => [styles.resumeBtn, pressed && { opacity: 0.85 }]}
+            >
+              <Ionicons name="play-circle" size={18} color={C.onBrand} />
+              <Text style={styles.resumeBtnText} numberOfLines={1}>
+                {t("resumeGame")}
+              </Text>
+            </Pressable>
+          )}
           <Pressable
             testID="notifications-bell"
             onPress={() => setNotifOpen(true)}
@@ -795,18 +786,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: SP.sm,
   },
-  resumePill: {
+  resumeBtn: {
     flexDirection: "row",
     alignItems: "center",
-    gap: SP.sm,
+    gap: 6,
     backgroundColor: C.brand,
     borderRadius: R.pill,
     paddingHorizontal: SP.md,
-    height: 42,
-    maxWidth: 340,
+    height: 40,
+    marginLeft: SP.sm,
+    maxWidth: 200,
   },
-  resumePillTitle: { fontFamily: F.display, fontSize: 12.5, color: C.onBrand },
-  resumePillDesc: { fontFamily: F.bold, fontSize: 10.5, color: "rgba(10,40,25,0.8)", marginTop: 1 },
+  resumeBtnText: { fontFamily: F.display, fontSize: 13, color: C.onBrand },
   content: {
     flex: 1,
     paddingHorizontal: SP.lg,

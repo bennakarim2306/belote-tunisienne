@@ -63,7 +63,11 @@ async def collect_stats(db):
     # ---- live right now ----
     entries = await db.mm_queue.find({}, {"players": 1}).to_list(200)
     s["waiting_now"] = len({p["user_id"] for e in entries for p in e["players"]})
-    s["live_games_now"] = await db.live_games.count_documents({"phase": {"$ne": "finished"}})
+    # only games with RECENT activity (heartbeat/bot action < 2 min): abandoned
+    # games linger in live_games up to 30 min before the sweep removes them —
+    # they must not show as "en cours" while "connectés maintenant" is 0
+    s["live_games_now"] = await db.live_games.count_documents(
+        {"phase": {"$ne": "finished"}, "updated_at": {"$gt": now - 120}})
 
     # ---- server matches, split by composition:
     # humans >= 2 -> real online games between players
@@ -268,7 +272,7 @@ async def render_stats_html(db):
 <div class="grid">
   {_card("Connectés maintenant", s["online_now"])}
   {_card("En file d'attente", s["waiting_now"])}
-  {_card("Parties en cours (serveur)", s["live_games_now"])}
+  {_card("Parties en cours (serveur)", s["live_games_now"], "activité < 2 min")}
 </div>
 
 <h2>Parties en ligne (entre joueurs)</h2>

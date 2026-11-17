@@ -548,9 +548,11 @@ export default function GameScreen() {
       {/* header */}
       <View style={[styles.header, { paddingTop: insets.top + SP.sm }]}>
         <View style={styles.headerLeft}>
+          {/* solo vs AI (local): quit directly, no confirm — the game is
+              auto-saved and resumable from the Home screen */}
           <Pressable
             testID="quit-game-button"
-            onPress={() => setQuitOpen(true)}
+            onPress={() => (isLocal ? quit() : setQuitOpen(true))}
             hitSlop={10}
             style={styles.quitBtn}
           >

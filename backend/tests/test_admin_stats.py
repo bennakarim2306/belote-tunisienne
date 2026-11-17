@@ -225,3 +225,44 @@ class TestRobustness:
             assert r.status_code == 200, f"{r.status_code} {r.text[:200]}"
         finally:
             _db.matches.delete_one({"match_id": f"{TAG}_np"})
+
+
+# ---- "En ce moment": parties en cours must reflect ACTIVE games only ----
+class TestLiveGamesNow:
+    SECTION = "En ce moment"
+    LABEL = "Parties en cours (serveur)"
+
+    def test_counts_only_recently_active_unfinished(self, stats):
+        before = int(stats()[self.SECTION][self.LABEL][0])
+        now = time.time()
+        base = {"state": {}, "version": 1, "user_ids": [], "events": [], "conn": {}}
+        docs = [
+            # active unfinished -> counted
+            {"_id": f"{TAG}_g_fresh", "phase": "playing", "updated_at": now, **base},
+            # abandoned 5 min ago (not yet swept) -> NOT counted ("0 connectés
+            # mais 2 parties en cours" bug reported by the owner)
+            {"_id": f"{TAG}_g_stale", "phase": "playing",
+             "updated_at": now - 300, **base},
+            # finished -> NOT counted
+            {"_id": f"{TAG}_g_done", "phase": "finished", "updated_at": now, **base},
+        ]
+        _db.live_games.insert_many(docs)
+        try:
+            after = int(stats()[self.SECTION][self.LABEL][0])
+            assert after == before + 1, f"expected {before}+1, got {after}"
+        finally:
+            _db.live_games.delete_many({"_id": {"$regex": f"^{TAG}_g_"}})
+
+    def test_sweep_removes_docs_without_updated_at(self):
+        _db.live_games.insert_one(
+            {"_id": f"{TAG}_g_noupd", "phase": "playing", "state": {},
+             "version": 1, "user_ids": [], "events": [], "conn": {}})
+        deadline = time.time() + 15
+        gone = False
+        while time.time() < deadline:
+            if _db.live_games.find_one({"_id": f"{TAG}_g_noupd"}) is None:
+                gone = True
+                break
+            time.sleep(1)
+        _db.live_games.delete_many({"_id": f"{TAG}_g_noupd"})
+        assert gone, "sweep did not delete live_games doc missing updated_at"

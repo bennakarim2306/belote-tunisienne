@@ -303,7 +303,8 @@ class MatchmakingMixin:
                 await self.db.live_games.delete_many(
                     {"phase": "finished", "updated_at": {"$lt": now - 900}})
                 await self.db.live_games.delete_many(
-                    {"updated_at": {"$lt": now - 1800}})
+                    {"$or": [{"updated_at": {"$lt": now - 1800}},
+                             {"updated_at": {"$exists": False}}]})
                 await self.db.live_rooms.delete_many(
                     {"started": True, "started_at": {"$lt": now - 300}})
                 await self.db.live_rooms.delete_many(
