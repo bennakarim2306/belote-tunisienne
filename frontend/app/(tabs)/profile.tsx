@@ -1,4 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
+import * as Application from "expo-application";
+import Constants, { ExecutionEnvironment } from "expo-constants";
 import { Image } from "expo-image";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
@@ -27,6 +29,17 @@ import { useI18n } from "@/src/i18n";
 import { openStoreListing } from "@/src/review";
 import { isSoundEnabled, setSoundEnabled } from "@/src/sound";
 import { C, F, R, SP } from "@/src/theme";
+
+// Installed app version: real native version + build number on dev/prod builds
+// (set by the Emergent build pipeline); falls back to app.json's version on
+// web / Expo Go, where the native values belong to the Expo Go client itself.
+const IS_NATIVE_BUILD =
+  Platform.OS !== "web" &&
+  Constants.executionEnvironment !== ExecutionEnvironment.StoreClient;
+const APP_VERSION =
+  IS_NATIVE_BUILD && Application.nativeApplicationVersion
+    ? `${Application.nativeApplicationVersion} (${Application.nativeBuildVersion ?? "?"})`
+    : (Constants.expoConfig?.version ?? "1.0.0");
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
@@ -347,6 +360,10 @@ export default function ProfileScreen() {
           <Ionicons name="trash" size={16} color={C.error} />
           <Text style={styles.deleteBtnText}>{t("deleteAccount")}</Text>
         </Pressable>
+
+        <Text style={styles.versionText} testID="app-version-text">
+          {t("appVersion")} {APP_VERSION}
+        </Text>
       </ScrollView>
 
       <FeedbackModal visible={showFeedback} onClose={() => setShowFeedback(false)} />
@@ -520,6 +537,14 @@ const styles = StyleSheet.create({
     marginTop: SP.md,
   },
   deleteBtnText: { fontFamily: F.display, fontSize: 14, color: C.error },
+  versionText: {
+    fontFamily: F.text,
+    fontSize: 12,
+    color: C.ink3,
+    textAlign: "center",
+    marginTop: SP.lg,
+    marginBottom: SP.sm,
+  },
   modalScrim: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.65)",
