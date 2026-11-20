@@ -1,6 +1,19 @@
 import React from "react";
-import { StyleSheet, Text, View } from "react-native";
-import Svg, { Circle, Ellipse, G, Path, Rect, Text as SvgText } from "react-native-svg";
+import { Image, StyleSheet, Text, View } from "react-native";
+import Svg, {
+  Circle,
+  ClipPath,
+  Defs,
+  Ellipse,
+  G,
+  Image as SvgImage,
+  Path,
+  Rect,
+  Text as SvgText,
+} from "react-native-svg";
+
+import { CARD_BACK, CARD_FACE, COURT_FIGURES } from "@/src/anime/assets";
+import { ANIME_THEME_ENABLED } from "@/src/anime/flags";
 
 import { C } from "@/src/theme";
 
@@ -230,6 +243,34 @@ function CourtFace({ rank, suit }: { rank: string; suit: string }) {
   );
 }
 
+/* ---- anime theme: painted card face + one large upright court figure ----
+ * Everything still lives in the same single SVG coordinate space (100×145).
+ * The painted figure is decoration only: rank letter and suit stay vector
+ * indices in both corners, so the card identity can never be wrong. */
+const COURT_H = 106; // figure height in viewBox units, standing on the bottom edge
+function AnimeCourtFace({ rank, suit }: { rank: string; suit: string }) {
+  const fig = COURT_FIGURES[rank];
+  const w = COURT_H * fig.aspect;
+  return (
+    <>
+      <G clipPath="url(#cardClip)">
+        <SvgImage
+          href={fig.source}
+          x={(100 - w) / 2}
+          y={145 - 3.5 - COURT_H}
+          width={w}
+          height={COURT_H}
+          preserveAspectRatio="none"
+        />
+      </G>
+      {/* ivory plate so the mirrored bottom-right index stays readable on the figure */}
+      <Rect x={78.5} y={108.5} width={19} height={34} rx={6} fill={CARD_BG} opacity={0.93} />
+      {/* small suit pip beside the figure, like real courts */}
+      <PipGlyph cx={86} cy={22} s={11} suit={suit} />
+    </>
+  );
+}
+
 interface Props {
   card?: string;
   width?: number;
@@ -246,6 +287,16 @@ export default function PlayingCard({
   trumpSuit,
 }: Props) {
   const height = width * 1.45;
+  if ((faceDown || !card) && ANIME_THEME_ENABLED) {
+    return (
+      <Image
+        source={CARD_BACK}
+        resizeMode="stretch"
+        fadeDuration={0}
+        style={{ width, height, borderRadius: width * 0.1 }}
+      />
+    );
+  }
   if (faceDown || !card) {
     return (
       <View style={[styles.card, styles.back, { width, height, borderRadius: width * 0.14 }]}>
@@ -262,6 +313,17 @@ export default function PlayingCard({
   return (
     <View style={[{ width, height }, dimmed && { opacity: 0.4 }]}>
       <Svg width={width} height={height} viewBox="0 0 100 145">
+        {ANIME_THEME_ENABLED && (
+          <>
+            <Defs>
+              <ClipPath id="cardClip">
+                <Rect x={3} y={3} width={94} height={139} rx={11} />
+              </ClipPath>
+            </Defs>
+            {/* painted ivory face under the vector content */}
+            <SvgImage href={CARD_FACE} x={0} y={0} width={100} height={145} preserveAspectRatio="none" />
+          </>
+        )}
         {/* card body + border (gold when trump) */}
         <Rect
           x={1.5}
@@ -269,12 +331,14 @@ export default function PlayingCard({
           width={97}
           height={142}
           rx={13}
-          fill={CARD_BG}
-          stroke={isTrump ? C.gold : "#CFC6B8"}
+          fill={ANIME_THEME_ENABLED ? "none" : CARD_BG}
+          stroke={isTrump ? C.gold : ANIME_THEME_ENABLED ? "none" : "#CFC6B8"}
           strokeWidth={isTrump ? 3.5 : 1.5}
         />
         {/* center: court figure, single ace pip, or the classic pip grid */}
-        {isCourt ? (
+        {isCourt && ANIME_THEME_ENABLED ? (
+          <AnimeCourtFace rank={rank} suit={suit} />
+        ) : isCourt ? (
           <CourtFace rank={rank} suit={suit} />
         ) : rank === "A" ? (
           <PipGlyph cx={50} cy={72.5} s={34} suit={suit} />

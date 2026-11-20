@@ -89,12 +89,12 @@ $ep = New-Object System.Drawing.Imaging.EncoderParameters 1
 $ep.Param[0] = New-Object System.Drawing.Imaging.EncoderParameter ([System.Drawing.Imaging.Encoder]::Quality, [long]88)
 function Save-Png($bmp, [string]$dir, [string]$name) {
   $p = Join-Path $dir $name
-  $bmp.Save($p, [System.Drawing.Imaging.ImageFormat]::Png)
+  try { $bmp.Save($p, [System.Drawing.Imaging.ImageFormat]::Png) } catch { [void]$report.Add("  !! $name not rewritten (file in use?) - kept existing"); return }
   [void]$report.Add(("{0,-24} {1}x{2}  {3} KB" -f $name, $bmp.Width, $bmp.Height, [int]((Get-Item $p).Length / 1KB)))
 }
 function Save-Jpg($bmp, [string]$dir, [string]$name) {
   $p = Join-Path $dir $name
-  $bmp.Save($p, $jpg, $ep)
+  try { $bmp.Save($p, $jpg, $ep) } catch { [void]$report.Add("  !! $name not rewritten (file in use?) - kept existing"); return }
   [void]$report.Add(("{0,-24} {1}x{2}  {3} KB" -f $name, $bmp.Width, $bmp.Height, [int]((Get-Item $p).Length / 1KB)))
 }
 # cleaned + trimmed + resized to a target height (or width)
@@ -170,5 +170,18 @@ foreach ($f in (Get-ChildItem -LiteralPath $SourceDir -Filter "av*_*.png" | Sort
   Save-Jpg $small $avDir "av$id.jpg"
   $raw.Dispose(); $crop.Dispose(); $small.Dispose()
 }
+# ---- cards: blank face + 3 court figures (optional: only when the raw files are present) ----
+$cardsDir = Join-Path $AssetsDir "cards"
+if (Test-Path -LiteralPath (Join-Path $SourceDir "raw_card_face.png")) {
+  New-Item -ItemType Directory -Force $cardsDir | Out-Null; $cardsDir = (Resolve-Path $cardsDir).Path
+  $map.cardFace = "raw_card_face"; $map.courtJ = "raw_court_jack"; $map.courtQ = "raw_court_queen"; $map.courtK = "raw_court_king"
+  $b = Get-Prepared "cardFace" -width 300; Save-Png $b $cardsDir "card_face.png"; $b.Dispose()
+  foreach ($c in @(@{ key = "courtJ"; name = "court_jack" }, @{ key = "courtQ"; name = "court_queen" }, @{ key = "courtK"; name = "court_king" })) {
+    $b = Get-Prepared $c.key -width 360
+    [void]$report.Add("  -> $($c.name): aspect $([math]::Round($b.Width / $b.Height, 4))")
+    Save-Png $b $cardsDir "$($c.name).png"; $b.Dispose()
+  }
+}
+
 $report
 "TOTAL game: {0} KB, avatars: {1} KB" -f [int]((Get-ChildItem $gameDir | Measure-Object Length -Sum).Sum / 1KB), [int]((Get-ChildItem $avDir | Measure-Object Length -Sum).Sum / 1KB)

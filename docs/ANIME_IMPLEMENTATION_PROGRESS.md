@@ -136,6 +136,20 @@ Karim supplied 11 table assets and 12 character portraits. Implemented behind th
   - `hud_crest.png` is prepared but unused.
 - Status: **awaiting Karim's visual approval of the game table.**
 
+## Stage 2 addition — card design (2026-11-20)
+
+Requested by Karim: queen as an Arabic dancer, jack as an original young adventurer, king as a sultan.
+
+- `src/components/PlayingCard.tsx` (flag-guarded): painted ivory face under the vector content; court
+  cards show one large upright painted figure instead of the mirrored vector bust; face-down cards use
+  the painted back. Indices, pips, number cards, aces and the gold trump border are unchanged vector.
+  Karim asked about whole-body figures; agreed direction is waist-up, one figure, not mirrored.
+- New assets in `frontend/assets/anime/cards/`; `prepare-game-assets.ps1` handles them and no longer
+  aborts when an existing output file is locked.
+- Bidding buttons: label padding reduced so "Annoncer 100♥" stays on one line.
+- Checks: `tsc` baseline, lint baseline, `smoke-game.js` 24/24 on and 24/24 off.
+- Unverified: `react-native-svg` `<Image>` inside the card SVG is confirmed on web only; it must be
+  checked on Android and iOS (if it fails there, the fallback is a normal image layer under the SVG).
 ## Safety log
 
 No `git push`, no remote branch, no pull request, no GitHub write, no Emergent/Expo/EAS deployment,

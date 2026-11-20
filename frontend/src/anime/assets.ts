@@ -147,3 +147,13 @@ export const AVATAR_PORTRAITS: Record<string, ImageSourcePropType> = {
   av11: require("../../assets/anime/avatars/av11.jpg"),
   av12: require("../../assets/anime/avatars/av12.jpg"),
 };
+// ---------------------------------------------------------------------------
+// Cards — blank face + court figures (ranks, suits and pips stay vector)
+// ---------------------------------------------------------------------------
+export const CARD_FACE = require("../../assets/anime/cards/card_face.png") as ImageSourcePropType;
+/** one upright waist-up figure per court rank; aspect = width / height */
+export const COURT_FIGURES: Record<string, { source: ImageSourcePropType; aspect: number }> = {
+  J: { source: require("../../assets/anime/cards/court_jack.png"), aspect: 360 / 395 },
+  Q: { source: require("../../assets/anime/cards/court_queen.png"), aspect: 360 / 359 },
+  K: { source: require("../../assets/anime/cards/court_king.png"), aspect: 360 / 360 },
+};

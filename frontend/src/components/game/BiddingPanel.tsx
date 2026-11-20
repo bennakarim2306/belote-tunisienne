@@ -452,7 +452,7 @@ const styles = StyleSheet.create({
   // my-turn panel keeps its pulsing gold border (the "your turn" signal)
   panelAnimeTurn: { backgroundColor: "transparent", padding: SP.md, borderRadius: 14 },
   dockAnime: { backgroundColor: "transparent", borderWidth: 0, padding: 9 },
-  btnAnime: { backgroundColor: "transparent", paddingHorizontal: SP.lg },
+  btnAnime: { backgroundColor: "transparent", paddingHorizontal: 6 },
   btnTextAnime: {
     color: "#FFF5DF",
     textShadowColor: "rgba(0,0,0,0.6)",
