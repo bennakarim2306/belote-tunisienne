@@ -7,8 +7,8 @@ part of this work and was not merged or modified.
 | Stage | Scope | Status | Approval |
 |---|---|---|---|
 | 0 | Discovery and design audit | Done (2026-11-20) | — |
-| 1 | Home screen only | Implemented, **awaiting visual approval** | pending |
-| 2 | Gameplay table | Not started (blocked on Stage 1 approval) | — |
+| 1 | Home screen only | Done, with painted assets | **Approved by Karim 2026-11-20** ("works! i tested!", tested on his Android phone) |
+| 2 | Gameplay table | Started 2026-11-20 at his request: asset list and prompts in `docs/ANIME_ASSET_BRIEF_GAME.md`; waiting for the assets, no code yet | — |
 | 3 | Quit dialog, profile, avatar picker | Not started | — |
 | 4 | Asset finalization, cross-screen QA | Not started | — |
 
