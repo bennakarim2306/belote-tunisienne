@@ -1,0 +1,76 @@
+# Anime Duel Redesign — Testing
+
+Everything here is local. Nothing pushes, deploys or touches the production backend.
+
+## 1. Turn the redesign on / off
+
+The flag is `EXPO_PUBLIC_ANIME_THEME` (read in `frontend/src/anime/flags.ts`). **Default: off.**
+
+- On: add `EXPO_PUBLIC_ANIME_THEME=1` to `frontend/.env.local` (git-ignored), or set it inline.
+- Off: remove the line or set it to `0`. The original screen renders unchanged.
+- Expo inlines `EXPO_PUBLIC_*` at bundle time: restart Metro after changing it
+  (`npx expo start --clear` if the old look sticks).
+
+PowerShell, from `frontend/`:
+
+```powershell
+$env:EXPO_PUBLIC_ANIME_THEME = "1"; npx expo start
+```
+
+## 2. Automated checks
+
+From `frontend/`:
+
+```powershell
+npx tsc --noEmit
+npx expo lint
+```
+
+Baseline on `main` (e956901), before any change: `tsc` reports 6 errors
+(`app/room/[code].tsx` ×3, `src/components/game/TrickArea.tsx` ×2, `src/i18n.tsx` ×1), lint reports
+0 errors and 1 warning (`app/game/[id].tsx:382`). The redesign must not add to either.
+There is no JS unit-test runner in this project.
+
+## 3. Home screen smoke test + screenshots (web build, mock data)
+
+Runs the real app code in a browser against a **local mock backend** with fake demo data
+(`demo_joueur`, ELO 1063, 3 online, one game in progress). No real account is used.
+
+Terminal 1 — mock backend:
+
+```powershell
+node scripts/anime/mock-backend.js
+```
+
+Terminal 2 — app with the redesign on (use `"0"` and another port for the original look):
+
+```powershell
+$env:EXPO_PUBLIC_BACKEND_URL = "http://127.0.0.1:8787"; $env:EXPO_PUBLIC_ANIME_THEME = "1"; $env:CI = "1"; npx expo start --web --port 8090
+```
+
+Terminal 3 — smoke test. `playwright-core` is not a project dependency; point `PLAYWRIGHT_CORE`
+at any existing copy. It drives the installed Microsoft Edge.
+
+```powershell
+$env:PLAYWRIGHT_CORE = "<path to>\node_modules\playwright-core"; node scripts/anime/smoke-home.js http://localhost:8090 anime ..\docs\anime\screenshots\stage1
+```
+
+What it asserts, at 844×390, 640×360, 915×412, 740×340 and 1280×800:
+
+- the four tiles form a 2×2 grid (online | IA on top, apprendre | privée below), equal sizes, inside the viewport, each side ≥ 76px;
+- the top bar keeps menu button, avatar, ELO pill, bell and the resume pill;
+- labels and live values come from the app (username, ELO, online count, scores, "Entraînement");
+- Jouer en ligne and Jouer contre l'IA open the match-type sheet; Partie privée opens join/create, and Créer leads to the timer option;
+- the bell opens notifications, the hamburger opens the side menu with 4 destinations;
+- Apprendre à jouer navigates to `/tutorial`; the resume pill navigates to `/game/<id>`.
+
+Note: with `CI=1` Metro does not watch files; restart it after editing code.
+
+## 4. Manual checks on a device (not yet done — see progress doc)
+
+1. Development build or Expo Go on Android and iOS, landscape, flag on.
+2. Home: arches, lanterns and lattice render; no clipped text; notch/safe areas respected on both sides.
+3. Tap each of the four tiles, the bell, the hamburger and (with an unfinished game) the resume pill.
+4. In a native build: the AdMob banner still loads at the bottom in its usual slot and the grid shrinks to make room.
+5. Switch language to Arabic and English in the profile: labels still fit.
+6. Flag off: the original home is back, pixel-for-pixel.

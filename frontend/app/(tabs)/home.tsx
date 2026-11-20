@@ -22,6 +22,8 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { ANIME_THEME_ENABLED } from "@/src/anime/flags";
+import AnimeHomeMain from "@/src/anime/home/AnimeHomeMain";
 import { api, ApiError } from "@/src/api";
 import Avatar from "@/src/components/Avatar";
 import ChunkyButton from "@/src/components/ChunkyButton";
@@ -257,6 +259,32 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container} testID="home-screen">
+      {ANIME_THEME_ENABLED ? (
+        // Anime redesign (local flag EXPO_PUBLIC_ANIME_THEME=1): visual layer
+        // only — same actions, labels and live values as the original below.
+        <AnimeHomeMain
+          username={user?.username}
+          avatarId={user?.avatar_id}
+          elo={user?.elo ?? 1000}
+          onlineNow={onlineNow}
+          notifCount={notifCount}
+          currentGame={currentGame}
+          onResume={() => {
+            if (currentGame) {
+              router.push({ pathname: "/game/[id]", params: { id: currentGame.game_id } });
+            }
+          }}
+          onOpenNotifications={() => setNotifOpen(true)}
+          onPlayOnline={() => setTypeModal("online")}
+          onPlaySolo={() => setTypeModal("solo")}
+          onLearn={() => router.push("/tutorial")}
+          onPrivate={() => {
+            setJoinError(null);
+            setPrivateOpen(true);
+          }}
+        />
+      ) : (
+      <>
       <View style={[styles.header, { paddingTop: insets.top + SP.sm }]}>
         <View style={styles.headerRow}>
           <MenuButton />
@@ -442,6 +470,8 @@ export default function HomeScreen() {
           </View>
         </View>
       </View>
+      </>
+      )}
 
       {/* private game: join by code or create */}
       <Modal visible={privateOpen} transparent animationType="fade" supportedOrientations={["landscape", "portrait"]}>

@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { usePathname, useRouter } from "expo-router";
 import React, { useState } from "react";
-import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import { Modal, Pressable, StyleProp, StyleSheet, Text, View, ViewStyle } from "react-native";
 import Animated, { SlideInLeft } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -18,7 +18,14 @@ const ITEMS = [
 
 /** Hamburger button (top-left of every tab screen) opening a left side menu.
  *  Replaces the bottom tab bar to free vertical space in landscape. */
-export default function MenuButton() {
+interface MenuButtonProps {
+  /** optional visual overrides for the trigger button only (anime theme);
+   *  without them the button renders exactly as before */
+  buttonStyle?: StyleProp<ViewStyle>;
+  iconColor?: string;
+}
+
+export default function MenuButton({ buttonStyle, iconColor }: MenuButtonProps = {}) {
   const [open, setOpen] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
@@ -44,10 +51,10 @@ export default function MenuButton() {
       <Pressable
         testID="menu-button"
         onPress={() => setOpen(true)}
-        style={({ pressed }) => [styles.btn, pressed && { opacity: 0.8 }]}
+        style={({ pressed }) => [styles.btn, buttonStyle, pressed && { opacity: 0.8 }]}
         hitSlop={6}
       >
-        <Ionicons name="menu" size={24} color={C.ink} />
+        <Ionicons name="menu" size={24} color={iconColor ?? C.ink} />
         {totalBadge > 0 && (
           <View style={styles.btnBadge}>
             <Text style={styles.btnBadgeText}>{totalBadge}</Text>
