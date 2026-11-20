@@ -19,7 +19,7 @@ import Animated, { FadeInDown } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { api } from "@/src/api";
-import { AVATARS, avatarUrl } from "@/src/avatars";
+import { AVATARS, avatarSource } from "@/src/avatars";
 import Avatar from "@/src/components/Avatar";
 import MenuButton from "@/src/components/MenuButton";
 import ChunkyButton from "@/src/components/ChunkyButton";
@@ -211,7 +211,7 @@ export default function ProfileScreen() {
                   ]}
                 >
                   <Image
-                    source={{ uri: avatarUrl(av.id) }}
+                    source={avatarSource(av.id)}
                     style={styles.avatarImg}
                     contentFit="cover"
                     transition={100}

@@ -2,7 +2,7 @@ import { Image } from "expo-image";
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 
-import { avatarUrl } from "@/src/avatars";
+import { avatarSource } from "@/src/avatars";
 import { C, F } from "@/src/theme";
 
 interface Props {
@@ -35,7 +35,7 @@ export default function Avatar({
       ]}
     >
       <Image
-        source={{ uri: avatarUrl(avatarId) }}
+        source={avatarSource(avatarId)}
         style={{ width: size, height: size, borderRadius: size / 2 }}
         contentFit="cover"
         transition={150}

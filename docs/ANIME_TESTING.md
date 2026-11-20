@@ -74,3 +74,19 @@ Note: with `CI=1` Metro does not watch files; restart it after editing code.
 4. In a native build: the AdMob banner still loads at the bottom in its usual slot and the grid shrinks to make room.
 5. Switch language to Arabic and English in the profile: labels still fit.
 6. Flag off: the original home is back, pixel-for-pixel.
+
+## 5. Game table smoke test + screenshots (web build)
+
+Same three terminals as section 3 (add `--offline` to `expo start` if it exits with "Body is unusable").
+The script starts "Jouer contre l'IA" and plays one real hand against the bots on the app's own
+offline engine:
+
+```powershell
+$env:PLAYWRIGHT_CORE = "<path to>\node_modules\playwright-core"; node scripts/anime/smoke-game.js http://localhost:8090 anime ..\docs\anime\screenshots\stage2
+```
+
+It asserts: exactly 8 valid, distinct cards dealt; 4 seats; score header with live text; quit, sound
+and chat controls; the bidding panel appears on my turn and a bid can be announced; the contract chip
+appears; cards can be played; never more than 8 cards in hand or 4 in a trick; the hand reaches its
+end screen; quit returns home; and the table renders at 640×360, 915×412 and 1280×800.
+Run it against the flag-off server too: the same 24 checks must pass with the original look.

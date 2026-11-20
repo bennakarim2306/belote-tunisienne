@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import Animated, {
   ZoomIn,
   useAnimatedStyle,
@@ -9,6 +9,9 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 
+import { CARD_BACK, NAMEPLATE, SEAT_FRAME } from "@/src/anime/assets";
+import HSlice from "@/src/anime/components/HSlice";
+import { ANIME_THEME_ENABLED } from "@/src/anime/flags";
 import Avatar from "@/src/components/Avatar";
 import { SUIT_COLOR_ON_DARK, SUIT_SYMBOL } from "@/src/components/PlayingCard";
 import { GamePlayer } from "@/src/game/useGameSocket";
@@ -91,6 +94,10 @@ export default function PlayerSeat({
   }));
 
   const ringSize = size + 18;
+  // anime theme: painted medallion frame around the portrait. Its hole matches
+  // the avatar's outer diameter (size + ring), so layout sizes stay unchanged.
+  const frameW = ((size + 8) / SEAT_FRAME.hole) * 0.97;
+  const frameH = frameW / SEAT_FRAME.aspect;
   // when both a chat message and a bid/contract bubble are visible, the chat
   // bubble is stacked ABOVE the bid bubble instead of overlapping behind it
   const hasBid = !!(contractLabel || bidLabel);
@@ -114,6 +121,13 @@ export default function PlayerSeat({
           style={[
             styles.turnRing,
             { width: ringSize, height: ringSize, borderRadius: ringSize / 2 },
+            ANIME_THEME_ENABLED && {
+              width: frameW + 8,
+              height: frameW + 8,
+              borderRadius: (frameW + 8) / 2,
+              borderWidth: 4,
+              borderColor: "#FFE08A",
+            },
             ringStyle,
           ]}
         />
@@ -123,6 +137,14 @@ export default function PlayerSeat({
           ringColor={isMe ? C.gold : "rgba(233,196,106,0.7)"}
           ringWidth={2}
         />
+        {ANIME_THEME_ENABLED && (
+          <Image
+            source={SEAT_FRAME.source}
+            resizeMode="stretch"
+            fadeDuration={0}
+            style={{ position: "absolute", width: frameW, height: frameH }}
+          />
+        )}
         {isDealer && (
           <View style={styles.dealerBadge}>
             <Text style={styles.dealerText}>D</Text>
@@ -148,16 +170,36 @@ export default function PlayerSeat({
           <SeatTimer deadline={deadline} side={timerSide} />
         ) : null}
       </Pressable>
-      <View style={styles.nameRow}>
-        <Text style={styles.name} numberOfLines={1}>
+      <View style={[styles.nameRow, ANIME_THEME_ENABLED && styles.nameRowAnime]}>
+        {ANIME_THEME_ENABLED && <HSlice slices={NAMEPLATE} />}
+        <Text style={[styles.name, ANIME_THEME_ENABLED && styles.nameAnime]} numberOfLines={1}>
           {player.username}
         </Text>
       </View>
-      {!isMe && (
-        <View style={styles.cardCount}>
-          <Text style={styles.cardCountText}>🂠 {player.card_count}</Text>
-        </View>
-      )}
+      {!isMe &&
+        (ANIME_THEME_ENABLED ? (
+          // painted card backs + the REAL number of cards still in hand
+          <View style={styles.cardFan} testID={`seat-cards-${player.seat}`}>
+            {player.card_count > 0 && (
+              <View style={styles.cardFanBacks}>
+                {[0, 1, 2].slice(0, Math.min(3, player.card_count)).map((i) => (
+                  <Image
+                    key={i}
+                    source={CARD_BACK}
+                    resizeMode="stretch"
+                    fadeDuration={0}
+                    style={[styles.cardFanBack, { marginLeft: i === 0 ? 0 : -7 }]}
+                  />
+                ))}
+              </View>
+            )}
+            <Text style={styles.cardFanCount}>{player.card_count}</Text>
+          </View>
+        ) : (
+          <View style={styles.cardCount}>
+            <Text style={styles.cardCountText}>🂠 {player.card_count}</Text>
+          </View>
+        ))}
       {chatText ? (
         <Animated.View
           entering={ZoomIn.duration(180)}
@@ -301,6 +343,29 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   cardCountText: { fontFamily: F.bold, fontSize: 10, color: "rgba(255,255,255,0.85)" },
+  // ---- anime theme ----
+  nameRowAnime: {
+    backgroundColor: "transparent",
+    borderWidth: 0,
+    borderRadius: 0,
+    paddingHorizontal: 15,
+    paddingVertical: 2.5,
+    minWidth: 66,
+    justifyContent: "center",
+    marginTop: 5,
+  },
+  nameAnime: { color: "#FFF5DF", maxWidth: 76 },
+  cardFan: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 },
+  cardFanBacks: { flexDirection: "row" },
+  cardFanBack: { width: 12, height: 17, borderRadius: 2 },
+  cardFanCount: {
+    fontFamily: F.bold,
+    fontSize: 10.5,
+    color: "#FFF5DF",
+    textShadowColor: "rgba(0,0,0,0.8)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
   bubble: {
     position: "absolute",
     top: -26,

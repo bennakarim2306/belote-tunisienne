@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Dimensions,
+  Image,
   ImageBackground,
   Modal,
   Platform,
@@ -40,6 +41,11 @@ import { api } from "@/src/api";
 import Avatar from "@/src/components/Avatar";
 import { isSoundEnabled, playSound, setSoundEnabled } from "@/src/sound";
 import { C, F, PATTERN_BG, R, SP } from "@/src/theme";
+import { BTN_DARK, BTN_ICON_GREEN, BTN_ICON_RED, HUD_PANEL } from "@/src/anime/assets";
+import HSlice from "@/src/anime/components/HSlice";
+import NineSlice from "@/src/anime/components/NineSlice";
+import { ANIME_THEME_ENABLED } from "@/src/anime/flags";
+import TableBackdrop from "@/src/anime/game/TableBackdrop";
 
 // raise the bidding panel by 5% of the screen height so it never covers the
 // top of the player's cards (dimensions frozen at app start; landscape lock)
@@ -531,19 +537,26 @@ export default function GameScreen() {
 
   return (
     <View style={styles.container} testID="game-screen">
-      <LinearGradient colors={[C.feltDark, C.felt, C.feltDark]} style={StyleSheet.absoluteFill} />
-      <ImageBackground
-        source={{ uri: PATTERN_BG }}
-        style={StyleSheet.absoluteFill}
-        imageStyle={{ opacity: 0.09 }}
-      />
-      {/* ornamental gilded frame + central medallion */}
-      <View pointerEvents="none" style={styles.ornateFrame} />
-      <View pointerEvents="none" style={styles.medallionWrap}>
-        <View style={styles.medallionOuter} />
-        <View style={styles.medallionInner} />
-        <View style={styles.medallionDiamond} />
-      </View>
+      {ANIME_THEME_ENABLED ? (
+        // anime redesign (local flag): painted courtyard + table top, visual only
+        <TableBackdrop />
+      ) : (
+        <>
+          <LinearGradient colors={[C.feltDark, C.felt, C.feltDark]} style={StyleSheet.absoluteFill} />
+          <ImageBackground
+            source={{ uri: PATTERN_BG }}
+            style={StyleSheet.absoluteFill}
+            imageStyle={{ opacity: 0.09 }}
+          />
+          {/* ornamental gilded frame + central medallion */}
+          <View pointerEvents="none" style={styles.ornateFrame} />
+          <View pointerEvents="none" style={styles.medallionWrap}>
+            <View style={styles.medallionOuter} />
+            <View style={styles.medallionInner} />
+            <View style={styles.medallionDiamond} />
+          </View>
+        </>
+      )}
 
       {/* header */}
       <View style={[styles.header, { paddingTop: insets.top + SP.sm }]}>
@@ -554,8 +567,9 @@ export default function GameScreen() {
             testID="quit-game-button"
             onPress={() => (isLocal ? quit() : setQuitOpen(true))}
             hitSlop={10}
-            style={styles.quitBtn}
+            style={[styles.quitBtn, ANIME_THEME_ENABLED && styles.animeIconBtn]}
           >
+            {ANIME_THEME_ENABLED && <Image source={BTN_ICON_RED} style={styles.animeIconBg} fadeDuration={0} />}
             <Ionicons name="close" size={22} color={C.cream} />
           </Pressable>
           {canPause && (
@@ -563,8 +577,9 @@ export default function GameScreen() {
               testID="pause-request-button"
               onPress={() => send({ action: "pause_request" })}
               hitSlop={10}
-              style={styles.quitBtn}
+              style={[styles.quitBtn, ANIME_THEME_ENABLED && styles.animeIconBtn]}
             >
+              {ANIME_THEME_ENABLED && <Image source={BTN_ICON_GREEN} style={styles.animeIconBg} fadeDuration={0} />}
               <Ionicons name="pause" size={20} color={C.cream} />
             </Pressable>
           )}
@@ -576,8 +591,9 @@ export default function GameScreen() {
               setSoundEnabled(next);
             }}
             hitSlop={10}
-            style={styles.quitBtn}
+            style={[styles.quitBtn, ANIME_THEME_ENABLED && styles.animeIconBtn]}
           >
+            {ANIME_THEME_ENABLED && <Image source={BTN_ICON_GREEN} style={styles.animeIconBg} fadeDuration={0} />}
             <Ionicons
               name={soundOn ? "volume-high" : "volume-mute"}
               size={20}
@@ -589,10 +605,11 @@ export default function GameScreen() {
         <View style={{ flex: 1 }} />
 
         <Pressable
-          style={styles.scoreBox}
+          style={[styles.scoreBox, ANIME_THEME_ENABLED && styles.animeHudBox]}
           testID="match-score-header"
           onPress={() => setScoresOpen(true)}
         >
+          {ANIME_THEME_ENABLED && <NineSlice slices={HUD_PANEL} corner={11} />}
           <Text style={styles.scoreText}>
             {t("us")} <Text style={styles.scoreNum}>{state.match_scores[myTeam]}</Text>
             {"  ·  "}
@@ -609,9 +626,13 @@ export default function GameScreen() {
             style={[
               styles.contractChip,
               { borderColor: contract!.team === myTeam ? C.goldLine : "rgba(194,59,34,0.75)" },
+              ANIME_THEME_ENABLED && styles.animeHudBox,
             ]}
             testID="contract-chip"
           >
+            {ANIME_THEME_ENABLED && <NineSlice slices={HUD_PANEL} corner={11} />}
+            {/* same meaning as the original border colour: red mark = their contract */}
+            {ANIME_THEME_ENABLED && contract!.team !== myTeam && <View style={styles.animeThemMark} />}
             <Text style={styles.contractText}>
               {contract!.capot ? t("capot") : contract!.value}
               <Text style={{ color: SUIT_COLOR_ON_DARK[contract!.suit] }}>
@@ -775,8 +796,9 @@ export default function GameScreen() {
               <Pressable
                 testID="last-trick-button"
                 onPress={() => setLastTrickOpen(true)}
-                style={styles.sideTextBtn}
+                style={[styles.sideTextBtn, ANIME_THEME_ENABLED && styles.animeTextBtn]}
               >
+                {ANIME_THEME_ENABLED && <HSlice slices={BTN_DARK} />}
                 <Text style={styles.sideTextBtnLabel}>{t("lastTrick")}</Text>
               </Pressable>
             )}
@@ -784,8 +806,9 @@ export default function GameScreen() {
               <Pressable
                 testID="chat-button"
                 onPress={() => setChatOpen(true)}
-                style={styles.sideBtn}
+                style={[styles.sideBtn, ANIME_THEME_ENABLED && styles.animeIconBtn]}
               >
+                {ANIME_THEME_ENABLED && <Image source={BTN_ICON_GREEN} style={styles.animeIconBg} fadeDuration={0} />}
                 <Ionicons name="chatbubble-ellipses" size={20} color={C.cream} />
               </Pressable>
             )}
@@ -1191,6 +1214,29 @@ export default function GameScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.feltDark },
+  // ---- anime theme (only applied when ANIME_THEME_ENABLED) ----
+  animeIconBtn: { backgroundColor: "transparent", borderWidth: 0, borderRadius: 10 },
+  animeIconBg: { position: "absolute", top: 0, left: 0, width: "100%", height: "100%", resizeMode: "stretch" },
+  animeHudBox: {
+    backgroundColor: "transparent",
+    borderWidth: 0,
+    paddingHorizontal: 20,
+    paddingVertical: 6,
+  },
+  animeThemMark: {
+    position: "absolute",
+    top: 5,
+    right: 7,
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: "#D92932",
+  },
+  animeTextBtn: {
+    backgroundColor: "transparent",
+    borderWidth: 0,
+    paddingHorizontal: SP.xl,
+  },
   ornateFrame: {
     position: "absolute",
     top: 6,

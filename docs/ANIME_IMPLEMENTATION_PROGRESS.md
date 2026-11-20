@@ -100,6 +100,42 @@ button panels, wordmark, flag banner). This pass wires them in.
   cropped out of the background. Licence of the generated images to be confirmed by Karim.
 - Status: **awaiting Karim's visual approval of the home screen.**
 
+## Stage 2 — game table (2026-11-20)
+
+Karim supplied 11 table assets and 12 character portraits. Implemented behind the same flag.
+
+- New: `frontend/assets/anime/game/*`, `frontend/assets/anime/avatars/*`, `src/anime/components/HSlice.tsx`,
+  `src/anime/game/TableBackdrop.tsx`, `scripts/anime/prepare-game-assets.ps1`, `scripts/anime/smoke-game.js`;
+  game section in `src/anime/assets.ts`.
+- Modified (every change guarded by `ANIME_THEME_ENABLED`, original rendering untouched when off):
+  - `app/game/[id].tsx`: painted backdrop instead of gradient/pattern; painted icon buttons (quit, pause,
+    sound, chat), "Dernier pli" button, score header and contract chip. A red dot on the contract chip
+    replaces the original red border meaning "their contract".
+  - `src/components/game/PlayerSeat.tsx`: painted medallion frame, name plaque, card-back fan with the
+    real card count; turn ring enlarged to stay visible around the frame.
+  - `src/components/game/BiddingPanel.tsx`: painted panel and buttons (Passer dark, Capot/Annoncer/Jouer
+    green, Contrer/Surcontrer red). The pulsing gold "your turn" border is kept.
+  - `src/components/game/DealAnimation.tsx`: painted card back.
+  - `src/avatars.ts` + `src/components/Avatar.tsx` + one line in `app/(tabs)/profile.tsx`: new
+    `avatarSource(id)`; with the flag on the 12 avatar ids show the painted portraits everywhere,
+    with it off the DiceBear images exactly as before.
+- Not touched: engine, AI, sockets, rules, card faces (`PlayingCard.tsx`), hand fan, trick area logic,
+  ads, backend.
+- Checks: `tsc` 6 errors (baseline, none in changed files), lint 0 errors / 1 baseline warning.
+  `smoke-game.js` (one full real hand vs bots): 24/24 with the flag on, 24/24 with it off.
+  `smoke-home.js` regression: 54/54 on and off. Screenshots in `docs/anime/screenshots/stage2/`.
+- Unverified / open:
+  - Not yet seen on a phone (frames, 3-slice seams, image memory, Android rendering).
+  - Online games (server bots and real players, timers, pause, chat bubbles) were not played; only the
+    offline solo engine was exercised.
+  - Bot names and bot avatars are picked independently at random (existing behaviour in
+    `useLocalGame.ts` and on the server), so a bot called "Aziza" can now show a man's portrait. Needs a
+    decision from Karim; not changed.
+  - Hand-end, match-end, last-trick, score-history, pause, chat and quit windows keep the original style
+    (quit dialog is Stage 3).
+  - `hud_crest.png` is prepared but unused.
+- Status: **awaiting Karim's visual approval of the game table.**
+
 ## Safety log
 
 No `git push`, no remote branch, no pull request, no GitHub write, no Emergent/Expo/EAS deployment,

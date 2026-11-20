@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef } from "react";
-import { StyleSheet, View } from "react-native";
+import { Image, StyleSheet, View } from "react-native";
 import Animated, {
   Easing,
   Extrapolation,
@@ -9,6 +9,9 @@ import Animated, {
   withDelay,
   withTiming,
 } from "react-native-reanimated";
+
+import { CARD_BACK } from "@/src/anime/assets";
+import { ANIME_THEME_ENABLED } from "@/src/anime/flags";
 
 const CARD_DELAY = 55;
 const CARD_DUR = 360;
@@ -43,7 +46,16 @@ function FlyingCard({ rel, index }: { rel: number; index: number }) {
     ],
   }));
 
-  return <Animated.View style={[styles.card, style]} />;
+  return (
+    <Animated.View style={[styles.card, ANIME_THEME_ENABLED && styles.cardAnime, style]}>
+      {ANIME_THEME_ENABLED && <CardBackFace />}
+    </Animated.View>
+  );
+}
+
+// anime theme: painted card back instead of the plain dark rectangle
+function CardBackFace() {
+  return <Image source={CARD_BACK} resizeMode="stretch" style={styles.cardImg} fadeDuration={0} />;
 }
 
 interface Props {
@@ -84,8 +96,15 @@ export default function DealAnimation({ mySeat, dealer, onDone }: Props) {
         {[2, 1, 0].map((i) => (
           <View
             key={i}
-            style={[styles.card, styles.deckCard, { top: -i * 2, left: -i * 2 }]}
-          />
+            style={[
+              styles.card,
+              styles.deckCard,
+              ANIME_THEME_ENABLED && styles.cardAnime,
+              { top: -i * 2, left: -i * 2 },
+            ]}
+          >
+            {ANIME_THEME_ENABLED && <CardBackFace />}
+          </View>
         ))}
       </View>
       {order.map((rel, i) => (
@@ -123,4 +142,6 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 4,
   },
+  cardAnime: { backgroundColor: "transparent", borderWidth: 0, borderRadius: 4 },
+  cardImg: { width: "100%", height: "100%" },
 });
