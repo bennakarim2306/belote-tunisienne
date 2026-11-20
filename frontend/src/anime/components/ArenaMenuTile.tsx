@@ -1,13 +1,22 @@
 import { LinearGradient } from "expo-linear-gradient";
-import React from "react";
+import React, { useEffect } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+} from "react-native-reanimated";
 
-import { A, goldGlow } from "@/src/anime/tokens";
+import { TILE_DARK, TILE_HERO } from "@/src/anime/assets";
+import NineSlice from "@/src/anime/components/NineSlice";
+import { A } from "@/src/anime/tokens";
 import { F, SP } from "@/src/theme";
 
-// Reusable menu tile for the Emerald Tunisian Arena: emerald (hero) or
-// near-black (dark) panel, gold trim, inner hairline frame, small ornamental
-// corner studs. A real Pressable — the background art never stands in for it.
+// Reusable menu tile for the Emerald Tunisian Arena. The frame is a painted
+// 9-slice panel (emerald "hero" or near-black "dark"); icon, texts and touch
+// handling are real components on top — the artwork never stands in for them.
 
 interface Props {
   variant: "hero" | "dark";
@@ -22,14 +31,12 @@ interface Props {
   titleSize: number;
   descSize: number;
   iconBox: number;
-  /** extra line under the description (e.g. live online count) */
+  /** tile height (dp) — lets the corners shrink on very small tiles */
+  tileHeight: number;
+  /** extra line under the description (live online count, badge…) */
   footer?: React.ReactNode;
-  /** small pill pinned top-right (e.g. "Entraînement") */
-  badge?: string;
-}
-
-function Stud({ style }: { style: object }) {
-  return <View pointerEvents="none" style={[styles.stud, style]} />;
+  /** soft breathing glow (hero tile) */
+  pulse?: boolean;
 }
 
 export default function ArenaMenuTile({
@@ -43,75 +50,70 @@ export default function ArenaMenuTile({
   titleSize,
   descSize,
   iconBox,
+  tileHeight,
   footer,
-  badge,
+  pulse,
 }: Props) {
   const hero = variant === "hero";
+  const slices = hero ? TILE_HERO : TILE_DARK;
+  // corners never take more than ~84% of the height together
+  const corner = tileHeight > 0 ? Math.min(slices.corner, tileHeight * 0.42) : slices.corner;
+
+  const glow = useSharedValue(0);
+  useEffect(() => {
+    if (!pulse) return;
+    glow.value = withRepeat(
+      withTiming(1, { duration: 1600, easing: Easing.inOut(Easing.quad) }),
+      -1,
+      true,
+    );
+  }, [glow, pulse]);
+  const glowStyle = useAnimatedStyle(() => ({
+    shadowOpacity: pulse ? 0.35 + glow.value * 0.5 : 0.4,
+  }));
+
   return (
     <Pressable
       testID={testID}
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={`${title}. ${desc}`}
-      style={({ pressed }) => [
-        styles.tile,
-        hero ? styles.tileHero : styles.tileDark,
-        pressed && styles.pressed,
-      ]}
+      style={({ pressed }) => [styles.tile, pressed && styles.pressed]}
     >
-      {({ pressed }) => (
-        <>
-          <LinearGradient
-            colors={hero ? ["#0F7C5C", "#07513E", "#053629"] : ["#231C14", "#17130E", "#0F0C08"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={[StyleSheet.absoluteFill, styles.fill]}
-          />
-          {/* inner hairline frame + corner studs */}
-          <View
-            pointerEvents="none"
-            style={[styles.innerFrame, pressed && { borderColor: A.goldLight }]}
-          />
-          <Stud style={{ top: 5, left: 5 }} />
-          <Stud style={{ top: 5, right: 5 }} />
-          <Stud style={{ bottom: 5, left: 5 }} />
-          <Stud style={{ bottom: 5, right: 5 }} />
+      {/* glow: an opaque plate hidden behind the panel, only its shadow shows */}
+      <Animated.View
+        pointerEvents="none"
+        style={[styles.glowPlate, hero ? styles.glowHero : styles.glowDark, glowStyle]}
+      />
+      <NineSlice slices={slices} corner={corner} />
 
-          <View
-            style={[
-              styles.iconBox,
-              { width: iconBox, height: iconBox, borderRadius: iconBox * 0.3 },
-              iconTone === "emerald" && styles.iconEmerald,
-            ]}
-          >
-            {iconTone === "amber" && (
-              <LinearGradient colors={[A.amber, A.amberDeep]} style={StyleSheet.absoluteFill} />
-            )}
-            {icon}
-          </View>
+      <View
+        style={[
+          styles.iconBox,
+          { width: iconBox, height: iconBox, borderRadius: iconBox * 0.3 },
+          iconTone === "emerald" && styles.iconEmerald,
+        ]}
+      >
+        {iconTone === "amber" && (
+          <LinearGradient colors={[A.amber, A.amberDeep]} style={StyleSheet.absoluteFill} />
+        )}
+        {icon}
+      </View>
 
-          <View style={styles.textWrap}>
-            <Text style={[styles.title, { fontSize: titleSize }]} numberOfLines={1}>
-              {title}
-            </Text>
-            <View style={styles.dividerRow}>
-              <View style={styles.dividerLine} />
-              <View style={styles.dividerDiamond} />
-              <View style={styles.dividerLine} />
-            </View>
-            <Text style={[styles.desc, { fontSize: descSize }]} numberOfLines={2}>
-              {desc}
-            </Text>
-            {footer}
-          </View>
-
-          {badge ? (
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>{badge}</Text>
-            </View>
-          ) : null}
-        </>
-      )}
+      <View style={styles.textWrap}>
+        <Text style={[styles.title, { fontSize: titleSize }]} numberOfLines={1}>
+          {title}
+        </Text>
+        <View style={styles.dividerRow}>
+          <View style={styles.dividerLine} />
+          <View style={styles.dividerDiamond} />
+          <View style={styles.dividerLine} />
+        </View>
+        <Text style={[styles.desc, { fontSize: descSize }]} numberOfLines={2}>
+          {desc}
+        </Text>
+        {footer}
+      </View>
     </Pressable>
   );
 }
@@ -120,41 +122,26 @@ const styles = StyleSheet.create({
   tile: {
     flex: 1,
     minHeight: 76,
-    borderRadius: 20,
-    borderWidth: 2,
-    paddingHorizontal: SP.lg,
+    paddingHorizontal: 18,
     paddingVertical: SP.md,
     flexDirection: "row",
     alignItems: "center",
     gap: SP.md,
   },
-  tileHero: { borderColor: "#3BE3A2", backgroundColor: A.emeraldSurface },
-  tileDark: { borderColor: A.gold, backgroundColor: A.ink, ...goldGlow },
-  fill: { borderRadius: 18 },
-  pressed: { transform: [{ scale: 0.98 }], opacity: 0.94 },
-  innerFrame: {
+  pressed: { transform: [{ scale: 0.98 }], opacity: 0.92 },
+  glowPlate: {
     position: "absolute",
-    top: 5,
-    left: 5,
-    right: 5,
-    bottom: 5,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: A.goldFaint,
+    top: 8,
+    left: 8,
+    right: 8,
+    bottom: 8,
+    borderRadius: 22,
+    shadowOffset: { width: 0, height: 0 },
+    shadowRadius: 14,
+    elevation: 8,
   },
-  stud: {
-    position: "absolute",
-    width: 7,
-    height: 7,
-    marginTop: -1,
-    marginLeft: -1,
-    marginRight: -1,
-    marginBottom: -1,
-    backgroundColor: A.goldLight,
-    borderWidth: 1,
-    borderColor: A.goldDark,
-    transform: [{ rotate: "45deg" }],
-  },
+  glowHero: { backgroundColor: A.emeraldSurface, shadowColor: "#3BE3A2" },
+  glowDark: { backgroundColor: A.ink, shadowColor: A.gold },
   iconBox: {
     alignItems: "center",
     justifyContent: "center",
@@ -189,16 +176,4 @@ const styles = StyleSheet.create({
     transform: [{ rotate: "45deg" }],
   },
   desc: { fontFamily: F.text, color: A.ivoryDim },
-  badge: {
-    position: "absolute",
-    top: 10,
-    right: 14,
-    backgroundColor: A.gold,
-    borderRadius: 999,
-    paddingHorizontal: SP.sm,
-    paddingVertical: 2,
-    borderWidth: 1,
-    borderColor: A.goldLight,
-  },
-  badgeText: { fontFamily: F.bold, fontSize: 10, color: A.ink },
 });

@@ -1,19 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
-import React, { useEffect, useState } from "react";
-import { LayoutChangeEvent, Pressable, StyleSheet, Text, View } from "react-native";
-import Animated, {
-  Easing,
-  FadeInUp,
-  useAnimatedStyle,
-  useSharedValue,
-  withRepeat,
-  withTiming,
-} from "react-native-reanimated";
+import React, { useState } from "react";
+import { Image, LayoutChangeEvent, Pressable, StyleSheet, Text, View } from "react-native";
+import Animated, { FadeInUp } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import ArenaBackground, { arenaSideWidth } from "@/src/anime/components/ArenaBackground";
+import { FLAG_BANNER, LOGO } from "@/src/anime/assets";
+import ArenaBackground, { arenaContentInset } from "@/src/anime/components/ArenaBackground";
 import ArenaMenuTile from "@/src/anime/components/ArenaMenuTile";
-import TunisianFlagBanner from "@/src/anime/components/TunisianFlagBanner";
 import { A } from "@/src/anime/tokens";
 import Avatar from "@/src/components/Avatar";
 import MenuButton from "@/src/components/MenuButton";
@@ -24,13 +17,6 @@ import { F, R, SP } from "@/src/theme";
 // theme: top bar + the 2×2 menu grid. It owns NO business logic — every
 // action, label and live value comes from app/(tabs)/home.tsx, which keeps
 // the modals, navigation and API calls exactly as in the original screen.
-
-const SUITS = [
-  { s: "♥", c: A.red },
-  { s: "♠", c: A.ivory },
-  { s: "♦", c: A.red },
-  { s: "♣", c: A.ivory },
-];
 
 export interface AnimeHomeMainProps {
   username?: string;
@@ -49,6 +35,9 @@ export interface AnimeHomeMainProps {
 }
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
+const CONTROL_H = 44;
+const LOGO_H = 46;
+const FLAG_W = 34;
 
 export default function AnimeHomeMain({
   username,
@@ -67,39 +56,33 @@ export default function AnimeHomeMain({
   const insets = useSafeAreaInsets();
   const { t } = useI18n();
   const [size, setSize] = useState({ w: 0, h: 0 });
+  const [gridH, setGridH] = useState(0);
   const onLayout = (e: LayoutChangeEvent) => {
     const { width, height } = e.nativeEvent.layout;
     if (Math.abs(width - size.w) > 0.5 || Math.abs(height - size.h) > 0.5) {
       setSize({ w: width, h: height });
     }
   };
-
-  // soft pulsing glow on the hero tile (same behaviour as the original card)
-  const glowPulse = useSharedValue(0);
-  useEffect(() => {
-    glowPulse.value = withRepeat(
-      withTiming(1, { duration: 1600, easing: Easing.inOut(Easing.quad) }),
-      -1,
-      true,
-    );
-  }, [glowPulse]);
-  const heroGlowStyle = useAnimatedStyle(() => ({
-    shadowOpacity: 0.3 + glowPulse.value * 0.45,
-  }));
+  const onGridLayout = (e: LayoutChangeEvent) => {
+    const { height } = e.nativeEvent.layout;
+    if (Math.abs(height - gridH) > 0.5) setGridH(height);
+  };
 
   // ---- responsive metrics (landscape phones → tablets) ----
   const { w, h } = size;
-  // the grid sits between the two arches (their width is capped in ArenaBackground)
+  // the grid starts where the painted arch/column/lantern end, but never
+  // gives up more than 17% of the width per side
   const sideInset = Math.max(
-    arenaSideWidth(w, h) + 6,
+    Math.min(arenaContentInset(w, h) + 4, w * 0.17),
     Math.max(insets.left, insets.right),
     SP.lg,
   );
   const gridW = Math.min(w - sideInset * 2, 940);
   const tileW = Math.max(0, (gridW - SP.sm) / 2);
-  const titleSize = clamp(tileW * 0.072, 15, 30);
-  const descSize = clamp(tileW * 0.043, 11, 17);
-  const iconBox = clamp(tileW * 0.19, 42, 80);
+  const tileH = Math.max(0, (gridH - SP.sm) / 2);
+  const titleSize = clamp(tileW * 0.066, 15, 30);
+  const descSize = clamp(tileW * 0.044, 11, 17);
+  const iconBox = clamp(tileW * 0.17, 42, 80);
   const iconSize = iconBox * 0.5;
   const showLogo = w >= 780;
   const showFlag = w >= 700;
@@ -108,9 +91,11 @@ export default function AnimeHomeMain({
   const us = currentGame ? currentGame.match_scores[currentGame.my_team] : 0;
   const them = currentGame ? currentGame.match_scores[1 - currentGame.my_team] : 0;
 
+  const tileSizes = { titleSize, descSize, iconBox, tileHeight: tileH };
+
   return (
     <View style={styles.root} onLayout={onLayout}>
-      <ArenaBackground width={w} height={h} />
+      <ArenaBackground />
 
       {/* ---------- top bar ---------- */}
       <View
@@ -127,28 +112,24 @@ export default function AnimeHomeMain({
 
         {showFlag && (
           <View style={styles.flagSlot} pointerEvents="none">
-            <View style={styles.flagHang}>
-              <TunisianFlagBanner width={40} />
-            </View>
+            <Image
+              source={FLAG_BANNER.source}
+              resizeMode="contain"
+              fadeDuration={0}
+              style={[styles.flagImg, { top: -(insets.top + SP.sm) }]}
+            />
           </View>
         )}
 
         {showLogo && (
-          <View style={styles.logo} pointerEvents="none" accessibilityRole="header">
-            <Text style={styles.logoText} numberOfLines={1}>
-              Belote
-            </Text>
-            <Text style={[styles.logoText, styles.logoText2]} numberOfLines={1}>
-              Tunisienne
-            </Text>
-            <View style={styles.logoSuits}>
-              {SUITS.map((d) => (
-                <Text key={d.s} style={[styles.logoSuit, { color: d.c }]}>
-                  {d.s}
-                </Text>
-              ))}
-            </View>
-          </View>
+          <Image
+            source={LOGO.source}
+            resizeMode="contain"
+            fadeDuration={0}
+            accessibilityRole="image"
+            accessibilityLabel="Belote Tunisienne"
+            style={styles.logoImg}
+          />
         )}
 
         <View style={styles.identity}>
@@ -208,33 +189,30 @@ export default function AnimeHomeMain({
 
       {/* ---------- 2×2 menu grid (never a single column) ---------- */}
       <View style={[styles.content, { paddingHorizontal: sideInset }]}>
-        <View style={styles.grid} testID="home-grid">
+        <View style={styles.grid} testID="home-grid" onLayout={onGridLayout}>
           <View style={styles.gridRow}>
             <Animated.View entering={FadeInUp.delay(40)} style={styles.gridItem}>
-              <Animated.View style={[styles.heroGlow, heroGlowStyle]}>
-                <ArenaMenuTile
-                  variant="hero"
-                  testID="play-online-card"
-                  onPress={onPlayOnline}
-                  iconTone="emerald"
-                  icon={<Ionicons name="globe-outline" size={iconSize} color={A.goldLight} />}
-                  title={t("playOnline")}
-                  desc={t("playOnlineDesc")}
-                  titleSize={titleSize}
-                  descSize={descSize}
-                  iconBox={iconBox}
-                  footer={
-                    onlineNow > 0 ? (
-                      <View style={styles.onlineRow}>
-                        <View style={styles.onlineDot} />
-                        <Text style={styles.onlineText} testID="online-now-count" numberOfLines={1}>
-                          {t("onlineCount", { n: onlineNow })}
-                        </Text>
-                      </View>
-                    ) : null
-                  }
-                />
-              </Animated.View>
+              <ArenaMenuTile
+                variant="hero"
+                pulse
+                testID="play-online-card"
+                onPress={onPlayOnline}
+                iconTone="emerald"
+                icon={<Ionicons name="globe-outline" size={iconSize} color={A.goldLight} />}
+                title={t("playOnline")}
+                desc={t("playOnlineDesc")}
+                {...tileSizes}
+                footer={
+                  onlineNow > 0 ? (
+                    <View style={styles.onlineRow}>
+                      <View style={styles.onlineDot} />
+                      <Text style={styles.onlineText} testID="online-now-count" numberOfLines={1}>
+                        {t("onlineCount", { n: onlineNow })}
+                      </Text>
+                    </View>
+                  ) : null
+                }
+              />
             </Animated.View>
 
             <Animated.View entering={FadeInUp.delay(70)} style={styles.gridItem}>
@@ -246,10 +224,15 @@ export default function AnimeHomeMain({
                 icon={<Ionicons name="game-controller" size={iconSize} color="#2C1400" />}
                 title={t("playVsAI")}
                 desc={t("playVsAIDesc")}
-                titleSize={titleSize}
-                descSize={descSize}
-                iconBox={iconBox}
-                badge={t("trainingBadge")}
+                {...tileSizes}
+                footer={
+                  // under the description so it can never cover the title
+                  <View style={styles.trainingBadge}>
+                    <Text style={styles.trainingBadgeText} numberOfLines={1}>
+                      {t("trainingBadge")}
+                    </Text>
+                  </View>
+                }
               />
             </Animated.View>
           </View>
@@ -264,9 +247,7 @@ export default function AnimeHomeMain({
                 icon={<Ionicons name="school" size={iconSize} color={A.goldLight} />}
                 title={t("tutorialTitle")}
                 desc={t("tutorialDesc")}
-                titleSize={titleSize}
-                descSize={descSize}
-                iconBox={iconBox}
+                {...tileSizes}
               />
             </Animated.View>
 
@@ -279,9 +260,7 @@ export default function AnimeHomeMain({
                 icon={<Ionicons name="people" size={iconSize} color="#2C1400" />}
                 title={t("privateParty")}
                 desc={t("privatePartyDesc")}
-                titleSize={titleSize}
-                descSize={descSize}
-                iconBox={iconBox}
+                {...tileSizes}
               />
             </Animated.View>
           </View>
@@ -290,8 +269,6 @@ export default function AnimeHomeMain({
     </View>
   );
 }
-
-const CONTROL_H = 44;
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: A.emeraldDeep, overflow: "hidden" },
@@ -306,22 +283,19 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: A.gold,
   },
-  // the banner hangs from the top edge and overlaps the grid area slightly
-  flagSlot: { width: 40, height: CONTROL_H },
-  flagHang: { position: "absolute", top: -SP.sm - 2, left: 0 },
-  logo: { alignItems: "center", marginHorizontal: SP.xs },
-  logoText: {
-    fontFamily: F.serif,
-    fontSize: 17,
-    lineHeight: 19,
-    color: A.goldLight,
-    textShadowColor: "rgba(0,0,0,0.7)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
+  // the banner hangs from the very top edge and dips slightly into the grid area
+  flagSlot: { width: FLAG_W, height: CONTROL_H },
+  flagImg: {
+    position: "absolute",
+    left: 0,
+    width: FLAG_W,
+    height: FLAG_W / FLAG_BANNER.aspect,
   },
-  logoText2: { marginTop: -2 },
-  logoSuits: { flexDirection: "row", gap: 4, marginTop: -1 },
-  logoSuit: { fontSize: 10, lineHeight: 12 },
+  logoImg: {
+    height: LOGO_H,
+    width: LOGO_H * LOGO.aspect,
+    marginHorizontal: 2,
+  },
   identity: {
     flexDirection: "row",
     alignItems: "center",
@@ -399,15 +373,18 @@ const styles = StyleSheet.create({
   grid: { flex: 1, gap: SP.sm, width: "100%", maxWidth: 940 },
   gridRow: { flex: 1, flexDirection: "row", gap: SP.sm },
   gridItem: { flex: 1 },
-  heroGlow: {
-    flex: 1,
-    borderRadius: 20,
-    shadowColor: "#3BE3A2",
-    shadowOffset: { width: 0, height: 0 },
-    shadowRadius: 16,
-    elevation: 10,
-  },
   onlineRow: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 4 },
   onlineDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: A.mint },
   onlineText: { fontFamily: F.bold, fontSize: 12, color: A.mint },
+  trainingBadge: {
+    alignSelf: "flex-start",
+    marginTop: 5,
+    backgroundColor: A.gold,
+    borderRadius: R.pill,
+    paddingHorizontal: SP.sm,
+    paddingVertical: 2,
+    borderWidth: 1,
+    borderColor: A.goldLight,
+  },
+  trainingBadgeText: { fontFamily: F.bold, fontSize: 10, color: A.ink },
 });

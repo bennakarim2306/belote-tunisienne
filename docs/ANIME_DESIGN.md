@@ -54,10 +54,12 @@ friend requests); resume pill → `/game/[id]`; hamburger → side menu.
 frontend/src/anime/
   flags.ts                     ANIME_THEME_ENABLED  (EXPO_PUBLIC_ANIME_THEME=1, default OFF)
   tokens.ts                    palette `A`, goldGlow
+  assets.ts                    require() map of the painted assets + 9-slice definitions
   components/
-    ArenaBackground.tsx        decorative SVG courtyard (placeholder art, pointerEvents none)
-    ArenaMenuTile.tsx          reusable gold-trimmed tile (hero / dark)
-    TunisianFlagBanner.tsx     decorative SVG banner
+    ArenaBackground.tsx        painted courtyard image, "cover", pointerEvents none
+    NineSlice.tsx              cross-platform 9-slice panel (corners keep their shape)
+    ArenaMenuTile.tsx          reusable tile: painted 9-slice frame (hero / dark) + code glow
+frontend/assets/anime/home/    painted files (see ANIME_ASSET_MANIFEST.md)
   home/
     AnimeHomeMain.tsx          top bar + 2×2 grid, presentation only
 ```
@@ -93,7 +95,9 @@ Space Grotesk for buttons/metrics. No new font files.
 - Top bar: hamburger, (flag, wordmark when width allows), avatar + greeting + username,
   resume pill when a game exists, ELO, bell with badge.
 - No large character on the home screen.
-- Background art is decorative only and capped at 10.5% of the width per side so the grid keeps room.
+- Background art is decorative only. The grid starts where arch, column and lantern end in the
+  painted background (computed from the image, capped at 17% of the width per side).
+- Painted assets never contain labels, numbers or icons: text stays live and translated.
 - Responsive: wordmark hidden under 780dp width, flag under 700dp, greeting under 620dp;
   title/description/icon sizes scale with tile width; safe-area insets respected on all sides.
 - States: press (scale 0.98 + brighter inner frame), hero glow pulse, `accessibilityRole="button"`

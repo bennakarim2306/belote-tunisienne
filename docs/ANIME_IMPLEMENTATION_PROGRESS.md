@@ -79,6 +79,27 @@ Not touched: backend, auth, ads (`src/ads/*`, `(tabs)/_layout.tsx`), game engine
 - "Ahla," greeting, "Entraînement" badge and live online count kept although the concept omits them.
 - Flag is off by default so the branch behaves like `main` unless explicitly enabled.
 
+## Stage 1, second pass — painted assets (2026-11-20)
+
+Karim reviewed the first pass on his Android phone (Expo Go): layout correct, but flat next to the
+concept because the art was drawn in code. He supplied five generated images (background, two
+button panels, wordmark, flag banner). This pass wires them in.
+
+- New: `frontend/assets/anime/home/*` (21 files), `src/anime/assets.ts`,
+  `src/anime/components/NineSlice.tsx`, `scripts/anime/prepare-assets.ps1`, `docs/ANIME_ASSET_BRIEF.md`.
+- Rewritten: `ArenaBackground.tsx` (painted image, "cover"), `ArenaMenuTile.tsx` (9-slice painted
+  frame + code glow), `AnimeHomeMain.tsx` (logo and flag images, grid inset derived from the background).
+- Removed: `TunisianFlagBanner.tsx` (vector) and the vector background.
+- Fixed: the "Entraînement" badge covered the end of "Jouer contre l'IA" on his phone; it now sits
+  under the description.
+- Checks: `tsc` 6 errors (baseline, none in changed files), lint 0 errors / 1 baseline warning,
+  smoke test 54/54 with the flag on and 54/54 with it off. Screenshots in
+  `docs/anime/screenshots/stage1/` were retaken (web build, mock data).
+- Still unverified: this second pass on a real device (9-slice seams, image memory, glow on Android),
+  the AdMob banner layout in a native build, Arabic/English strings. On tablets the arches are
+  cropped out of the background. Licence of the generated images to be confirmed by Karim.
+- Status: **awaiting Karim's visual approval of the home screen.**
+
 ## Safety log
 
 No `git push`, no remote branch, no pull request, no GitHub write, no Emergent/Expo/EAS deployment,
