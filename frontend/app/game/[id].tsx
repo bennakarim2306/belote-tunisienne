@@ -1326,7 +1326,8 @@ const styles = StyleSheet.create({
   animeHistoryRow: {
     borderTopWidth: 0,
     marginTop: 6,
-    paddingHorizontal: SP.md,
+    paddingHorizontal: SCORE_ROW ? 52 : SP.md,
+    paddingVertical: SCORE_ROW ? 10 : 8,
     borderRadius: 8,
     backgroundColor: SCORE_ROW ? "transparent" : "rgba(3,35,28,0.7)",
     borderWidth: SCORE_ROW ? 0 : 1,
@@ -1361,8 +1362,8 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   // crest sits on the bottom edge of the winning card, clear of the name above
-  animeCrestWrap: { position: "absolute", bottom: -13, left: 0, right: 0, alignItems: "center" },
-  animeCrestImg: { width: 30, height: 30, resizeMode: "contain" },
+  animeCrestWrap: { position: "absolute", bottom: -20, left: 0, right: 0, alignItems: "center" },
+  animeCrestImg: { width: 42, height: 42, resizeMode: "contain" },
   animeCrestFallback: {
     width: 24,
     height: 24,

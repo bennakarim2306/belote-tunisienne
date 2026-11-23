@@ -10,6 +10,7 @@ import Animated, {
 } from "react-native-reanimated";
 
 import { BUBBLE_BID, BUBBLE_CONTRACT, CARD_BACK, NAMEPLATE, SEAT_FRAME } from "@/src/anime/assets";
+import BubbleSlice from "@/src/anime/components/BubbleSlice";
 import HSlice from "@/src/anime/components/HSlice";
 import { ANIME_THEME_ENABLED } from "@/src/anime/flags";
 import Avatar from "@/src/components/Avatar";
@@ -67,20 +68,9 @@ const ANIME = ANIME_THEME_ENABLED;
 /** Anime theme: painted speech-bubble background (or a coded plaque until the
  *  painted bubbles are delivered). `pointer` = small tail toward the avatar. */
 function AnimeBubbleBg({ contract, pointer }: { contract?: boolean; pointer?: boolean }) {
-  const img = contract ? BUBBLE_CONTRACT : BUBBLE_BID;
-  if (img) {
-    return (
-      <View style={styles.animeBubbleImgWrap} pointerEvents="none">
-        {/* bubbles beside the avatar hide the bottom tail by clipping it off */}
-        <Image
-          source={img}
-          resizeMode="stretch"
-          fadeDuration={0}
-          style={[styles.animeBubbleImg, !pointer && styles.animeBubbleImgNoTail]}
-        />
-      </View>
-    );
-  }
+  const slices = contract ? BUBBLE_CONTRACT : BUBBLE_BID;
+  // bubbles beside the avatar (pointer=false) clip their bottom tail off
+  if (slices) return <BubbleSlice slices={slices} tail={pointer} />;
   return pointer ? (
     <View
       pointerEvents="none"
@@ -380,9 +370,11 @@ const styles = StyleSheet.create({
     borderWidth: BUBBLE_BID ? 0 : 1.5,
     borderColor: "#D6AC56",
     borderRadius: BUBBLE_BID ? 0 : 9,
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     paddingTop: 3,
     paddingBottom: BUBBLE_BID ? 7 : 3,
+    minWidth: 46,
+    alignItems: "center",
     shadowOpacity: 0.5,
   },
   animeContractBubble: {
@@ -390,14 +382,12 @@ const styles = StyleSheet.create({
     borderWidth: BUBBLE_CONTRACT ? 0 : 1.5,
     borderColor: "#8A6A2B",
     borderRadius: BUBBLE_CONTRACT ? 0 : 9,
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     paddingTop: 3,
     paddingBottom: BUBBLE_CONTRACT ? 7 : 3,
+    minWidth: 46,
   },
   animeBidText: { color: "#FFF5DF" },
-  animeBubbleImgWrap: { ...StyleSheet.absoluteFillObject, overflow: "hidden" },
-  animeBubbleImg: { width: "100%", height: "100%" },
-  animeBubbleImgNoTail: { height: "118%" },
   animeTail: {
     position: "absolute",
     bottom: -7,

@@ -185,6 +185,10 @@ Prompts for 9 images were sent; the code is built first with stand-ins so the im
 - `scripts/anime/smoke-game.js` now also opens the chat, the last trick and the score history: 28/28 with
   the flag on, 28/28 off. `tsc` baseline, lint baseline.
 - Status: stand-ins in place, **waiting for Karim's 9 images**.
+- Update 2026-11-23: the 9 images arrived and are wired in (ssets/anime/ui/, BubbleSlice.tsx for the
+  bubbles). Window frame re-sliced with full edges to remove seams from its gradient. Score-row text inset
+  from the end ornaments; winner crest enlarged. smoke-game.js 28/28 on, 28/28 off; smoke-home.js 54/54.
+  **Awaiting Karim's review on the phone.**
 ## Safety log
 
 No `git push`, no remote branch, no pull request, no GitHub write, no Emergent/Expo/EAS deployment,

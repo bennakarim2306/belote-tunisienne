@@ -192,19 +192,78 @@ export const CLASSIC_COURTS: Record<string, { source: ImageSourcePropType; aspec
 // is null, and the component falls back to a coded look.
 // ---------------------------------------------------------------------------
 /** dialog frame for score history, quick chat, last trick (9-slice) */
-export const MODAL_FRAME: NineSliceSource = { ...HUD_PANEL, corner: 26 };
+export const MODAL_FRAME: NineSliceSource = {
+  tl: require("../../assets/anime/ui/modal_frame_tl.png"),
+  t: require("../../assets/anime/ui/modal_frame_t.png"),
+  tr: require("../../assets/anime/ui/modal_frame_tr.png"),
+  l: require("../../assets/anime/ui/modal_frame_l.png"),
+  c: require("../../assets/anime/ui/modal_frame_c.png"),
+  r: require("../../assets/anime/ui/modal_frame_r.png"),
+  bl: require("../../assets/anime/ui/modal_frame_bl.png"),
+  b: require("../../assets/anime/ui/modal_frame_b.png"),
+  br: require("../../assets/anime/ui/modal_frame_br.png"),
+  corner: 40,
+};
 /** title cartouche (3-slice) */
-export const TITLE_RIBBON: HSliceSource = NAMEPLATE;
-/** score-history row plaque (3-slice) — null: coded gold lines */
-export const SCORE_ROW: HSliceSource | null = null;
+export const TITLE_RIBBON: HSliceSource = {
+  l: require("../../assets/anime/ui/title_ribbon_l.png"),
+  c: require("../../assets/anime/ui/title_ribbon_c.png"),
+  r: require("../../assets/anime/ui/title_ribbon_r.png"),
+  capRatio: 0.72,
+};
+/** score-history row plaque (3-slice) */
+export const SCORE_ROW: HSliceSource | null = {
+  l: require("../../assets/anime/ui/score_row_l.png"),
+  c: require("../../assets/anime/ui/score_row_c.png"),
+  r: require("../../assets/anime/ui/score_row_r.png"),
+  capRatio: 0.625,
+};
 /** quick-chat phrase button (3-slice) */
-export const CHAT_CHIP: HSliceSource = BTN_DARK;
+export const CHAT_CHIP: HSliceSource = {
+  l: require("../../assets/anime/ui/chat_chip_l.png"),
+  c: require("../../assets/anime/ui/chat_chip_c.png"),
+  r: require("../../assets/anime/ui/chat_chip_r.png"),
+  capRatio: 0.55,
+};
 /** quick-chat emoji tile (square) */
-export const EMOJI_TILE: ImageSourcePropType = BTN_ICON_GREEN;
-/** crest over the card that won the last trick — null: coded trophy badge */
-export const WINNER_CREST: ImageSourcePropType | null = null;
-/** "À toi de jouer !" banner (3-slice) — null: coded gold scroll */
-export const TURN_BANNER: HSliceSource | null = null;
-/** bid / contract speech bubbles — null: coded plaques */
-export const BUBBLE_BID: ImageSourcePropType | null = null;
-export const BUBBLE_CONTRACT: ImageSourcePropType | null = null;
+export const EMOJI_TILE: ImageSourcePropType = require("../../assets/anime/ui/emoji_tile.png");
+/** laurel + crown over the card that won the last trick */
+export const WINNER_CREST: ImageSourcePropType | null = require("../../assets/anime/ui/winner_crest.png");
+/** "À toi de jouer !" scroll banner (3-slice) */
+export const TURN_BANNER: HSliceSource | null = {
+  l: require("../../assets/anime/ui/turn_banner_l.png"),
+  c: require("../../assets/anime/ui/turn_banner_c.png"),
+  r: require("../../assets/anime/ui/turn_banner_r.png"),
+  capRatio: 0.58,
+};
+
+/** Speech bubble: fixed caps and centred tail, stretchable body on both sides. */
+export interface BubbleSliceSource {
+  l: ImageSourcePropType;
+  m: ImageSourcePropType;
+  tail: ImageSourcePropType;
+  r: ImageSourcePropType;
+  /** cap width / height, tail width / height */
+  capRatio: number;
+  tailRatio: number;
+  /** fraction of the height taken by the body (below it: only the tail) */
+  body: number;
+}
+export const BUBBLE_BID: BubbleSliceSource | null = {
+  l: require("../../assets/anime/ui/bubble_bid_l.png"),
+  m: require("../../assets/anime/ui/bubble_bid_m.png"),
+  tail: require("../../assets/anime/ui/bubble_bid_tail.png"),
+  r: require("../../assets/anime/ui/bubble_bid_r.png"),
+  capRatio: 28 / 96,
+  tailRatio: 34 / 96,
+  body: 0.885,
+};
+export const BUBBLE_CONTRACT: BubbleSliceSource | null = {
+  l: require("../../assets/anime/ui/bubble_contract_l.png"),
+  m: require("../../assets/anime/ui/bubble_contract_m.png"),
+  tail: require("../../assets/anime/ui/bubble_contract_tail.png"),
+  r: require("../../assets/anime/ui/bubble_contract_r.png"),
+  capRatio: 28 / 96,
+  tailRatio: 34 / 96,
+  body: 0.875,
+};
