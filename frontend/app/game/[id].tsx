@@ -41,11 +41,25 @@ import { api } from "@/src/api";
 import Avatar from "@/src/components/Avatar";
 import { isSoundEnabled, playSound, setSoundEnabled } from "@/src/sound";
 import { C, F, PATTERN_BG, R, SP } from "@/src/theme";
-import { BTN_DARK, BTN_ICON_GREEN, BTN_ICON_RED, HUD_PANEL } from "@/src/anime/assets";
+import {
+  BTN_DARK,
+  BTN_ICON_GREEN,
+  BTN_ICON_RED,
+  CHAT_CHIP,
+  EMOJI_TILE,
+  HUD_PANEL,
+  SCORE_ROW,
+  TURN_BANNER,
+  WINNER_CREST,
+} from "@/src/anime/assets";
+import { A } from "@/src/anime/tokens";
+import { AnimeButton, AnimeTitle, AnimeWindowFrame, animeWindow } from "@/src/anime/game/AnimeUI";
 import HSlice from "@/src/anime/components/HSlice";
 import NineSlice from "@/src/anime/components/NineSlice";
 import { ANIME_THEME_ENABLED } from "@/src/anime/flags";
 import TableBackdrop from "@/src/anime/game/TableBackdrop";
+
+const ANIME = ANIME_THEME_ENABLED;
 
 // raise the bidding panel by 5% of the screen height so it never covers the
 // top of the player's cards (dimensions frozen at app start; landscape lock)
@@ -778,8 +792,9 @@ export default function GameScreen() {
         </View>
         <View style={styles.bottomRight}>
           {myTurn && state.phase === "playing" && (
-            <View style={styles.turnPill} testID="your-turn-pill">
-              <Text style={styles.turnPillText}>{t("yourTurn")}</Text>
+            <View style={[styles.turnPill, ANIME && styles.animeTurnPill]} testID="your-turn-pill">
+              {ANIME && TURN_BANNER && <HSlice slices={TURN_BANNER} />}
+              <Text style={[styles.turnPillText, ANIME && styles.animeTurnText]}>{t("yourTurn")}</Text>
               {remaining !== null && remaining <= 15 && (
                 <Text style={styles.turnTimer}>{remaining}s</Text>
               )}
@@ -887,17 +902,25 @@ export default function GameScreen() {
       {/* quick chat modal */}
       <Modal visible={chatOpen} transparent animationType="slide" supportedOrientations={["landscape", "portrait"]}>
         <Pressable style={styles.chatScrim} onPress={() => setChatOpen(false)}>
-          <Pressable style={styles.chatSheet} onPress={() => {}} testID="chat-panel">
-            <View style={styles.sheetHandle} />
-            <Text style={styles.quitTitle}>{t("quickChat")}</Text>
+          <Pressable style={[styles.chatSheet, ANIME && styles.animeChatSheet]} onPress={() => {}} testID="chat-panel">
+            {ANIME && <AnimeWindowFrame />}
+            {ANIME ? (
+              <AnimeTitle text={t("quickChat")} />
+            ) : (
+              <>
+                <View style={styles.sheetHandle} />
+                <Text style={styles.quitTitle}>{t("quickChat")}</Text>
+              </>
+            )}
             <View style={styles.emojiRow}>
               {CHAT_EMOJIS.map((em) => (
                 <Pressable
                   key={em}
                   testID={`chat-emoji-${em}`}
                   onPress={() => sendChat("emoji", em)}
-                  style={({ pressed }) => [styles.emojiBtn, pressed && { opacity: 0.7 }]}
+                  style={({ pressed }) => [styles.emojiBtn, ANIME && styles.animeEmojiBtn, pressed && { opacity: 0.7 }]}
                 >
+                  {ANIME && <Image source={EMOJI_TILE} style={styles.animeIconBg} fadeDuration={0} />}
                   <Text style={styles.emojiText}>{em}</Text>
                 </Pressable>
               ))}
@@ -908,9 +931,10 @@ export default function GameScreen() {
                   key={id2}
                   testID={`chat-msg-${id2}`}
                   onPress={() => sendChat("msg", id2)}
-                  style={({ pressed }) => [styles.chatMsgChip, pressed && { opacity: 0.7 }]}
+                  style={({ pressed }) => [styles.chatMsgChip, ANIME && styles.animeChatChip, pressed && { opacity: 0.7 }]}
                 >
-                  <Text style={styles.chatMsgText}>{t(`chat_${id2}` as TKey)}</Text>
+                  {ANIME && <HSlice slices={CHAT_CHIP} />}
+                  <Text style={[styles.chatMsgText, ANIME && styles.animeChatText]}>{t(`chat_${id2}` as TKey)}</Text>
                 </Pressable>
               ))}
             </View>
@@ -920,8 +944,13 @@ export default function GameScreen() {
 
       <Modal visible={lastTrickOpen} transparent animationType="fade" supportedOrientations={["landscape", "portrait"]}>
         <Pressable style={styles.quitScrim} onPress={() => setLastTrickOpen(false)}>
-          <Pressable style={styles.quitCard} onPress={() => {}} testID="last-trick-modal">
-            <Text style={styles.quitTitle}>{t("lastTrick")}</Text>
+          <Pressable style={[styles.quitCard, ANIME && animeWindow]} onPress={() => {}} testID="last-trick-modal">
+            {ANIME && <AnimeWindowFrame />}
+            {ANIME ? (
+              <AnimeTitle text={t("lastTrick")} />
+            ) : (
+              <Text style={styles.quitTitle}>{t("lastTrick")}</Text>
+            )}
             <View style={styles.lastTrickRow}>
               {state.last_trick?.cards.map((tc) => {
                 const p = state.players.find((pl) => pl.seat === tc.seat)!;
@@ -929,19 +958,40 @@ export default function GameScreen() {
                 return (
                   <View key={tc.seat} style={styles.lastTrickCol}>
                     <Text
-                      style={[styles.lastTrickName, isWinner && { color: C.brand }]}
+                      style={[
+                        styles.lastTrickName,
+                        isWinner && { color: C.brand },
+                        ANIME && (isWinner ? styles.animeWinnerName : styles.animeMutedName),
+                      ]}
                       numberOfLines={1}
                     >
                       {p.username}
                     </Text>
-                    <View style={isWinner ? styles.lastTrickWinner : styles.lastTrickNeutral}>
-                      <PlayingCard card={tc.card} width={54} trumpSuit={state.trump} />
+                    <View
+                      style={[
+                        isWinner ? styles.lastTrickWinner : styles.lastTrickNeutral,
+                        ANIME && isWinner && styles.animeTrickWinner,
+                      ]}
+                      testID={isWinner ? "last-trick-winner-card" : undefined}
+                    >
+                      <PlayingCard card={tc.card} width={ANIME ? 62 : 54} trumpSuit={state.trump} />
+                      {ANIME && isWinner && (
+                        <View style={styles.animeCrestWrap} pointerEvents="none">
+                          {WINNER_CREST ? (
+                            <Image source={WINNER_CREST} style={styles.animeCrestImg} fadeDuration={0} />
+                          ) : (
+                            <View style={styles.animeCrestFallback}>
+                              <Ionicons name="trophy" size={13} color={A.ink} />
+                            </View>
+                          )}
+                        </View>
+                      )}
                     </View>
                   </View>
                 );
               })}
             </View>
-            <Text style={styles.lastTrickWonBy} testID="last-trick-won-by">
+            <Text style={[styles.lastTrickWonBy, ANIME && styles.animeAccentText, ANIME && { marginTop: SP.lg + 4 }]} testID="last-trick-won-by">
               {t("wonBy", {
                 name:
                   state.players.find((pl) => pl.seat === state.last_trick?.winner_seat)
@@ -950,14 +1000,23 @@ export default function GameScreen() {
               {" · +"}
               {state.last_trick?.points} {t("points")}
             </Text>
-            <ChunkyButton
-              testID="last-trick-close-button"
-              label={t("close")}
-              variant="secondary"
-              small
-              onPress={() => setLastTrickOpen(false)}
-              style={{ marginTop: SP.md }}
-            />
+            {ANIME ? (
+              <AnimeButton
+                testID="last-trick-close-button"
+                label={t("close")}
+                onPress={() => setLastTrickOpen(false)}
+                style={{ marginTop: SP.md }}
+              />
+            ) : (
+              <ChunkyButton
+                testID="last-trick-close-button"
+                label={t("close")}
+                variant="secondary"
+                small
+                onPress={() => setLastTrickOpen(false)}
+                style={{ marginTop: SP.md }}
+              />
+            )}
           </Pressable>
         </Pressable>
       </Modal>
@@ -1049,12 +1108,17 @@ export default function GameScreen() {
       <Modal visible={scoresOpen} transparent animationType="fade" supportedOrientations={["landscape", "portrait"]}>
         <Pressable style={styles.quitScrim} onPress={() => setScoresOpen(false)}>
           <Pressable
-            style={[styles.quitCard, { maxHeight: "75%" }]}
+            style={[styles.quitCard, { maxHeight: "75%" }, ANIME && animeWindow, ANIME && { maxHeight: "88%" }]}
             onPress={() => {}}
             testID="score-history-modal"
           >
-            <Text style={styles.quitTitle}>{t("scoreHistory")}</Text>
-            <Text style={styles.historyTotal} testID="score-history-total">
+            {ANIME && <AnimeWindowFrame />}
+            {ANIME ? (
+              <AnimeTitle text={t("scoreHistory")} />
+            ) : (
+              <Text style={styles.quitTitle}>{t("scoreHistory")}</Text>
+            )}
+            <Text style={[styles.historyTotal, ANIME && styles.animeAccentText]} testID="score-history-total">
               {t("us")} {state.match_scores[myTeam]} — {state.match_scores[1 - myTeam]}{" "}
               {t("them")} · {state.target} pts
             </Text>
@@ -1066,9 +1130,10 @@ export default function GameScreen() {
             >
               {state.hand_history?.length ? (
                 state.hand_history.map((h) => (
-                  <View key={h.hand_number} style={styles.historyRow}>
+                  <View key={h.hand_number} style={[styles.historyRow, ANIME && styles.animeHistoryRow]}>
+                    {ANIME && SCORE_ROW && <HSlice slices={SCORE_ROW} />}
                     <View style={{ flex: 1, minWidth: 0 }}>
-                      <Text style={styles.historyHand}>
+                      <Text style={[styles.historyHand, ANIME && styles.animeHistoryHand]}>
                         {t("hand", { n: h.hand_number })} ·{" "}
                         {h.contract.capot ? t("capot") : h.contract.value}
                         <Text style={{ color: SUIT_COLOR_ON_DARK[h.contract.suit] }}>
@@ -1081,7 +1146,7 @@ export default function GameScreen() {
                             ? ` · ${t("contred")}`
                             : ""}
                       </Text>
-                      <Text style={styles.historyTaker} numberOfLines={1}>
+                      <Text style={[styles.historyTaker, ANIME && styles.animeHistoryTaker]} numberOfLines={1}>
                         {state.players.find((p) => p.seat === h.contract.seat)?.username}
                         {" · "}
                         {h.contract.team === myTeam ? t("us") : t("them")}
@@ -1092,23 +1157,32 @@ export default function GameScreen() {
                       size={18}
                       color={h.success ? C.green : C.error}
                     />
-                    <Text style={styles.historyScores}>
+                    <Text style={[styles.historyScores, ANIME && styles.animeHistoryScores]}>
                       {h.hand_scores[myTeam]} / {h.hand_scores[1 - myTeam]}
                     </Text>
                   </View>
                 ))
               ) : (
-                <Text style={styles.historyEmpty}>{t("noHandsYet")}</Text>
+                <Text style={[styles.historyEmpty, ANIME && styles.animeHistoryEmpty]}>{t("noHandsYet")}</Text>
               )}
             </ScrollView>
-            <ChunkyButton
-              testID="score-history-close"
-              label={t("close")}
-              variant="secondary"
-              small
-              onPress={() => setScoresOpen(false)}
-              style={{ marginTop: SP.md }}
-            />
+            {ANIME ? (
+              <AnimeButton
+                testID="score-history-close"
+                label={t("close")}
+                onPress={() => setScoresOpen(false)}
+                style={{ marginTop: SP.md }}
+              />
+            ) : (
+              <ChunkyButton
+                testID="score-history-close"
+                label={t("close")}
+                variant="secondary"
+                small
+                onPress={() => setScoresOpen(false)}
+                style={{ marginTop: SP.md }}
+              />
+            )}
           </Pressable>
         </Pressable>
       </Modal>
@@ -1231,6 +1305,73 @@ const styles = StyleSheet.create({
     height: 7,
     borderRadius: 4,
     backgroundColor: "#D92932",
+  },
+  // "À toi de jouer !" scroll banner
+  animeTurnPill: {
+    backgroundColor: TURN_BANNER ? "transparent" : A.gold,
+    borderWidth: TURN_BANNER ? 0 : 1.5,
+    borderColor: A.goldLight,
+    borderRadius: TURN_BANNER ? 0 : 8,
+    paddingHorizontal: SP.xl,
+    height: 36,
+    shadowColor: A.goldLight,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+  animeTurnText: { fontFamily: F.serif, fontSize: 14, color: A.ink },
+  // in-game windows (score history, quick chat, last trick)
+  animeAccentText: { fontFamily: F.serif, color: A.goldLight, fontSize: 16 },
+  animeHistoryRow: {
+    borderTopWidth: 0,
+    marginTop: 6,
+    paddingHorizontal: SP.md,
+    borderRadius: 8,
+    backgroundColor: SCORE_ROW ? "transparent" : "rgba(3,35,28,0.7)",
+    borderWidth: SCORE_ROW ? 0 : 1,
+    borderColor: "rgba(214,172,86,0.35)",
+  },
+  animeHistoryHand: { color: A.ivory },
+  animeHistoryTaker: { color: A.ivoryDim },
+  animeHistoryScores: { fontFamily: F.serif, color: A.goldLight },
+  animeHistoryEmpty: { color: A.ivoryDim, paddingVertical: SP.xl },
+  animeChatSheet: {
+    backgroundColor: "transparent",
+    paddingTop: SP.lg,
+    paddingHorizontal: SP.xl + 6,
+    paddingBottom: SP.xl + 4,
+  },
+  animeEmojiBtn: { backgroundColor: "transparent", borderWidth: 0, borderRadius: 10 },
+  animeChatChip: { backgroundColor: "transparent", borderWidth: 0, borderRadius: 0, paddingHorizontal: SP.xl },
+  animeChatText: {
+    color: A.ivory,
+    textShadowColor: "rgba(0,0,0,0.6)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+  animeWinnerName: { color: A.goldLight, fontFamily: F.serif, fontSize: 12.5 },
+  animeMutedName: { color: A.ivoryDim },
+  animeTrickWinner: {
+    borderColor: A.goldLight,
+    shadowColor: A.gold,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.9,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+  // crest sits on the bottom edge of the winning card, clear of the name above
+  animeCrestWrap: { position: "absolute", bottom: -13, left: 0, right: 0, alignItems: "center" },
+  animeCrestImg: { width: 30, height: 30, resizeMode: "contain" },
+  animeCrestFallback: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: A.goldLight,
+    borderWidth: 1.5,
+    borderColor: A.goldDark,
+    alignItems: "center",
+    justifyContent: "center",
   },
   animeTextBtn: {
     backgroundColor: "transparent",

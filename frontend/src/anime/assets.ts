@@ -185,3 +185,26 @@ export const CLASSIC_COURTS: Record<string, { source: ImageSourcePropType; aspec
   Q: { source: require("../../assets/anime/cards/classic_queen.png"), aspect: 420 / 361 },
   K: { source: require("../../assets/anime/cards/classic_king.png"), aspect: 420 / 331 },
 };
+
+// ---------------------------------------------------------------------------
+// In-game windows and labels (2026-11-23). Each slot is swapped for Karim's
+// painted image once delivered; until then it points at an existing asset or
+// is null, and the component falls back to a coded look.
+// ---------------------------------------------------------------------------
+/** dialog frame for score history, quick chat, last trick (9-slice) */
+export const MODAL_FRAME: NineSliceSource = { ...HUD_PANEL, corner: 26 };
+/** title cartouche (3-slice) */
+export const TITLE_RIBBON: HSliceSource = NAMEPLATE;
+/** score-history row plaque (3-slice) — null: coded gold lines */
+export const SCORE_ROW: HSliceSource | null = null;
+/** quick-chat phrase button (3-slice) */
+export const CHAT_CHIP: HSliceSource = BTN_DARK;
+/** quick-chat emoji tile (square) */
+export const EMOJI_TILE: ImageSourcePropType = BTN_ICON_GREEN;
+/** crest over the card that won the last trick — null: coded trophy badge */
+export const WINNER_CREST: ImageSourcePropType | null = null;
+/** "À toi de jouer !" banner (3-slice) — null: coded gold scroll */
+export const TURN_BANNER: HSliceSource | null = null;
+/** bid / contract speech bubbles — null: coded plaques */
+export const BUBBLE_BID: ImageSourcePropType | null = null;
+export const BUBBLE_CONTRACT: ImageSourcePropType | null = null;

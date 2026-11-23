@@ -66,7 +66,20 @@ const waitDealt = async (page) => {
   const headerText = await page.locator(tid("match-score-header")).innerText();
   check("score header carries live text (Nous / Eux / 500 pts)", /Nous/.test(headerText) && /Eux/.test(headerText) && /500/.test(headerText), headerText.replace(/\s+/g, " "));
 
+  // quick chat sheet opens and closes
+  await page.locator(tid("chat-button")).click();
+  await page.locator(tid("chat-panel")).waitFor({ timeout: 5000 });
+  await page.waitForTimeout(700);
+  check("quick chat opens with emojis and phrases",
+    (await page.locator('[data-testid^="chat-emoji-"]').count()) >= 4 &&
+    (await page.locator('[data-testid^="chat-msg-"]').count()) >= 4);
+  await shot(page, "7-chat");
+  await page.mouse.click(8, 8);
+  await page.waitForTimeout(700);
+  check("quick chat closes", (await page.locator(tid("chat-panel")).count()) === 0);
+
   let bidShot = false, playShot = false, played = 0, announced = false, sawContract = false, handEnd = false;
+  let trickShot = false;
   let maxHand = hand.length, maxTrick = 0;
   for (let i = 0; i < 260 && !handEnd; i++) {
     await page.waitForTimeout(450);
@@ -105,6 +118,19 @@ const waitDealt = async (page) => {
     if (await page.locator(tid("contract-chip")).count()) sawContract = true;
     if (await page.locator(tid("your-turn-pill")).count()) {
       if (!playShot && played >= 1) { await shot(page, "4-playing"); playShot = true; }
+      if (!trickShot && played >= 1 && (await page.locator(tid("last-trick-button")).count())) {
+        await page.locator(tid("last-trick-button")).click();
+        await page.locator(tid("last-trick-modal")).waitFor({ timeout: 5000 });
+        await page.waitForTimeout(500);
+        check("last trick shows 4 cards and marks the winner",
+          (await page.locator(`${tid("last-trick-modal")} svg`).count()) >= 4 &&
+          (await page.locator(tid("last-trick-winner-card")).count()) === 1);
+        await shot(page, "6-last-trick");
+        await page.locator(tid("last-trick-close-button")).click();
+        await page.waitForTimeout(500);
+        trickShot = true;
+        continue;
+      }
       const before = hand.length;
       for (const id of hand) {
         await page.locator(tid(id)).click({ timeout: 2000 }).catch(() => {});
@@ -127,6 +153,19 @@ const waitDealt = async (page) => {
   if (await page.locator(tid("hand-continue-button")).count()) {
     await page.locator(tid("hand-continue-button")).click().catch(() => {});
     await page.waitForTimeout(600);
+  }
+  // score history lists the finished hand
+  await waitDealt(page);
+  await page.locator(tid("match-score-header")).click({ timeout: 5000 }).catch(() => {});
+  if (await page.locator(tid("score-history-modal")).count()) {
+    await page.waitForTimeout(500);
+    const histText = await page.locator(tid("score-history-modal")).innerText();
+    check("score history lists the finished hand", /Donne 1/.test(histText), histText.replace(/\s+/g, " ").slice(0, 90));
+    await shot(page, "8-score-history");
+    await page.locator(tid("score-history-close")).click();
+    await page.waitForTimeout(500);
+  } else {
+    check("score history opens from the score header", false);
   }
   if (await page.locator(tid("quit-game-button")).count()) {
     await page.locator(tid("quit-game-button")).click({ timeout: 4000 }).catch(() => {});

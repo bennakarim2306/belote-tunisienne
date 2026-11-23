@@ -167,6 +167,24 @@ Requested by Karim: comedy caricature manga characters, and classic French Valet
 - Same three figures for all four suits; a real French deck has 12 distinct courts (possible follow-up).
 - Bot name / portrait mismatch is more visible with caricatures (e.g. bot "Baya" with Docteur Hichem's face);
   still waiting for Karim's decision.
+## Game view windows and labels (2026-11-23)
+
+Karim approved art set v2 on his phone ("matches my expectations") and asked for four game-view parts to be
+redesigned: score history, quick chat, last trick, the "À toi de jouer !" banner and the bid/contract bubbles.
+Prompts for 9 images were sent; the code is built first with stand-ins so the images only need to be swapped.
+
+- `src/anime/assets.ts`: slots `MODAL_FRAME`, `TITLE_RIBBON`, `SCORE_ROW`, `CHAT_CHIP`, `EMOJI_TILE`,
+  `WINNER_CREST`, `TURN_BANNER`, `BUBBLE_BID`, `BUBBLE_CONTRACT` — currently existing assets or `null`
+  (coded fallback). Replace each with the painted file when delivered.
+- New `src/anime/game/AnimeUI.tsx`: window frame, title ribbon, painted button.
+- `app/game/[id].tsx` (flag-guarded): score history, quick chat and last trick use the painted window,
+  ribbon title and painted "Fermer"; trick winner gets a gold glow and a crest; turn banner styling.
+  New testID `last-trick-winner-card` (both modes).
+- `src/components/game/PlayerSeat.tsx` (flag-guarded): bid bubble (dark emerald) and contract bubble (gold)
+  with a tail toward the avatar; painted bubble images take over when delivered.
+- `scripts/anime/smoke-game.js` now also opens the chat, the last trick and the score history: 28/28 with
+  the flag on, 28/28 off. `tsc` baseline, lint baseline.
+- Status: stand-ins in place, **waiting for Karim's 9 images**.
 ## Safety log
 
 No `git push`, no remote branch, no pull request, no GitHub write, no Emergent/Expo/EAS deployment,

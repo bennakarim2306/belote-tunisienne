@@ -9,7 +9,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 
-import { CARD_BACK, NAMEPLATE, SEAT_FRAME } from "@/src/anime/assets";
+import { BUBBLE_BID, BUBBLE_CONTRACT, CARD_BACK, NAMEPLATE, SEAT_FRAME } from "@/src/anime/assets";
 import HSlice from "@/src/anime/components/HSlice";
 import { ANIME_THEME_ENABLED } from "@/src/anime/flags";
 import Avatar from "@/src/components/Avatar";
@@ -60,6 +60,33 @@ interface Props {
   timerSide?: "left" | "right";
   /** tapping the avatar (online games: opens the add-friend player card) */
   onPress?: () => void;
+}
+
+const ANIME = ANIME_THEME_ENABLED;
+
+/** Anime theme: painted speech-bubble background (or a coded plaque until the
+ *  painted bubbles are delivered). `pointer` = small tail toward the avatar. */
+function AnimeBubbleBg({ contract, pointer }: { contract?: boolean; pointer?: boolean }) {
+  const img = contract ? BUBBLE_CONTRACT : BUBBLE_BID;
+  if (img) {
+    return (
+      <View style={styles.animeBubbleImgWrap} pointerEvents="none">
+        {/* bubbles beside the avatar hide the bottom tail by clipping it off */}
+        <Image
+          source={img}
+          resizeMode="stretch"
+          fadeDuration={0}
+          style={[styles.animeBubbleImg, !pointer && styles.animeBubbleImgNoTail]}
+        />
+      </View>
+    );
+  }
+  return pointer ? (
+    <View
+      pointerEvents="none"
+      style={[styles.animeTail, { borderTopColor: contract ? "#8A6A2B" : "#D6AC56" }]}
+    />
+  ) : null;
 }
 
 export default function PlayerSeat({
@@ -228,6 +255,7 @@ export default function PlayerSeat({
           style={[
             styles.bubble,
             styles.contractBubble,
+            ANIME && styles.animeContractBubble,
             bubbleSide === "right" && [
               styles.bubbleRight,
               { top: ringSize / 2 - 12, left: 82 + rightBubbleShift },
@@ -235,6 +263,7 @@ export default function PlayerSeat({
           ]}
           testID={`contract-holder-${player.seat}`}
         >
+          {ANIME && <AnimeBubbleBg contract pointer={bubbleSide === "top"} />}
           <Ionicons name="ribbon" size={11} color="#1A1200" />
           <Text style={[styles.bubbleText, { color: "#1A1200" }]} numberOfLines={1}>
             {" "}
@@ -249,6 +278,7 @@ export default function PlayerSeat({
         <Animated.View
           style={[
             styles.bubble,
+            ANIME && styles.animeBidBubble,
             bubbleSide === "right" && [
               styles.bubbleRight,
               { top: ringSize / 2 - 12, left: 82 + rightBubbleShift },
@@ -256,7 +286,8 @@ export default function PlayerSeat({
           ]}
           entering={undefined}
         >
-          <Text style={styles.bubbleText} numberOfLines={1}>
+          {ANIME && <AnimeBubbleBg pointer={bubbleSide === "top"} />}
+          <Text style={[styles.bubbleText, ANIME && styles.animeBidText]} numberOfLines={1}>
             {bidLabel}
             {bidSuit ? (
               <Text style={{ color: SUIT_COLOR_ON_DARK[bidSuit] }}> {SUIT_SYMBOL[bidSuit]}</Text>
@@ -344,6 +375,41 @@ const styles = StyleSheet.create({
   },
   cardCountText: { fontFamily: F.bold, fontSize: 10, color: "rgba(255,255,255,0.85)" },
   // ---- anime theme ----
+  animeBidBubble: {
+    backgroundColor: BUBBLE_BID ? "transparent" : "#063F32",
+    borderWidth: BUBBLE_BID ? 0 : 1.5,
+    borderColor: "#D6AC56",
+    borderRadius: BUBBLE_BID ? 0 : 9,
+    paddingHorizontal: 12,
+    paddingTop: 3,
+    paddingBottom: BUBBLE_BID ? 7 : 3,
+    shadowOpacity: 0.5,
+  },
+  animeContractBubble: {
+    backgroundColor: BUBBLE_CONTRACT ? "transparent" : "#F4D68C",
+    borderWidth: BUBBLE_CONTRACT ? 0 : 1.5,
+    borderColor: "#8A6A2B",
+    borderRadius: BUBBLE_CONTRACT ? 0 : 9,
+    paddingHorizontal: 12,
+    paddingTop: 3,
+    paddingBottom: BUBBLE_CONTRACT ? 7 : 3,
+  },
+  animeBidText: { color: "#FFF5DF" },
+  animeBubbleImgWrap: { ...StyleSheet.absoluteFillObject, overflow: "hidden" },
+  animeBubbleImg: { width: "100%", height: "100%" },
+  animeBubbleImgNoTail: { height: "118%" },
+  animeTail: {
+    position: "absolute",
+    bottom: -7,
+    alignSelf: "center",
+    width: 0,
+    height: 0,
+    borderLeftWidth: 6,
+    borderRightWidth: 6,
+    borderTopWidth: 7,
+    borderLeftColor: "transparent",
+    borderRightColor: "transparent",
+  },
   nameRowAnime: {
     backgroundColor: "transparent",
     borderWidth: 0,
