@@ -3,6 +3,8 @@
 // docs/ANIME_ASSET_MANIFEST.md for source, size and status of each file.
 import { ImageSourcePropType } from "react-native";
 
+import { ANIME_ART_SET } from "@/src/anime/flags";
+
 export interface NineSliceSource {
   tl: ImageSourcePropType;
   t: ImageSourcePropType;
@@ -133,7 +135,7 @@ export const HUD_PANEL: NineSliceSource = {
 };
 
 /** Anime portraits for the 12 existing avatar ids (same identities as src/avatars.ts). */
-export const AVATAR_PORTRAITS: Record<string, ImageSourcePropType> = {
+const AVATAR_PORTRAITS_V1: Record<string, ImageSourcePropType> = {
   av1: require("../../assets/anime/avatars/av1.jpg"),
   av2: require("../../assets/anime/avatars/av2.jpg"),
   av3: require("../../assets/anime/avatars/av3.jpg"),
@@ -147,6 +149,25 @@ export const AVATAR_PORTRAITS: Record<string, ImageSourcePropType> = {
   av11: require("../../assets/anime/avatars/av11.jpg"),
   av12: require("../../assets/anime/avatars/av12.jpg"),
 };
+/** Art set v2: comedy caricature portraits, same 12 identities. */
+const AVATAR_PORTRAITS_V2: Record<string, ImageSourcePropType> = {
+  av1: require("../../assets/anime/avatars-v2/av1.jpg"),
+  av2: require("../../assets/anime/avatars-v2/av2.jpg"),
+  av3: require("../../assets/anime/avatars-v2/av3.jpg"),
+  av4: require("../../assets/anime/avatars-v2/av4.jpg"),
+  av5: require("../../assets/anime/avatars-v2/av5.jpg"),
+  av6: require("../../assets/anime/avatars-v2/av6.jpg"),
+  av7: require("../../assets/anime/avatars-v2/av7.jpg"),
+  av8: require("../../assets/anime/avatars-v2/av8.jpg"),
+  av9: require("../../assets/anime/avatars-v2/av9.jpg"),
+  av10: require("../../assets/anime/avatars-v2/av10.jpg"),
+  av11: require("../../assets/anime/avatars-v2/av11.jpg"),
+  av12: require("../../assets/anime/avatars-v2/av12.jpg"),
+};
+
+/** Portraits of the active art set (EXPO_PUBLIC_ANIME_ART). */
+export const AVATAR_PORTRAITS: Record<string, ImageSourcePropType> =
+  ANIME_ART_SET === "v1" ? AVATAR_PORTRAITS_V1 : AVATAR_PORTRAITS_V2;
 // ---------------------------------------------------------------------------
 // Cards — blank face + court figures (ranks, suits and pips stay vector)
 // ---------------------------------------------------------------------------
@@ -156,4 +177,11 @@ export const COURT_FIGURES: Record<string, { source: ImageSourcePropType; aspect
   J: { source: require("../../assets/anime/cards/court_jack.png"), aspect: 360 / 395 },
   Q: { source: require("../../assets/anime/cards/court_queen.png"), aspect: 360 / 359 },
   K: { source: require("../../assets/anime/cards/court_king.png"), aspect: 360 / 360 },
+};
+
+/** Art set v2: classic French court halves (upper half, mirrored in the card). */
+export const CLASSIC_COURTS: Record<string, { source: ImageSourcePropType; aspect: number }> = {
+  J: { source: require("../../assets/anime/cards/classic_jack.png"), aspect: 420 / 379 },
+  Q: { source: require("../../assets/anime/cards/classic_queen.png"), aspect: 420 / 361 },
+  K: { source: require("../../assets/anime/cards/classic_king.png"), aspect: 420 / 331 },
 };

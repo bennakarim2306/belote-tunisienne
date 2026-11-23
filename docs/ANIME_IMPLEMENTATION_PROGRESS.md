@@ -150,6 +150,23 @@ Requested by Karim: queen as an Arabic dancer, jack as an original young adventu
 - Checks: `tsc` baseline, lint baseline, `smoke-game.js` 24/24 on and 24/24 off.
 - Unverified: `react-native-svg` `<Image>` inside the card SVG is confirmed on web only; it must be
   checked on Android and iOS (if it fails there, the fallback is a normal image layer under the SVG).
+## Art set v2 — caricature characters + classic courts (2026-11-23)
+
+Requested by Karim: comedy caricature manga characters, and classic French Valet / Dame / Roi.
+
+- New switch `EXPO_PUBLIC_ANIME_ART` in `src/anime/flags.ts`: `v2` (default) or `v1` (previous painted set).
+  Both sets are in the bundle; nothing from v1 was removed.
+- `src/anime/assets.ts`: `AVATAR_PORTRAITS` now picks v1 or v2; new `CLASSIC_COURTS`.
+- `src/components/PlayingCard.tsx`: `ClassicCourtFace` — thin gilt frame, painted upper half standing on
+  the centre line, the same half rotated 180° below, small vector suit pip beside the head. Corner
+  indices (V / D / R), pips and number cards unchanged.
+- `BiddingPanel.tsx`: the Annoncer button is wider in anime mode so "Annoncer 110♥" fits on one line.
+- Checks: `tsc` baseline (6), lint baseline (0 errors, 1 warning). `smoke-game.js` 24/24 for v2, v1 and
+  flag off; `smoke-home.js` 54/54 for v2.
+- Still unverified on a phone (SVG image rendering in cards on Android/iOS, see previous section).
+- Same three figures for all four suits; a real French deck has 12 distinct courts (possible follow-up).
+- Bot name / portrait mismatch is more visible with caricatures (e.g. bot "Baya" with Docteur Hichem's face);
+  still waiting for Karim's decision.
 ## Safety log
 
 No `git push`, no remote branch, no pull request, no GitHub write, no Emergent/Expo/EAS deployment,

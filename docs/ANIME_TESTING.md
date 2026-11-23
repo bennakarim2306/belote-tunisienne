@@ -90,3 +90,9 @@ and chat controls; the bidding panel appears on my turn and a bid can be announc
 appears; cards can be played; never more than 8 cards in hand or 4 in a trick; the hand reaches its
 end screen; quit returns home; and the table renders at 640×360, 915×412 and 1280×800.
 Run it against the flag-off server too: the same 24 checks must pass with the original look.
+
+## 6. Art sets
+
+`EXPO_PUBLIC_ANIME_ART=v1` shows the painted portraits and painted court figures; anything else (default)
+shows art set v2 (caricature portraits, classic double-headed courts). Restart Metro with `--clear` after
+changing it. Run `smoke-game.js` for each set.

@@ -12,8 +12,8 @@ import Svg, {
   Text as SvgText,
 } from "react-native-svg";
 
-import { CARD_BACK, CARD_FACE, COURT_FIGURES } from "@/src/anime/assets";
-import { ANIME_THEME_ENABLED } from "@/src/anime/flags";
+import { CARD_BACK, CARD_FACE, CLASSIC_COURTS, COURT_FIGURES } from "@/src/anime/assets";
+import { ANIME_ART_SET, ANIME_THEME_ENABLED } from "@/src/anime/flags";
 
 import { C } from "@/src/theme";
 
@@ -271,6 +271,51 @@ function AnimeCourtFace({ rank, suit }: { rank: string; suit: string }) {
   );
 }
 
+/* ---- anime theme, art set v2: classic double-headed French court ----
+ * The painted upper half stands on the centre line of a thin gilt frame and is
+ * repeated rotated by 180° in the lower half, like a real French card. The suit
+ * pip beside the head and both corner indices stay vector. */
+const FRAME = { x: 21, y: 16, w: 58, h: 113 };
+const MID_Y = FRAME.y + FRAME.h / 2; // 72.5 = card centre
+function ClassicCourtFace({ rank, suit }: { rank: string; suit: string }) {
+  const fig = CLASSIC_COURTS[rank];
+  const halfH = MID_Y - FRAME.y;
+  // fit the half figure inside the half frame, standing on the centre line
+  const w = Math.min(FRAME.w, halfH * fig.aspect);
+  const h = w / fig.aspect;
+  const half = (
+    <>
+      <SvgImage
+        href={fig.source}
+        x={FRAME.x + (FRAME.w - w) / 2}
+        y={MID_Y - h}
+        width={w}
+        height={h}
+        preserveAspectRatio="none"
+      />
+      <PipGlyph cx={FRAME.x + FRAME.w - 7} cy={FRAME.y + 8} s={9} suit={suit} />
+    </>
+  );
+  return (
+    <>
+      <Defs>
+        <ClipPath id="classicFrameClip">
+          <Rect x={FRAME.x} y={FRAME.y} width={FRAME.w} height={FRAME.h} rx={2} />
+        </ClipPath>
+      </Defs>
+      <G clipPath="url(#classicFrameClip)">
+        {half}
+        <G rotation={180} originX={50} originY={MID_Y}>
+          {half}
+        </G>
+      </G>
+      <Rect x={FRAME.x} y={FRAME.y} width={FRAME.w} height={FRAME.h} rx={2}
+            fill="none" stroke="#B8963E" strokeWidth={1.1} />
+      <Path d={`M${FRAME.x} ${MID_Y} L${FRAME.x + FRAME.w} ${MID_Y}`} stroke="#B8963E" strokeWidth={0.7} />
+    </>
+  );
+}
+
 interface Props {
   card?: string;
   width?: number;
@@ -336,7 +381,9 @@ export default function PlayingCard({
           strokeWidth={isTrump ? 3.5 : 1.5}
         />
         {/* center: court figure, single ace pip, or the classic pip grid */}
-        {isCourt && ANIME_THEME_ENABLED ? (
+        {isCourt && ANIME_THEME_ENABLED && ANIME_ART_SET === "v2" ? (
+          <ClassicCourtFace rank={rank} suit={suit} />
+        ) : isCourt && ANIME_THEME_ENABLED ? (
           <AnimeCourtFace rank={rank} suit={suit} />
         ) : isCourt ? (
           <CourtFace rank={rank} suit={suit} />

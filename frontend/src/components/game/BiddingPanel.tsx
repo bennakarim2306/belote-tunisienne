@@ -228,6 +228,7 @@ export default function BiddingPanel({ state, t, onAction }: Props) {
             styles.bigAction,
             { backgroundColor: C.brand, opacity: canAnnounce ? 1 : 0.4 },
             ANIME && styles.btnAnime,
+            ANIME && styles.btnAnnounceAnime,
           ]}
         >
           {paint(BTN_GREEN)}
@@ -453,6 +454,8 @@ const styles = StyleSheet.create({
   panelAnimeTurn: { backgroundColor: "transparent", padding: SP.md, borderRadius: 14 },
   dockAnime: { backgroundColor: "transparent", borderWidth: 0, padding: 9 },
   btnAnime: { backgroundColor: "transparent", paddingHorizontal: 6 },
+  // "Annoncer 110♥" needs more room than the one-word buttons
+  btnAnnounceAnime: { flex: 1.45 },
   btnTextAnime: {
     color: "#FFF5DF",
     textShadowColor: "rgba(0,0,0,0.6)",
