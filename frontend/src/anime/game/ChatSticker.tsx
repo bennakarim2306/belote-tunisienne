@@ -1,6 +1,6 @@
 import React from "react";
 import { I18nManager, Image, ImageSourcePropType, StyleSheet, Text, View } from "react-native";
-import Animated, { ZoomIn } from "react-native-reanimated";
+import Animated, { Easing, Keyframe } from "react-native-reanimated";
 
 import { F } from "@/src/theme";
 
@@ -9,6 +9,22 @@ import { F } from "@/src/theme";
 // The sticker images contain no text, so the text follows the app language.
 
 export const STICKER_SIZE = 86;
+
+/** One flashy pop out of the avatar: starts small at the avatar, overshoots
+ *  once, settles — then stays completely still (no spring, no wobble). */
+const popFrom = (side: "left" | "right") => {
+  const fromX = side === "right" ? -70 : 70; // the avatar sits on the other side
+  return new Keyframe({
+    0: { opacity: 0, transform: [{ translateX: fromX }, { scale: 0.15 }] },
+    65: {
+      opacity: 1,
+      transform: [{ translateX: 0 }, { scale: 1.14 }],
+      easing: Easing.out(Easing.cubic),
+    },
+    100: { opacity: 1, transform: [{ translateX: 0 }, { scale: 1 }], easing: Easing.inOut(Easing.quad) },
+  }).duration(280);
+};
+const POP = { left: popFrom("left"), right: popFrom("right") };
 
 interface Props {
   source: ImageSourcePropType;
@@ -21,7 +37,7 @@ interface Props {
 export default function ChatSticker({ source, text, side, testID }: Props) {
   return (
     <Animated.View
-      entering={ZoomIn.springify().damping(13)}
+      entering={POP[side]}
       pointerEvents="none"
       style={[styles.wrap, side === "right" ? styles.right : styles.left]}
       testID={testID}
