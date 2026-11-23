@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
-import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { Image, ImageSourcePropType, Pressable, StyleSheet, Text, View } from "react-native";
 import Animated, {
   ZoomIn,
   useAnimatedStyle,
@@ -13,6 +13,7 @@ import { BUBBLE_BID, BUBBLE_CONTRACT, CARD_BACK, NAMEPLATE, SEAT_FRAME } from "@
 import BubbleSlice from "@/src/anime/components/BubbleSlice";
 import HSlice from "@/src/anime/components/HSlice";
 import { ANIME_THEME_ENABLED } from "@/src/anime/flags";
+import ChatSticker from "@/src/anime/game/ChatSticker";
 import Avatar from "@/src/components/Avatar";
 import { SUIT_COLOR_ON_DARK, SUIT_SYMBOL } from "@/src/components/PlayingCard";
 import { GamePlayer } from "@/src/game/useGameSocket";
@@ -51,6 +52,10 @@ interface Props {
   bidSuit?: string | null;
   contractLabel?: { text: string; suit: string } | null;
   chatText?: string | null;
+  /** anime theme: the sender's sticker for a quick-chat phrase (shown with chatText) */
+  chatSticker?: ImageSourcePropType | null;
+  /** which side of the avatar the sticker goes (toward the table centre) */
+  stickerSide?: "left" | "right";
   deadline?: number;
   showTimer?: boolean;
   isMe?: boolean;
@@ -87,6 +92,8 @@ export default function PlayerSeat({
   bidSuit,
   contractLabel,
   chatText,
+  chatSticker,
+  stickerSide = "right",
   deadline,
   showTimer,
   isMe,
@@ -217,7 +224,14 @@ export default function PlayerSeat({
             <Text style={styles.cardCountText}>🂠 {player.card_count}</Text>
           </View>
         ))}
-      {chatText ? (
+      {ANIME && chatText && chatSticker ? (
+        <ChatSticker
+          source={chatSticker}
+          text={chatText}
+          side={stickerSide}
+          testID={`chat-sticker-${player.seat}`}
+        />
+      ) : chatText ? (
         <Animated.View
           entering={ZoomIn.duration(180)}
           style={[

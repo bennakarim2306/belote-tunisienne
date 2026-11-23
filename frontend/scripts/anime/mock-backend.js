@@ -17,7 +17,7 @@ const user = {
   user_id: "mock_user_1",
   email: "demo@example.test",
   username: "demo_joueur",
-  avatar_id: "av3",
+  avatar_id: process.env.MOCK_AVATAR || "av3",
   elo: 1063,
   elo_duo: 1000,
   games_played: 12,

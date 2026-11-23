@@ -78,6 +78,20 @@ const waitDealt = async (page) => {
   await page.waitForTimeout(700);
   check("quick chat closes", (await page.locator(tid("chat-panel")).count()) === 0);
 
+  // a phrase is sent and shown at my seat (EXPECT_STICKER=1: as my character's sticker)
+  await page.locator(tid("chat-button")).click();
+  await page.locator(tid("chat-msg-wellPlayed")).click();
+  await page.waitForTimeout(900);
+  if (process.env.EXPECT_STICKER === "1") {
+    check("sent phrase shows as my sticker with its text",
+      (await page.locator('[data-testid^="chat-sticker-"]').count()) === 1 &&
+      /Bien jou/.test(await page.locator('[data-testid^="chat-sticker-"]').innerText()));
+    await shot(page, "9-sticker");
+  } else {
+    check("sent phrase shows at my seat", (await page.locator('[data-testid^="chat-bubble-"], [data-testid^="chat-sticker-"]').count()) >= 1);
+  }
+  await page.waitForTimeout(3800);
+
   let bidShot = false, playShot = false, played = 0, announced = false, sawContract = false, handEnd = false;
   let trickShot = false;
   let maxHand = hand.length, maxTrick = 0;

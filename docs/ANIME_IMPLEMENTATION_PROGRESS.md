@@ -189,6 +189,22 @@ Prompts for 9 images were sent; the code is built first with stand-ins so the im
   bubbles). Window frame re-sliced with full edges to remove seams from its gradient. Score-row text inset
   from the end ornaments; winner crest enlarged. smoke-game.js 28/28 on, 28/28 off; smoke-home.js 54/54.
   **Awaiting Karim's review on the phone.**
+## Chat stickers (2026-11-23)
+
+Karim's request: quick-chat phrases shown as stickers of the sender's own character with the right
+reaction, the existing text in a manga bubble in the user's language; texts must not change.
+
+- Step 1 done: Mokhtar le Malin (av12), 8 stickers.
+- New: `src/anime/game/ChatSticker.tsx` (sticker + manga bubble), generated `src/anime/stickers.ts`,
+  `scripts/anime/prepare-stickers.ps1`.
+- `app/game/[id].tsx` (flag-guarded): chat events keep the message id; `stickerFor(seat)` picks the
+  sender's sticker; phrase buttons in the quick-chat sheet show my own sticker; my seat sits above the
+  hand fan so my sticker bubble is not hidden; stickers stay 3.6 s instead of 2.8 s.
+- `PlayerSeat.tsx`: `chatSticker` / `stickerSide` props; falls back to the old text bubble when the sender's
+  character has no stickers yet (and for emojis).
+- i18n texts unchanged. `mock-backend.js` accepts `MOCK_AVATAR`. `smoke-game.js` sends a phrase and, with
+  `EXPECT_STICKER=1`, checks the sticker: 29/29 on (avatar av12), 29/29 off.
+- Next: the other 11 characters, one at a time.
 ## Safety log
 
 No `git push`, no remote branch, no pull request, no GitHub write, no Emergent/Expo/EAS deployment,

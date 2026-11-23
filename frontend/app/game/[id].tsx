@@ -58,6 +58,7 @@ import HSlice from "@/src/anime/components/HSlice";
 import NineSlice from "@/src/anime/components/NineSlice";
 import { ANIME_THEME_ENABLED } from "@/src/anime/flags";
 import TableBackdrop from "@/src/anime/game/TableBackdrop";
+import { STICKERS } from "@/src/anime/stickers";
 
 const ANIME = ANIME_THEME_ENABLED;
 
@@ -158,7 +159,9 @@ export default function GameScreen() {
     "loading" | "none" | "friends" | "pending_sent" | "pending_received"
   >("loading");
   const friendshipIdRef = useRef<string | null>(null);
-  const [chatBubbles, setChatBubbles] = useState<Record<number, { text: string; key: number }>>({});
+  const [chatBubbles, setChatBubbles] = useState<
+    Record<number, { text: string; key: number; msgId?: string }>
+  >({});
   const chatTimers = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
   const [coachMsg, setCoachMsg] = useState<{ text: string; key: number } | null>(null);
   const coachMsgTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -266,7 +269,8 @@ export default function GameScreen() {
       } else if (ev.e === "chat" && ev.seat !== undefined) {
         const seat = ev.seat;
         const text = ev.kind === "msg" ? t(`chat_${ev.msg}` as TKey) : (ev.msg ?? "");
-        setChatBubbles((b) => ({ ...b, [seat]: { text, key: Date.now() } }));
+        const msgId = ev.kind === "msg" ? ev.msg : undefined;
+        setChatBubbles((b) => ({ ...b, [seat]: { text, key: Date.now(), msgId } }));
         if (chatTimers.current[seat]) clearTimeout(chatTimers.current[seat]);
         chatTimers.current[seat] = setTimeout(() => {
           setChatBubbles((b) => {
@@ -274,7 +278,7 @@ export default function GameScreen() {
             delete next[seat];
             return next;
           });
-        }, 2800);
+        }, ANIME && ev.kind === "msg" ? 3600 : 2800);
       } else if (ev.e === "belote") {
         playSound("belote");
         setBanner({ text: t(ev.word === "belote" ? "belote" : "rebelote"), key: Date.now() });
@@ -533,6 +537,17 @@ export default function GameScreen() {
       ? { text: contract.capot ? t("capot") : String(contract.value), suit: contract.suit }
       : null;
 
+  // anime theme: the sender's own sticker for a quick-chat phrase (null = text bubble)
+  const myStickers = ANIME
+    ? STICKERS[state.players.find((p) => p.seat === mySeat)?.avatar_id ?? ""]
+    : undefined;
+  const stickerFor = (seat: number) => {
+    if (!ANIME) return null;
+    const msgId = chatBubbles[seat]?.msgId;
+    const avatar = state.players.find((p) => p.seat === seat)?.avatar_id;
+    return (msgId && avatar && STICKERS[avatar]?.[msgId]) || null;
+  };
+
   // countdown visible on the active player's seat for everyone (timed games)
   const seatTimerOn =
     !!state.turn_timeout &&
@@ -707,6 +722,7 @@ export default function GameScreen() {
           bidSuit={bidLabels[partner.seat]?.suit}
           contractLabel={contractLabelFor(partner.seat)}
           chatText={chatBubbles[partner.seat]?.text}
+          chatSticker={stickerFor(partner.seat)}
           deadline={state.turn_deadline}
           showTimer={seatTimerOn}
           size={38}
@@ -726,6 +742,7 @@ export default function GameScreen() {
             bidSuit={bidLabels[leftP.seat]?.suit}
             contractLabel={contractLabelFor(leftP.seat)}
             chatText={chatBubbles[leftP.seat]?.text}
+            chatSticker={stickerFor(leftP.seat)}
             deadline={state.turn_deadline}
             showTimer={seatTimerOn}
             onPress={seatPress(leftP)}
@@ -745,6 +762,8 @@ export default function GameScreen() {
             bidSuit={bidLabels[rightP.seat]?.suit}
             contractLabel={contractLabelFor(rightP.seat)}
             chatText={chatBubbles[rightP.seat]?.text}
+            chatSticker={stickerFor(rightP.seat)}
+            stickerSide="left"
             deadline={state.turn_deadline}
             showTimer={seatTimerOn}
             timerSide="left"
@@ -764,7 +783,8 @@ export default function GameScreen() {
 
       {/* bottom row: me + chat (left) · hand fan (center) · status (right) */}
       <View style={[styles.bottomRow, { paddingBottom: Math.max(insets.bottom, SP.sm) }]}>
-        <View style={styles.bottomSide}>
+        {/* anime: my seat above the hand fan, so my chat sticker is never hidden by cards */}
+        <View style={[styles.bottomSide, ANIME && { zIndex: 30, elevation: 30 }]}>
           <PlayerSeat
             player={me}
             isTurn={myTurn}
@@ -773,6 +793,7 @@ export default function GameScreen() {
             bidSuit={bidLabels[mySeat]?.suit}
             contractLabel={contractLabelFor(mySeat)}
             chatText={chatBubbles[mySeat]?.text}
+            chatSticker={stickerFor(mySeat)}
             deadline={state.turn_deadline}
             showTimer={seatTimerOn}
             isMe
@@ -934,6 +955,9 @@ export default function GameScreen() {
                   style={({ pressed }) => [styles.chatMsgChip, ANIME && styles.animeChatChip, pressed && { opacity: 0.7 }]}
                 >
                   {ANIME && <HSlice slices={CHAT_CHIP} />}
+                  {ANIME && myStickers?.[id2] && (
+                    <Image source={myStickers[id2]} style={styles.animeChipSticker} fadeDuration={0} />
+                  )}
                   <Text style={[styles.chatMsgText, ANIME && styles.animeChatText]}>{t(`chat_${id2}` as TKey)}</Text>
                 </Pressable>
               ))}
@@ -1344,7 +1368,14 @@ const styles = StyleSheet.create({
     paddingBottom: SP.xl + 4,
   },
   animeEmojiBtn: { backgroundColor: "transparent", borderWidth: 0, borderRadius: 10 },
-  animeChatChip: { backgroundColor: "transparent", borderWidth: 0, borderRadius: 0, paddingHorizontal: SP.xl },
+  animeChatChip: {
+    backgroundColor: "transparent",
+    borderWidth: 0,
+    borderRadius: 0,
+    paddingHorizontal: SP.xl,
+    flexDirection: "row",
+  },
+  animeChipSticker: { width: 40, height: 40, marginLeft: -8, marginRight: 4, marginVertical: -8 },
   animeChatText: {
     color: A.ivory,
     textShadowColor: "rgba(0,0,0,0.6)",
