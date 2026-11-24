@@ -124,6 +124,72 @@ public static class SheetSlicer {
     }
     return cuts;
   }
+  // drops thin, small shapes (stray outline slivers of a neighbour): bounding box
+  // thinner than maxThin px AND area below 2% of the biggest shape
+  public static int DropThin(Bitmap bmp, int maxThin, int alphaMin) {
+    int w = bmp.Width, h = bmp.Height;
+    BitmapData d = bmp.LockBits(new Rectangle(0, 0, w, h), ImageLockMode.ReadWrite, PixelFormat.Format32bppArgb);
+    int stride = d.Stride; byte[] px = new byte[stride * h];
+    Marshal.Copy(d.Scan0, px, 0, px.Length);
+    int[] label = new int[w * h]; var area = new List<int>(); var bw = new List<int>(); var bh = new List<int>(); var st = new Stack<int>(); int n = 0;
+    for (int i = 0; i < w * h; i++) {
+      if (label[i] != 0 || px[(i / w) * stride + (i % w) * 4 + 3] < alphaMin) continue;
+      n++; label[i] = n; st.Push(i); int cnt = 0, x0 = w, x1 = 0, y0 = h, y1 = 0;
+      while (st.Count > 0) {
+        int q = st.Pop(); int x = q % w, y = q / w; cnt++;
+        if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
+        for (int k = 0; k < 4; k++) {
+          int nx = x + (k == 0 ? 1 : k == 1 ? -1 : 0), ny = y + (k == 2 ? 1 : k == 3 ? -1 : 0);
+          if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
+          int r = ny * w + nx; if (label[r] != 0 || px[ny * stride + nx * 4 + 3] < alphaMin) continue;
+          label[r] = n; st.Push(r);
+        }
+      }
+      area.Add(cnt); bw.Add(x1 - x0 + 1); bh.Add(y1 - y0 + 1);
+    }
+    int max = 0; foreach (int a in area) if (a > max) max = a;
+    var drop = new bool[n + 1]; int dropped = 0;
+    for (int k = 0; k < n; k++) if (Math.Min(bw[k], bh[k]) <= maxThin && area[k] < max * 0.02) { drop[k + 1] = true; dropped++; }
+    if (dropped > 0) {
+      for (int i = 0; i < w * h; i++) {
+        int x = i % w, y = i / w, si = y * stride + x * 4; bool clr = drop[label[i]];
+        if (!clr && label[i] == 0 && px[si + 3] > 0) {
+          // soft edge pixels next to a dropped shape go too
+          for (int dy = -1; dy <= 1 && !clr; dy++) for (int dx = -1; dx <= 1 && !clr; dx++) {
+            int nx = x + dx, ny = y + dy; if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
+            if (drop[label[ny * w + nx]]) clr = true;
+          }
+        }
+        if (clr) { px[si] = 0; px[si + 1] = 0; px[si + 2] = 0; px[si + 3] = 0; }
+      }
+      Marshal.Copy(px, 0, d.Scan0, px.Length);
+    }
+    bmp.UnlockBits(d);
+    return dropped;
+  }
+  // removes thin slivers of a neighbouring sticker along the edges  // (strip variant) if, within the
+  // outer `win` pixels, an empty column/row separates a strip from the body, clear the strip
+  public static int TrimSlivers(Bitmap bmp, int win, int alphaMin) {
+    int w = bmp.Width, h = bmp.Height, cleared = 0;
+    BitmapData d = bmp.LockBits(new Rectangle(0, 0, w, h), ImageLockMode.ReadWrite, PixelFormat.Format32bppArgb);
+    int stride = d.Stride; byte[] px = new byte[stride * h];
+    Marshal.Copy(d.Scan0, px, 0, px.Length);
+    Func<int, bool, bool> empty = (i, col) => {
+      int n = col ? h : w;
+      for (int t = 0; t < n; t++) { int x = col ? i : t, y = col ? t : i; if (px[y * stride + x * 4 + 3] >= alphaMin) return false; }
+      return true;
+    };
+    Action<int, int, bool> clear = (a, b, col) => {
+      for (int i = a; i <= b; i++) { int n = col ? h : w; for (int t = 0; t < n; t++) { int x = col ? i : t, y = col ? t : i; int si = y * stride + x * 4; px[si] = 0; px[si + 1] = 0; px[si + 2] = 0; px[si + 3] = 0; } }
+    };
+    foreach (bool col in new[] { true, false }) {
+      int len = col ? w : h, lim = Math.Min(win, len / 4);
+      for (int i = 1; i < lim; i++) if (empty(i, col)) { bool content = false; for (int j = 0; j < i; j++) if (!empty(j, col)) content = true; if (content) { clear(0, i, col); cleared++; } break; }
+      for (int i = len - 2; i > len - 1 - lim; i--) if (empty(i, col)) { bool content = false; for (int j = i + 1; j < len; j++) if (!empty(j, col)) content = true; if (content) { clear(i, len - 1, col); cleared++; } break; }
+    }
+    Marshal.Copy(px, 0, d.Scan0, px.Length); bmp.UnlockBits(d);
+    return cleared;
+  }
   // keep the biggest shape of a crop plus every shape that does not touch the crop edge
   public static Bitmap KeepMain(Bitmap crop, int alphaMin) {
     int w = crop.Width, h = crop.Height;
@@ -197,6 +263,8 @@ $sizes = @()
 for ($i = 0; $i -lt $outs.Length; $i++) {
   $parts = $report[$i].Split(":")
   if (-not $outs[$i]) { "{0}: EMPTY - no sticker found in this cell" -f ($i + 1); continue }
+  $trimmed = [SheetSlicer]::DropThin($outs[$i], 26, 40) + [SheetSlicer]::TrimSlivers($outs[$i], 40, 40)
+  if ($trimmed) { "   ({0}: removed {1} edge sliver(s) of a neighbour)" -f ($i + 1), $trimmed }
   $p = Join-Path $OutDir ("{0}_s.png" -f ($i + 1))
   $outs[$i].Save($p, [System.Drawing.Imaging.ImageFormat]::Png)
   $sizes += [int]$parts[1]
