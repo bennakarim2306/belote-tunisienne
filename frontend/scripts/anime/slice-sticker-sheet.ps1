@@ -97,6 +97,74 @@ public static class SheetSlicer {
     }
     return outs;
   }
+  // Fallback for sheets where neighbouring stickers touch: find the cut line near
+  // each nominal grid line that crosses the fewest opaque pixels (within +-win).
+  public static int[] Seams(Bitmap src, int parts, bool vertical, int bandStart, int bandEnd, int win, int alphaMin) {
+    int w = src.Width, h = src.Height;
+    BitmapData d = src.LockBits(new Rectangle(0, 0, w, h), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
+    byte[] px = new byte[d.Stride * h];
+    Marshal.Copy(d.Scan0, px, 0, px.Length);
+    int stride = d.Stride;
+    src.UnlockBits(d);
+    int len = vertical ? w : h;
+    int[] cuts = new int[parts + 1];
+    cuts[0] = 0; cuts[parts] = len;
+    for (int k = 1; k < parts; k++) {
+      int nominal = len * k / parts, best = nominal, bestCount = int.MaxValue;
+      for (int c = Math.Max(1, nominal - win); c <= Math.Min(len - 2, nominal + win); c++) {
+        int count = 0;
+        for (int t = bandStart; t < bandEnd; t++) {
+          int x = vertical ? c : t, y = vertical ? t : c;
+          if (px[y * stride + x * 4 + 3] >= alphaMin) count++;
+        }
+        // prefer the line closest to the nominal one on ties
+        if (count < bestCount || (count == bestCount && Math.Abs(c - nominal) < Math.Abs(best - nominal))) { bestCount = count; best = c; }
+      }
+      cuts[k] = best;
+    }
+    return cuts;
+  }
+  // keep the biggest shape of a crop plus every shape that does not touch the crop edge
+  public static Bitmap KeepMain(Bitmap crop, int alphaMin) {
+    int w = crop.Width, h = crop.Height;
+    Bitmap bmp = crop.Clone(new Rectangle(0, 0, w, h), PixelFormat.Format32bppArgb);
+    BitmapData d = bmp.LockBits(new Rectangle(0, 0, w, h), ImageLockMode.ReadWrite, PixelFormat.Format32bppArgb);
+    int stride = d.Stride; byte[] px = new byte[stride * h];
+    Marshal.Copy(d.Scan0, px, 0, px.Length);
+    int[] label = new int[w * h]; var sizes = new List<int>(); var edge = new List<bool>(); var st = new Stack<int>(); int n = 0;
+    for (int i = 0; i < w * h; i++) {
+      if (label[i] != 0 || px[(i / w) * stride + (i % w) * 4 + 3] < alphaMin) continue;
+      n++; label[i] = n; st.Push(i); int cnt = 0; bool touches = false;
+      while (st.Count > 0) {
+        int q = st.Pop(); int x = q % w, y = q / w; cnt++;
+        if (x == 0 || y == 0 || x == w - 1 || y == h - 1) touches = true;
+        for (int k = 0; k < 4; k++) {
+          int nx = x + (k == 0 ? 1 : k == 1 ? -1 : 0), ny = y + (k == 2 ? 1 : k == 3 ? -1 : 0);
+          if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
+          int r = ny * w + nx; if (label[r] != 0 || px[ny * stride + nx * 4 + 3] < alphaMin) continue;
+          label[r] = n; st.Push(r);
+        }
+      }
+      sizes.Add(cnt); edge.Add(touches);
+    }
+    int main = 0; for (int k = 1; k < sizes.Count; k++) if (sizes[k] > sizes[main]) main = k;
+    for (int i = 0; i < w * h; i++) {
+      int l = label[i]; int si = (i / w) * stride + (i % w) * 4;
+      bool keep = l != 0 && (l - 1 == main || !edge[l - 1]);
+      if (!keep && px[si + 3] < alphaMin) {
+        // soft edge next to a kept pixel stays; everything else is cleared
+        int x = i % w, y = i / w; bool near = false;
+        for (int dy = -1; dy <= 1 && !near; dy++) for (int dx = -1; dx <= 1 && !near; dx++) {
+          int nx = x + dx, ny = y + dy; if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
+          int nl = label[ny * w + nx]; if (nl != 0 && (nl - 1 == main || !edge[nl - 1])) near = true;
+        }
+        keep = near;
+      }
+      if (!keep) { px[si] = 0; px[si + 1] = 0; px[si + 2] = 0; px[si + 3] = 0; }
+    }
+    Marshal.Copy(px, 0, d.Scan0, px.Length); bmp.UnlockBits(d);
+    return bmp;
+  }
 }
 "@
 New-Item -ItemType Directory -Force $OutDir | Out-Null
@@ -105,6 +173,26 @@ $src = New-Object System.Drawing.Bitmap $Sheet
 $report = $null
 $outs = [SheetSlicer]::Slice($src, $Cols, $Rows, 40, [ref]$report)
 $src.Dispose()
+# Fallback: stickers touching each other merge into one shape, leaving empty cells.
+# Then cut along the emptiest lines near the grid instead.
+if (($outs | Where-Object { -not $_ }).Count -gt 0) {
+  "shapes merge across cells -> cutting along the emptiest lines near the grid instead"
+  foreach ($o in $outs) { if ($o) { $o.Dispose() } }
+  $src = New-Object System.Drawing.Bitmap $Sheet
+  $rowCuts = [SheetSlicer]::Seams($src, $Rows, $false, 0, $src.Width, 80, 40)
+  $outs = @(); $report = @()
+  for ($r = 0; $r -lt $Rows; $r++) {
+    $colCuts = [SheetSlicer]::Seams($src, $Cols, $true, $rowCuts[$r], $rowCuts[$r + 1], 80, 40)
+    "  row $($r + 1): y $($rowCuts[$r])-$($rowCuts[$r + 1]), x cuts $($colCuts -join ',')"
+    for ($c = 0; $c -lt $Cols; $c++) {
+      $rect = New-Object System.Drawing.Rectangle $colCuts[$c], $rowCuts[$r], ($colCuts[$c + 1] - $colCuts[$c]), ($rowCuts[$r + 1] - $rowCuts[$r])
+      $crop = $src.Clone($rect, [System.Drawing.Imaging.PixelFormat]::Format32bppArgb)
+      $outs += [SheetSlicer]::KeepMain($crop, 40); $crop.Dispose()
+      $report += "seam:$($rect.Width * $rect.Height)"
+    }
+  }
+  $src.Dispose()
+}
 $sizes = @()
 for ($i = 0; $i -lt $outs.Length; $i++) {
   $parts = $report[$i].Split(":")
