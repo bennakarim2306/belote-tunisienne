@@ -204,7 +204,7 @@ reaction, the existing text in a manga bubble in the user's language; texts must
   character has no stickers yet (and for emojis).
 - i18n texts unchanged. `mock-backend.js` accepts `MOCK_AVATAR`. `smoke-game.js` sends a phrase and, with
   `EXPECT_STICKER=1`, checks the sticker: 29/29 on (avatar av12), 29/29 off.
-- Next: the other 11 characters, one at a time.
+- 2026-11-24: all 12 characters done (av4–av11 from one 4x2 sheet each, cut by slice-sticker-sheet.ps1). Full check: 96/96 stickers present, smoke-game.js 29/29 on and off, smoke-home.js 54/54 on and off, tsc/lint baseline. Stickers total 12.6 MB (compression pass needed before release).
 ## Safety log
 
 No `git push`, no remote branch, no pull request, no GitHub write, no Emergent/Expo/EAS deployment,
