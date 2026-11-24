@@ -38,3 +38,7 @@ yarn-error.*
 *.tsbuildinfo
 
 app-example
+
+# anime redesign: local reference images and generated raw stickers (not committed)
+scripts/anime/.refs/
+scripts/anime/.generated/

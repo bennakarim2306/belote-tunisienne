@@ -1,0 +1,28 @@
+{
+  "_comment": "Prompts for the quick-chat stickers. {name} {look} {he} {his} {him} are filled per character. Order = CHAT_MSGS in app/game/[id].tsx.",
+  "setup": "Use the attached portrait of my character \"{name}\". Draw exactly this character: same face, {look}, same comedy caricature manga style as the portrait. One chat sticker, square, the character from the waist up with a thick white die-cut outline around the whole silhouette, real transparent background. Very exaggerated manga expression and pose; manga effects allowed (sweat drops, sparkles, speed lines, steam, hearts, question marks, confetti). Absolutely no text, no letters, no words, no speech bubbles. The sticker: ",
+  "reactions": [
+    { "id": "wellPlayed", "text": "clapping enthusiastically, wide delighted eyes, sparkles around {him}." },
+    { "id": "yezzi", "text": "exasperated, both palms raised saying \"stop\", vein mark on {his} forehead, little steam puffs." },
+    { "id": "aychek", "text": "hands pressed together in thanks, small grateful bow, warm smile, tiny hearts." },
+    { "id": "luck", "text": "jaw dropped in disbelief, eyes popping, a four-leaf clover floating next to {him}." },
+    { "id": "yalla", "text": "impatiently tapping {his} wristwatch and pointing forward, speed lines behind {him}." },
+    { "id": "oops", "text": "embarrassed, scratching the back of {his} head, big sweat drop, blushing cheeks." },
+    { "id": "sahha", "text": "celebrating with a big grin and a thumbs up, confetti bursting around {him}." },
+    { "id": "thinking", "text": "hand on {his} chin, one eye squinting, looking up, question marks floating above {his} head." }
+  ],
+  "characters": {
+    "av1": { "name": "Si Brahim", "pronoun": "m", "look": "same huge curled grey moustache, same red chechia and clothes" },
+    "av2": { "name": "Tata Zakia", "pronoun": "f", "look": "same huge colourful headscarf with the big bow, same round glasses and clothes" },
+    "av3": { "name": "Chef Slim", "pronoun": "m", "look": "same round face, same tall white chef hat and chef jacket" },
+    "av4": { "name": "Docteur Hichem", "pronoun": "m", "look": "same giant thick glasses, same white doctor coat and stethoscope" },
+    "av5": { "name": "Fatma la Rusée", "pronoun": "f", "look": "same long dark curls, same red scarf and clothes" },
+    "av6": { "name": "Si Mongi", "pronoun": "m", "look": "same bushy white eyebrows, same dark burnous" },
+    "av7": { "name": "Baya Baklawa", "pronoun": "f", "look": "same round cheeks, same jasmine flower in her hair and pastel green vest" },
+    "av8": { "name": "Hamma Turbo", "pronoun": "m", "look": "same spiky windswept hair, same red and white tracksuit" },
+    "av9": { "name": "Lella Zohra", "pronoun": "f", "look": "same white safsari veil, same round rosy cheeks and glasses" },
+    "av10": { "name": "Farhat Fantasia", "pronoun": "m", "look": "same blue turban with the big feather, same embroidered vest" },
+    "av11": { "name": "Aziza Harissa", "pronoun": "f", "look": "same curly flame-like hair, same red headband and clothes" },
+    "av12": { "name": "Mokhtar le Malin", "pronoun": "m", "look": "same thin twirled moustache, same red fez and striped shirt" }
+  }
+}
