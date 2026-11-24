@@ -33,6 +33,16 @@ export const STICKERS: Record<string, Record<string, ImageSourcePropType>> = {
     sahha: require("../../assets/anime/stickers/av3_sahha.png"),
     thinking: require("../../assets/anime/stickers/av3_thinking.png"),
   },
+  av4: {
+    wellPlayed: require("../../assets/anime/stickers/av4_wellPlayed.png"),
+    yezzi: require("../../assets/anime/stickers/av4_yezzi.png"),
+    aychek: require("../../assets/anime/stickers/av4_aychek.png"),
+    luck: require("../../assets/anime/stickers/av4_luck.png"),
+    yalla: require("../../assets/anime/stickers/av4_yalla.png"),
+    oops: require("../../assets/anime/stickers/av4_oops.png"),
+    sahha: require("../../assets/anime/stickers/av4_sahha.png"),
+    thinking: require("../../assets/anime/stickers/av4_thinking.png"),
+  },
   av12: {
     wellPlayed: require("../../assets/anime/stickers/av12_wellPlayed.png"),
     yezzi: require("../../assets/anime/stickers/av12_yezzi.png"),
