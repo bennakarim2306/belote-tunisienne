@@ -241,7 +241,8 @@ $outs = [SheetSlicer]::Slice($src, $Cols, $Rows, 40, [ref]$report)
 $src.Dispose()
 # Fallback: stickers touching each other merge into one shape, leaving empty cells.
 # Then cut along the emptiest lines near the grid instead.
-if (($outs | Where-Object { -not $_ }).Count -gt 0) {
+$emptyCells = 0; foreach ($o in $outs) { if ($null -eq $o) { $emptyCells++ } }
+if ($emptyCells -gt 0) {
   "shapes merge across cells -> cutting along the emptiest lines near the grid instead"
   foreach ($o in $outs) { if ($o) { $o.Dispose() } }
   $src = New-Object System.Drawing.Bitmap $Sheet
