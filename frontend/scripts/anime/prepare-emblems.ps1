@@ -1,11 +1,11 @@
 # LOCAL dev script: alert/result emblems cut by slice-sticker-sheet.ps1 -> app assets.
 #   powershell.exe -ExecutionPolicy Bypass -File scripts\anime\prepare-emblems.ps1 -SourceDir <folder>
-# <folder> holds <kind>.png (belote, contre, ...). Output: assets/anime/emblems/<kind>.png,
+# <folder> holds <kind>.png (belote, contre, ...). Output: assets/anime/<Folder>/<kind>.png,
 # square (-Size, default 384 px), transparent, trimmed, content centred. (Windows PowerShell 5.1.)
-param([Parameter(Mandatory = $true)][string]$SourceDir, [int]$Size = 384)
+param([Parameter(Mandatory = $true)][string]$SourceDir, [int]$Size = 384, [string]$Folder = "emblems")
 $ErrorActionPreference = "Stop"
 Add-Type -AssemblyName System.Drawing
-$out = Join-Path (Split-Path -Parent $MyInvocation.MyCommand.Path) "..\..\assets\anime\emblems"
+$out = Join-Path (Split-Path -Parent $MyInvocation.MyCommand.Path) "..\..\assets\anime\$Folder"
 New-Item -ItemType Directory -Force $out | Out-Null; $out = (Resolve-Path $out).Path
 foreach ($f in Get-ChildItem -LiteralPath $SourceDir -Filter *.png) {
   $b = New-Object System.Drawing.Bitmap $f.FullName

@@ -243,6 +243,12 @@ Inventory: 20 old-design elements. Karim approved starting ("let's go"); prompts
   partner, notifications, side menu); 3 matchmaking, private room, join link, share and invite sheets; 4 tutorial.
 - Existing behaviour noted, not changed: when creating a room or inviting a duo partner fails, home.tsx sets `joinError`,
   but the only place that shows it is the private-game window, which is closed at that moment.
+### Home view step 1 (2026-11-25)
+
+- Painted menu, bell, resume button, ELO and name pills, tile icons and training badge (`assets/anime/icons/`, 8 files,
+  about 1 MB). `MenuButton` got an optional `icon` prop; nothing else changes when the flag is off.
+- `smoke-home.js` 54/54 on and off. tsc / lint: nothing new. Game test not re-run. Phone check pending.
+- Design kit added in `docs/design-kit/` (66 elements, 233 images covered, `kit.mjs check` clean).
 ## Safety log
 
 No `git push`, no remote branch, no pull request, no GitHub write, no Emergent/Expo/EAS deployment,

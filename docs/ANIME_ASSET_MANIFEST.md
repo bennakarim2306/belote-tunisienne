@@ -129,3 +129,7 @@ when enlarged; Karim to decide. Window art re-sliced the same day with full-widt
 
 Added 2026-11-25 from a third sheet: `pause`, `connection`, `host` (320 px), `tile`, `tile_on`, `badge_dealer`,
 `badge_bot` (144 px), all in `assets/anime/emblems/`, made with `prepare-emblems.ps1 -Size`.
+
+## Home icons (2026-11-25, candidate)
+
+`assets/anime/icons/`, 8 files, 256 px, from one 4x2 sheet Karim generated with ChatGPT: online, solo, learn, private, bell, elo, resume, menu. All elements and prompts: `docs/design-kit/`.

@@ -23,9 +23,11 @@ interface MenuButtonProps {
    *  without them the button renders exactly as before */
   buttonStyle?: StyleProp<ViewStyle>;
   iconColor?: string;
+  /** replaces the menu glyph (painted button of the anime theme) */
+  icon?: React.ReactNode;
 }
 
-export default function MenuButton({ buttonStyle, iconColor }: MenuButtonProps = {}) {
+export default function MenuButton({ buttonStyle, iconColor, icon }: MenuButtonProps = {}) {
   const [open, setOpen] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
@@ -54,7 +56,7 @@ export default function MenuButton({ buttonStyle, iconColor }: MenuButtonProps =
         style={({ pressed }) => [styles.btn, buttonStyle, pressed && { opacity: 0.8 }]}
         hitSlop={6}
       >
-        <Ionicons name="menu" size={24} color={iconColor ?? C.ink} />
+        {icon ?? <Ionicons name="menu" size={24} color={iconColor ?? C.ink} />}
         {totalBadge > 0 && (
           <View style={styles.btnBadge}>
             <Text style={styles.btnBadgeText}>{totalBadge}</Text>

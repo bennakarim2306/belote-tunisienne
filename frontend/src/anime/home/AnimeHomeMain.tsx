@@ -1,17 +1,25 @@
-import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import { Image, LayoutChangeEvent, Pressable, StyleSheet, Text, View } from "react-native";
 import Animated, { FadeInUp } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { FLAG_BANNER, LOGO } from "@/src/anime/assets";
+import {
+  BTN_GREEN,
+  BTN_ICON_GREEN,
+  CHAT_CHIP,
+  FLAG_BANNER,
+  ICONS,
+  LOGO,
+  TITLE_RIBBON,
+} from "@/src/anime/assets";
+import HSlice from "@/src/anime/components/HSlice";
 import ArenaBackground, { arenaContentInset } from "@/src/anime/components/ArenaBackground";
 import ArenaMenuTile from "@/src/anime/components/ArenaMenuTile";
 import { A } from "@/src/anime/tokens";
 import Avatar from "@/src/components/Avatar";
 import MenuButton from "@/src/components/MenuButton";
 import { useI18n } from "@/src/i18n";
-import { F, R, SP } from "@/src/theme";
+import { F, SP } from "@/src/theme";
 
 // Visual layer of the home screen for the "Emerald Tunisian Anime Arena"
 // theme: top bar + the 2×2 menu grid. It owns NO business logic — every
@@ -82,8 +90,7 @@ export default function AnimeHomeMain({
   const tileH = Math.max(0, (gridH - SP.sm) / 2);
   const titleSize = clamp(tileW * 0.066, 15, 30);
   const descSize = clamp(tileW * 0.044, 11, 17);
-  const iconBox = clamp(tileW * 0.17, 42, 80);
-  const iconSize = iconBox * 0.5;
+  const iconBox = clamp(tileW * 0.21, 50, 100);
   const showLogo = w >= 780;
   const showFlag = w >= 700;
   const showGreeting = w >= 620;
@@ -108,7 +115,15 @@ export default function AnimeHomeMain({
           },
         ]}
       >
-        <MenuButton buttonStyle={styles.menuBtn} iconColor={A.goldLight} />
+        <MenuButton
+          buttonStyle={styles.menuBtn}
+          icon={
+            <>
+              <Image source={BTN_ICON_GREEN} style={styles.btnBg} fadeDuration={0} />
+              <Image source={ICONS.menu} style={styles.btnIcon} fadeDuration={0} />
+            </>
+          }
+        />
 
         {showFlag && (
           <View style={styles.flagSlot} pointerEvents="none">
@@ -133,6 +148,7 @@ export default function AnimeHomeMain({
         )}
 
         <View style={styles.identity}>
+          <HSlice slices={CHAT_CHIP} />
           <Avatar avatarId={avatarId} size={36} ringColor={A.gold} ringWidth={2} testID="home-user-avatar" />
           <View style={styles.identityText}>
             {showGreeting && <Text style={styles.hello}>{t("hello")},</Text>}
@@ -152,7 +168,8 @@ export default function AnimeHomeMain({
             accessibilityLabel={t("resumeGame")}
             style={({ pressed }) => [styles.resumeBtn, pressed && { opacity: 0.85 }]}
           >
-            <Ionicons name="play-circle" size={22} color={A.emeraldInk} />
+            <HSlice slices={BTN_GREEN} />
+            <Image source={ICONS.resume} style={styles.resumeIcon} fadeDuration={0} />
             <View style={styles.resumeTextWrap}>
               <Text style={styles.resumeTitle} numberOfLines={1}>
                 {t("resumeGame")}
@@ -161,12 +178,12 @@ export default function AnimeHomeMain({
                 {t("us")} {us} · {them} {t("them")}
               </Text>
             </View>
-            <Ionicons name="chevron-forward" size={16} color={A.emeraldInk} />
           </Pressable>
         )}
 
         <View style={styles.eloPill} testID="home-elo-pill">
-          <Ionicons name="flame" size={15} color={A.amber} />
+          <HSlice slices={CHAT_CHIP} />
+          <Image source={ICONS.elo} style={styles.eloIcon} fadeDuration={0} />
           <Text style={styles.eloText}>{elo}</Text>
         </View>
 
@@ -178,7 +195,8 @@ export default function AnimeHomeMain({
           hitSlop={8}
           style={({ pressed }) => [styles.bellBtn, pressed && { opacity: 0.85 }]}
         >
-          <Ionicons name="notifications" size={20} color={A.goldLight} />
+          <Image source={BTN_ICON_GREEN} style={styles.btnBg} fadeDuration={0} />
+          <Image source={ICONS.bell} style={styles.btnIcon} fadeDuration={0} />
           {notifCount > 0 && (
             <View style={styles.bellBadge} testID="notifications-badge">
               <Text style={styles.bellBadgeText}>{notifCount}</Text>
@@ -197,8 +215,7 @@ export default function AnimeHomeMain({
                 pulse
                 testID="play-online-card"
                 onPress={onPlayOnline}
-                iconTone="emerald"
-                icon={<Ionicons name="globe-outline" size={iconSize} color={A.goldLight} />}
+                icon={ICONS.online}
                 title={t("playOnline")}
                 desc={t("playOnlineDesc")}
                 {...tileSizes}
@@ -220,14 +237,14 @@ export default function AnimeHomeMain({
                 variant="dark"
                 testID="play-solo-card"
                 onPress={onPlaySolo}
-                iconTone="amber"
-                icon={<Ionicons name="game-controller" size={iconSize} color="#2C1400" />}
+                icon={ICONS.solo}
                 title={t("playVsAI")}
                 desc={t("playVsAIDesc")}
                 {...tileSizes}
                 footer={
                   // under the description so it can never cover the title
                   <View style={styles.trainingBadge}>
+                    <HSlice slices={TITLE_RIBBON} />
                     <Text style={styles.trainingBadgeText} numberOfLines={1}>
                       {t("trainingBadge")}
                     </Text>
@@ -243,8 +260,7 @@ export default function AnimeHomeMain({
                 variant="dark"
                 testID="learn-card"
                 onPress={onLearn}
-                iconTone="emerald"
-                icon={<Ionicons name="school" size={iconSize} color={A.goldLight} />}
+                icon={ICONS.learn}
                 title={t("tutorialTitle")}
                 desc={t("tutorialDesc")}
                 {...tileSizes}
@@ -256,8 +272,7 @@ export default function AnimeHomeMain({
                 variant="dark"
                 testID="private-game-card"
                 onPress={onPrivate}
-                iconTone="amber"
-                icon={<Ionicons name="people" size={iconSize} color="#2C1400" />}
+                icon={ICONS.privateGame}
                 title={t("privateParty")}
                 desc={t("privatePartyDesc")}
                 {...tileSizes}
@@ -278,11 +293,9 @@ const styles = StyleSheet.create({
     paddingBottom: SP.sm,
     gap: SP.sm,
   },
-  menuBtn: {
-    backgroundColor: "rgba(3,35,28,0.78)",
-    borderWidth: 1.5,
-    borderColor: A.gold,
-  },
+  menuBtn: { width: 46, height: 46, backgroundColor: "transparent", borderWidth: 0, borderRadius: 0 },
+  btnBg: { position: "absolute", top: 0, left: 0, width: "100%", height: "100%", resizeMode: "stretch" },
+  btnIcon: { width: 28, height: 28, resizeMode: "contain" },
   // the banner hangs from the very top edge and dips slightly into the grid area
   flagSlot: { width: FLAG_W, height: CONTROL_H },
   flagImg: {
@@ -301,13 +314,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flexShrink: 1,
     minWidth: 0,
-    height: CONTROL_H,
-    paddingLeft: 2,
-    paddingRight: SP.md,
-    borderRadius: R.pill,
-    backgroundColor: "rgba(3,35,28,0.72)",
-    borderWidth: 1.5,
-    borderColor: A.goldLine,
+    height: CONTROL_H + 4,
+    paddingLeft: 4,
+    paddingRight: 20,
   },
   identityText: { marginLeft: SP.sm, flexShrink: 1, minWidth: 0 },
   hello: { fontFamily: F.text, fontSize: 10.5, lineHeight: 12, color: A.ivoryDim },
@@ -318,36 +327,28 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 6,
     height: CONTROL_H,
-    paddingHorizontal: SP.md,
-    borderRadius: R.pill,
-    backgroundColor: A.mint,
-    borderWidth: 1.5,
-    borderColor: "rgba(255,255,255,0.55)",
-    maxWidth: 220,
+    paddingLeft: 18,
+    paddingRight: 28,
+    maxWidth: 240,
     flexShrink: 1,
   },
+  resumeIcon: { width: 32, height: 32, resizeMode: "contain" },
   resumeTextWrap: { flexShrink: 1, minWidth: 0 },
-  resumeTitle: { fontFamily: F.display, fontSize: 12.5, lineHeight: 15, color: A.emeraldInk },
-  resumeScore: { fontFamily: F.bold, fontSize: 11, lineHeight: 13, color: "rgba(3,35,28,0.8)" },
+  resumeTitle: { fontFamily: F.display, fontSize: 12.5, lineHeight: 15, color: A.ivory },
+  resumeScore: { fontFamily: F.bold, fontSize: 11, lineHeight: 13, color: A.goldLight },
   eloPill: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
     height: CONTROL_H - 2,
-    paddingHorizontal: SP.lg,
-    borderRadius: R.pill,
-    backgroundColor: "rgba(3,35,28,0.78)",
-    borderWidth: 1.5,
-    borderColor: A.gold,
+    paddingLeft: 14,
+    paddingRight: 20,
   },
+  eloIcon: { width: 24, height: 24, resizeMode: "contain" },
   eloText: { fontFamily: F.serif, fontSize: 17, color: A.ivory },
   bellBtn: {
-    width: CONTROL_H,
-    height: CONTROL_H,
-    borderRadius: CONTROL_H / 2,
-    backgroundColor: "rgba(3,35,28,0.78)",
-    borderWidth: 1.5,
-    borderColor: A.gold,
+    width: 46,
+    height: 46,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -359,6 +360,8 @@ const styles = StyleSheet.create({
     height: 18,
     borderRadius: 9,
     backgroundColor: A.red,
+    borderWidth: 1,
+    borderColor: A.goldLight,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 4,
@@ -378,13 +381,11 @@ const styles = StyleSheet.create({
   onlineText: { fontFamily: F.bold, fontSize: 12, color: A.mint },
   trainingBadge: {
     alignSelf: "flex-start",
-    marginTop: 5,
-    backgroundColor: A.gold,
-    borderRadius: R.pill,
-    paddingHorizontal: SP.sm,
-    paddingVertical: 2,
-    borderWidth: 1,
-    borderColor: A.goldLight,
+    marginTop: 4,
+    marginLeft: -4,
+    height: 22,
+    justifyContent: "center",
+    paddingHorizontal: 20,
   },
-  trainingBadgeText: { fontFamily: F.bold, fontSize: 10, color: A.ink },
+  trainingBadgeText: { fontFamily: F.bold, fontSize: 10, color: A.goldLight },
 });

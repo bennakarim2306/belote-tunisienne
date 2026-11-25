@@ -1,6 +1,5 @@
-import { LinearGradient } from "expo-linear-gradient";
 import React, { useEffect } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Image, ImageSourcePropType, Pressable, StyleSheet, Text, View } from "react-native";
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -20,9 +19,7 @@ import { F, SP } from "@/src/theme";
 
 interface Props {
   variant: "hero" | "dark";
-  icon: React.ReactNode;
-  /** "emerald" = framed glass well, "amber" = the app's existing orange block */
-  iconTone: "emerald" | "amber";
+  icon: ImageSourcePropType;
   title: string;
   desc: string;
   onPress: () => void;
@@ -42,7 +39,6 @@ interface Props {
 export default function ArenaMenuTile({
   variant,
   icon,
-  iconTone,
   title,
   desc,
   onPress,
@@ -87,18 +83,12 @@ export default function ArenaMenuTile({
       />
       <NineSlice slices={slices} corner={corner} />
 
-      <View
-        style={[
-          styles.iconBox,
-          { width: iconBox, height: iconBox, borderRadius: iconBox * 0.3 },
-          iconTone === "emerald" && styles.iconEmerald,
-        ]}
-      >
-        {iconTone === "amber" && (
-          <LinearGradient colors={[A.amber, A.amberDeep]} style={StyleSheet.absoluteFill} />
-        )}
-        {icon}
-      </View>
+      <Image
+        source={icon}
+        resizeMode="contain"
+        fadeDuration={0}
+        style={[styles.icon, { width: iconBox, height: iconBox }]}
+      />
 
       <View style={styles.textWrap}>
         <Text style={[styles.title, { fontSize: titleSize }]} numberOfLines={1}>
@@ -142,17 +132,7 @@ const styles = StyleSheet.create({
   },
   glowHero: { backgroundColor: A.emeraldSurface, shadowColor: "#3BE3A2" },
   glowDark: { backgroundColor: A.ink, shadowColor: A.gold },
-  iconBox: {
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
-    overflow: "hidden",
-  },
-  iconEmerald: {
-    backgroundColor: "rgba(3,35,28,0.55)",
-    borderWidth: 1.5,
-    borderColor: A.goldLine,
-  },
+  icon: { flexShrink: 0 },
   textWrap: { flex: 1, minWidth: 0 },
   title: {
     fontFamily: F.serif,

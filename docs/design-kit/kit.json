@@ -1,0 +1,720 @@
+{
+ "_about": "Every image of the design, what it must be (role, theme-neutral) and the prompt used for the emerald theme. Order inside a sheet = cell order.",
+ "rules": {
+  "single": "One single asset per image, centered, front view, filling most of the canvas. Real transparent background (PNG with alpha) unless marked opaque. No backdrop, no shadow plate, no caption. No text, letters or numbers (except the logo). Original work, not resembling any existing game, film, anime or brand.",
+  "sheet": "Landscape 1536 × 1024, real transparent background. Each element is one connected object, centered in its cell, with a gap of at least 50 pixels around it. No loose particles, no background panel. Bold shapes that stay readable when very small. Absolutely no text, no letters, no numbers. Original work, not resembling any existing game, film, anime or brand.",
+  "sliced": "Elements that are sliced must be plain and uniform between their ends or corners: the app stretches that part.",
+  "stickers": "Landscape 1536 × 1024, real transparent background. Each sticker: the character from the waist up with a thick white die-cut outline, very exaggerated manga expression, manga effects allowed. Make each sticker a bit smaller so there is a wide empty gap (at least 40 pixels) around every sticker; the white outlines must never touch each other. Absolutely no text, no letters, no numbers, no speech bubbles."
+ },
+ "sheets": {
+  "emblems_a": {
+   "cols": 3,
+   "rows": 2
+  },
+  "emblems_b": {
+   "cols": 3,
+   "rows": 1
+  },
+  "emblems_c": {
+   "cols": 4,
+   "rows": 2
+  },
+  "icons_home": {
+   "cols": 4,
+   "rows": 2
+  }
+ },
+ "elements": [
+  {
+   "id": "bg_home",
+   "sheet": "single",
+   "files": [
+    "home/bg_arena.jpg"
+   ],
+   "how": "opaque, wide 20:9, at least 1870 px; centre 76% and top 20% calm and dark",
+   "role": "full home background, decoration only at the far left and right edges",
+   "used": "Full home background: emerald courtyard wall with mosaic pattern, a gilded horseshoe arch with column, hanging lantern and palm leaves at the far left and far right edges, tiled floor at the bottom (row 1 of docs/ANIME_ASSET_BRIEF.md)"
+  },
+  {
+   "id": "tile_hero",
+   "sheet": "single",
+   "files": [
+    "home/tile_hero_*"
+   ],
+   "how": "transparent, 13:6, sliced in 9",
+   "role": "empty wide button panel, highlighted version, small ornaments in the corners only",
+   "used": "An empty rectangular game button panel, wide format, aspect ratio about 13:6 (1040 × 480 pixels or larger at the same ratio). Deep emerald green interior with a soft darker gradient, completely empty inside. Thin polished gold rim with rounded corners, a soft glowing jade-green outer edge, and a small gold arabesque ornament in each of the four corners, kept small and close to the corners. Nothing in the middle. Transparent background."
+  },
+  {
+   "id": "tile_dark",
+   "sheet": "single",
+   "files": [
+    "home/tile_dark_*"
+   ],
+   "how": "transparent, same shape as tile_hero, sliced in 9",
+   "role": "the same empty panel in a dark version",
+   "used": "Exactly the same shape, size, rim thickness and corner ornaments as asset 1, but the interior is near-black warm brown (#17130E) and the glow around the rim is warm gold instead of green. Completely empty inside. Transparent background."
+  },
+  {
+   "id": "logo",
+   "sheet": "single",
+   "files": [
+    "home/logo_belote_tunisienne.png"
+   ],
+   "how": "transparent, 15:7; the only image with text",
+   "role": "wordmark Belote Tunisienne on two lines with the four suits below",
+   "used": "The wordmark \"Belote Tunisienne\" on two lines (\"Belote\" above \"Tunisienne\"), spelled exactly like that, in elegant italic gold lettering with a subtle bevel and dark outline. A gold laurel branch on the left and on the right. Underneath, the four card suits in this order: red heart, black spade, red diamond, black club. Wide format about 15:7 (900 × 420 pixels or larger). No other text. Transparent background."
+  },
+  {
+   "id": "flag",
+   "sheet": "single",
+   "files": [
+    "home/flag_banner.png"
+   ],
+   "how": "transparent, 3:5",
+   "role": "hanging banner decoration for the top bar",
+   "used": "A vertical hanging cloth banner on a short gold rod, with a swallow-tail bottom edge and a thin gold fringe. The cloth shows the flag of Tunisia, accurate and not mirrored: red field, a white disc in the center, and inside the disc a red crescent opening to the right around a red five-pointed star. Light fabric folds. Tall format about 3:5 (300 × 520 pixels or larger). No text. Transparent background."
+  },
+  {
+   "id": "bg_game",
+   "sheet": "single",
+   "files": [
+    "game/bg_game.jpg"
+   ],
+   "how": "opaque, wide 20:9; centre 70% empty, dark and calm",
+   "role": "background of the game screen without a table",
+   "usedIn": "docs/ANIME_ASSET_BRIEF_GAME.md"
+  },
+  {
+   "id": "table_top",
+   "sheet": "single",
+   "files": [
+    "game/table_top.png"
+   ],
+   "how": "transparent, 2:1",
+   "role": "the card table surface alone, clean empty playing area, ornate rim",
+   "usedIn": "docs/ANIME_ASSET_BRIEF_GAME.md"
+  },
+  {
+   "id": "seat_frame",
+   "sheet": "single",
+   "files": [
+    "game/seat_frame.png"
+   ],
+   "how": "transparent incl. the round hole, square",
+   "role": "round portrait frame, empty centre",
+   "usedIn": "docs/ANIME_ASSET_BRIEF_GAME.md"
+  },
+  {
+   "id": "nameplate",
+   "sheet": "single",
+   "files": [
+    "game/nameplate_*"
+   ],
+   "how": "transparent, 7:2, plain middle (3 slices)",
+   "role": "small empty name plaque, ornaments at both ends only",
+   "usedIn": "docs/ANIME_ASSET_BRIEF_GAME.md"
+  },
+  {
+   "id": "hud_panel",
+   "sheet": "single",
+   "files": [
+    "game/hud_panel_*",
+    "game/hud_crest.png"
+   ],
+   "how": "transparent, 2:1, plain straight edges (9 slices)",
+   "role": "small empty panel for score, contract and bidding",
+   "usedIn": "docs/ANIME_ASSET_BRIEF_GAME.md"
+  },
+  {
+   "id": "btn_green",
+   "sheet": "single",
+   "files": [
+    "game/btn_green_*"
+   ],
+   "how": "transparent, 3:1, plain middle (3 slices)",
+   "role": "empty wide button, main colour",
+   "usedIn": "docs/ANIME_ASSET_BRIEF_GAME.md"
+  },
+  {
+   "id": "btn_red",
+   "sheet": "single",
+   "files": [
+    "game/btn_red_*"
+   ],
+   "how": "identical shape to btn_green",
+   "role": "the same button in the warning colour",
+   "usedIn": "docs/ANIME_ASSET_BRIEF_GAME.md"
+  },
+  {
+   "id": "btn_dark",
+   "sheet": "single",
+   "files": [
+    "game/btn_dark_*"
+   ],
+   "how": "identical shape to btn_green",
+   "role": "the same button in the neutral dark colour",
+   "usedIn": "docs/ANIME_ASSET_BRIEF_GAME.md"
+  },
+  {
+   "id": "btn_icon_green",
+   "sheet": "single",
+   "files": [
+    "game/btn_icon_green.png"
+   ],
+   "how": "transparent, square",
+   "role": "empty rounded-square icon button, main colour",
+   "usedIn": "docs/ANIME_ASSET_BRIEF_GAME.md"
+  },
+  {
+   "id": "btn_icon_red",
+   "sheet": "single",
+   "files": [
+    "game/btn_icon_red.png"
+   ],
+   "how": "identical shape",
+   "role": "the same icon button in the warning colour",
+   "usedIn": "docs/ANIME_ASSET_BRIEF_GAME.md"
+  },
+  {
+   "id": "card_back",
+   "sheet": "single",
+   "files": [
+    "game/card_back.png"
+   ],
+   "how": "transparent outside rounded corners, 100:145",
+   "role": "back of a playing card, symmetric, no suits or letters",
+   "usedIn": "docs/ANIME_ASSET_BRIEF_GAME.md"
+  },
+  {
+   "id": "card_face",
+   "sheet": "single",
+   "files": [
+    "cards/card_face.png"
+   ],
+   "how": "transparent outside rounded corners, 100:145",
+   "role": "blank light card face with a very thin frame",
+   "used": "Blank playing card face, portrait ratio 100:145 (600 × 870 or larger), rounded corners, transparent outside the corners. Warm ivory paper with a very thin antique-gold line close to the edge and a tiny gold arabesque in each corner, kept very small. The whole inside is empty and plain ivory. No text, no letters, no suit symbols, no figures."
+  },
+  {
+   "id": "court_jack",
+   "sheet": "single",
+   "files": [
+    "cards/classic_jack.png",
+    "cards/court_jack.png"
+   ],
+   "how": "transparent, upper half only, flat cut at the waist (the app mirrors it)",
+   "role": "Valet figure",
+   "used": "Flat traditional playing-card illustration: bold black outlines, flat colors limited to red, royal blue, yellow-gold, black, white and skin tone, small decorative patterns on the clothes, no shading, no gradients. Upper half-figure only, from the top of the head down to the waist, cut off perfectly straight and flat at the bottom edge. Faces three-quarters to the left, fills the width. Landscape 1536 × 1024, real transparent background. No frame, no letters, no suit symbols. Valet: a young page with shoulder-length hair under a small plumed cap, short tunic in red and blue with yellow trim, holding a tall halberd upright in one hand, a calm proud expression.",
+   "usedForV1": "Figure 2, the Jack: a young street-smart adventurer from an old Arabian tale, about 18, original design: short tousled dark hair under a small emerald turban with a feather, open embroidered vest in emerald and gold over a cream shirt, red sash, playful grin, one hand on his hip."
+  },
+  {
+   "id": "court_queen",
+   "sheet": "single",
+   "files": [
+    "cards/classic_queen.png",
+    "cards/court_queen.png"
+   ],
+   "how": "same",
+   "role": "Dame figure",
+   "used": "Flat traditional playing-card illustration: bold black outlines, flat colors limited to red, royal blue, yellow-gold, black, white and skin tone, small decorative patterns on the clothes, no shading, no gradients. Upper half-figure only, from the top of the head down to the waist, cut off perfectly straight and flat at the bottom edge. Faces three-quarters to the left, fills the width. Landscape 1536 × 1024, real transparent background. No frame, no letters, no suit symbols. Dame: a queen with long braided hair, a small gold crown and a veil falling on her shoulders, gown in blue and red with a yellow embroidered collar, holding a single flower in one hand near her chest, serene expression.",
+   "usedForV1": "Figure 1, the Queen: a graceful Arabic dancer, about 25, long dark hair with a gold headpiece and a light veil, embroidered red and gold top with coin jewellery, bracelets, one hand raised elegantly beside her face, confident smile."
+  },
+  {
+   "id": "court_king",
+   "sheet": "single",
+   "files": [
+    "cards/classic_king.png",
+    "cards/court_king.png"
+   ],
+   "how": "same",
+   "role": "Roi figure",
+   "used": "Flat traditional playing-card illustration: bold black outlines, flat colors limited to red, royal blue, yellow-gold, black, white and skin tone, small decorative patterns on the clothes, no shading, no gradients. Upper half-figure only, from the top of the head down to the waist, cut off perfectly straight and flat at the bottom edge. Faces three-quarters to the left, fills the width. Landscape 1536 × 1024, real transparent background. No frame, no letters, no suit symbols. Roi: a bearded king with a tall gold crown, ermine collar (white with black spots), robe in red and blue with yellow ornaments, holding a scepter upright in one hand, dignified expression.",
+   "usedForV1": "Figure 3, the King: a majestic sultan, about 55, full dark beard with grey streaks, large white and gold turban with a red jewel, rich red robe with gold embroidery and a fur-trimmed collar, calm commanding look, one hand holding a small golden scepter."
+  },
+  {
+   "id": "avatar_av1",
+   "sheet": "single",
+   "files": [
+    "avatars-v2/av1.jpg",
+    "avatars/av1.jpg"
+   ],
+   "how": "opaque, square 1024, head and shoulders, face large, same plain background for all 12",
+   "role": "player portrait: Si Brahim",
+   "used": "Si Brahim: old jovial grandpa, enormous curled grey moustache that sticks out past his cheeks, red chechia hat slightly too small, laughing so hard his eyes are closed.",
+   "usedForV1": "docs/ANIME_ASSET_BRIEF_GAME.md"
+  },
+  {
+   "id": "avatar_av2",
+   "sheet": "single",
+   "files": [
+    "avatars-v2/av2.jpg",
+    "avatars/av2.jpg"
+   ],
+   "how": "opaque, square 1024, head and shoulders, face large, same plain background for all 12",
+   "role": "player portrait: Tata Zakia",
+   "used": "Tata Zakia: chatty aunt, huge colourful headscarf tied in a giant bow, round glasses sliding down her nose, one eyebrow raised, gossiping smirk.",
+   "usedForV1": "docs/ANIME_ASSET_BRIEF_GAME.md"
+  },
+  {
+   "id": "avatar_av3",
+   "sheet": "single",
+   "files": [
+    "avatars-v2/av3.jpg",
+    "avatars/av3.jpg"
+   ],
+   "how": "opaque, square 1024, head and shoulders, face large, same plain background for all 12",
+   "role": "player portrait: Chef Slim",
+   "used": "Chef Slim: round cook with puffed cheeks, tall white chef hat tilted, tasting spoon in his mouth, eyes wide with delight.",
+   "usedForV1": "docs/ANIME_ASSET_BRIEF_GAME.md"
+  },
+  {
+   "id": "avatar_av4",
+   "sheet": "single",
+   "files": [
+    "avatars-v2/av4.jpg",
+    "avatars/av4.jpg"
+   ],
+   "how": "opaque, square 1024, head and shoulders, face large, same plain background for all 12",
+   "role": "player portrait: Docteur Hichem",
+   "used": "Docteur Hichem: skinny know-it-all doctor, giant thick glasses that magnify his eyes, stethoscope around his neck, finger raised as if correcting someone.",
+   "usedForV1": "docs/ANIME_ASSET_BRIEF_GAME.md"
+  },
+  {
+   "id": "avatar_av5",
+   "sheet": "single",
+   "files": [
+    "avatars-v2/av5.jpg",
+    "avatars/av5.jpg"
+   ],
+   "how": "opaque, square 1024, head and shoulders, face large, same plain background for all 12",
+   "role": "player portrait: Fatma la Rusée",
+   "used": "Fatma la Rusée: sly young woman, one eye winking, half hiding a card behind her fan of long dark curls, mischievous grin.",
+   "usedForV1": "docs/ANIME_ASSET_BRIEF_GAME.md"
+  },
+  {
+   "id": "avatar_av6",
+   "sheet": "single",
+   "files": [
+    "avatars-v2/av6.jpg",
+    "avatars/av6.jpg"
+   ],
+   "how": "opaque, square 1024, head and shoulders, face large, same plain background for all 12",
+   "role": "player portrait: Si Mongi",
+   "used": "Si Mongi: grumpy old man, bushy white eyebrows covering his eyes, arms crossed under a dark burnous, perfect stone-faced poker face, one tiny drop of sweat.",
+   "usedForV1": "docs/ANIME_ASSET_BRIEF_GAME.md"
+  },
+  {
+   "id": "avatar_av7",
+   "sheet": "single",
+   "files": [
+    "avatars-v2/av7.jpg",
+    "avatars/av7.jpg"
+   ],
+   "how": "opaque, square 1024, head and shoulders, face large, same plain background for all 12",
+   "role": "player portrait: Baya Baklawa",
+   "used": "Baya Baklawa: sweet young woman, cheeks full like a hamster, holding a piece of baklava, crumbs on her face, sparkling happy eyes.",
+   "usedForV1": "docs/ANIME_ASSET_BRIEF_GAME.md"
+  },
+  {
+   "id": "avatar_av8",
+   "sheet": "single",
+   "files": [
+    "avatars-v2/av8.jpg",
+    "avatars/av8.jpg"
+   ],
+   "how": "opaque, square 1024, head and shoulders, face large, same plain background for all 12",
+   "role": "player portrait: Hamma Turbo",
+   "used": "Hamma Turbo: hyperactive young man, spiky hair blown back as if by wind, red and white tracksuit, huge competitive grin with speed lines behind him.",
+   "usedForV1": "docs/ANIME_ASSET_BRIEF_GAME.md"
+  },
+  {
+   "id": "avatar_av9",
+   "sheet": "single",
+   "files": [
+    "avatars-v2/av9.jpg",
+    "avatars/av9.jpg"
+   ],
+   "how": "opaque, square 1024, head and shoulders, face large, same plain background for all 12",
+   "role": "player portrait: Lella Zohra",
+   "used": "Lella Zohra: tiny elegant grandmother, white safsari veil, very round rosy cheeks, serene smile, a little teacup in her hand.",
+   "usedForV1": "docs/ANIME_ASSET_BRIEF_GAME.md"
+  },
+  {
+   "id": "avatar_av10",
+   "sheet": "single",
+   "files": [
+    "avatars-v2/av10.jpg",
+    "avatars/av10.jpg"
+   ],
+   "how": "opaque, square 1024, head and shoulders, face large, same plain background for all 12",
+   "role": "player portrait: Farhat Fantasia",
+   "used": "Farhat Fantasia: proud show-off horseman, chest puffed out, blue turban with an oversized feather, heroic pose with closed eyes and nose in the air.",
+   "usedForV1": "docs/ANIME_ASSET_BRIEF_GAME.md"
+  },
+  {
+   "id": "avatar_av11",
+   "sheet": "single",
+   "files": [
+    "avatars-v2/av11.jpg",
+    "avatars/av11.jpg"
+   ],
+   "how": "opaque, square 1024, head and shoulders, face large, same plain background for all 12",
+   "role": "player portrait: Aziza Harissa",
+   "used": "Aziza Harissa: fiery woman, curly hair standing up like flames, red headband, holding a chili pepper, steam coming out of her ears, daring grin.",
+   "usedForV1": "docs/ANIME_ASSET_BRIEF_GAME.md"
+  },
+  {
+   "id": "avatar_av12",
+   "sheet": "single",
+   "files": [
+    "avatars-v2/av12.jpg",
+    "avatars/av12.jpg"
+   ],
+   "how": "opaque, square 1024, head and shoulders, face large, same plain background for all 12",
+   "role": "player portrait: Mokhtar le Malin",
+   "used": "Mokhtar le Malin: skinny trickster, thin twirled moustache, rubbing his hands together, one eye half closed, sneaky sideways grin, striped shirt.",
+   "usedForV1": "docs/ANIME_ASSET_BRIEF_GAME.md"
+  },
+  {
+   "id": "stickers",
+   "sheet": "stickers",
+   "files": [
+    "stickers/*"
+   ],
+   "how": "per character one 4x2 sheet, portrait attached",
+   "role": "8 chat reactions per character",
+   "usedIn": "frontend/scripts/anime/sticker-prompts.json (reactions); sheet rules below"
+  },
+  {
+   "id": "modal_frame",
+   "sheet": "single",
+   "files": [
+    "ui/modal_frame_*"
+   ],
+   "how": "transparent, empty, dialog window, 9 slices, 3:2",
+   "role": "large empty dialog window",
+   "used": "A large dialog window panel, landscape 3:2 (1536 × 1024). Very dark emerald interior with a faint geometric arabesque texture, polished antique-gold rim of uniform thickness, a carved gold arabesque ornament in each of the four corners only, soft gold inner line. Empty inside."
+  },
+  {
+   "id": "title_ribbon",
+   "sheet": "single",
+   "files": [
+    "ui/title_ribbon_*"
+   ],
+   "how": "transparent, empty, 5:1, 3 slices",
+   "role": "title cartouche",
+   "used": "A horizontal title cartouche, wide 5:1 (1500 × 300). Emerald ribbon band with a polished gold rim, pointed ornamental gold ends left and right with a tiny emerald gem on each. Plain uniform middle. Empty."
+  },
+  {
+   "id": "score_row",
+   "sheet": "single",
+   "files": [
+    "ui/score_row_*"
+   ],
+   "how": "transparent, empty, 8:1, 3 slices",
+   "role": "thin table row plaque",
+   "used": "A thin horizontal table row plaque, wide 8:1 (1600 × 200). Dark emerald fill, thin gold line on top and bottom only, small gold diamond ornament at each end. Plain uniform middle. Empty."
+  },
+  {
+   "id": "chat_chip",
+   "sheet": "single",
+   "files": [
+    "ui/chat_chip_*"
+   ],
+   "how": "transparent, empty, 4:1, 3 slices",
+   "role": "pill button for phrases and top-bar values",
+   "used": "A rounded pill-shaped button, wide 4:1 (1200 × 300). Dark emerald glossy interior with a soft top highlight, thin polished gold rim, tiny gold dot ornament at each rounded end. Plain uniform middle. Empty."
+  },
+  {
+   "id": "emoji_tile",
+   "sheet": "single",
+   "files": [
+    "ui/emoji_tile.png"
+   ],
+   "how": "transparent, empty, square",
+   "role": "small dark tile",
+   "used": "A small rounded-square tile, square (512 × 512). Very dark emerald interior with a subtle radial glow in the center, thin polished gold rim, tiny gold ornament in each corner. Empty."
+  },
+  {
+   "id": "winner_crest",
+   "sheet": "single",
+   "files": [
+    "ui/winner_crest.png"
+   ],
+   "how": "transparent, empty, square",
+   "role": "winner mark",
+   "used": "A small golden laurel wreath open at the top, with a tiny gold crown floating above it, square (512 × 512). Polished gold with an emerald gem at the bottom of the wreath. Nothing inside the wreath."
+  },
+  {
+   "id": "turn_banner",
+   "sheet": "single",
+   "files": [
+    "ui/turn_banner_*"
+   ],
+   "how": "transparent, empty, 4:1, 3 slices",
+   "role": "scroll banner for alerts and 'your turn'",
+   "used": "A horizontal scroll banner, wide 4:1 (1200 × 300). Glowing gold band with a slightly darker gold rim and small curled scroll ends left and right, a soft warm glow around it. Plain uniform middle. Empty."
+  },
+  {
+   "id": "bubble_bid",
+   "sheet": "single",
+   "files": [
+    "ui/bubble_bid_*"
+   ],
+   "how": "transparent, empty, 5:3, tail centred at the bottom",
+   "role": "speech bubble",
+   "used": "A small speech bubble plaque, wide 5:3 (1000 × 600). Dark emerald interior, polished gold rim, rounded corners, a small triangular pointer centered at the bottom edge. Plain uniform middle. Empty."
+  },
+  {
+   "id": "bubble_contract",
+   "sheet": "single",
+   "files": [
+    "ui/bubble_contract_*"
+   ],
+   "how": "transparent, empty, identical shape",
+   "role": "speech bubble, highlighted",
+   "used": "Same speech bubble as the previous one, identical shape, size and pointer, but with a bright polished gold interior and a darker bronze rim, like a trophy plate. Empty."
+  },
+  {
+   "id": "belote",
+   "sheet": "emblems_a",
+   "files": [
+    "emblems/belote.png"
+   ],
+   "how": "transparent, one connected object, gap of 50 px",
+   "role": "royal couple emblem",
+   "used": "a royal couple emblem: a king's crown and a queen's crown side by side over two crossed golden laurel branches, with an emerald heart in the center"
+  },
+  {
+   "id": "contre",
+   "sheet": "emblems_a",
+   "files": [
+    "emblems/contre.png"
+   ],
+   "how": "transparent, one connected object, gap of 50 px",
+   "role": "challenge emblem",
+   "used": "a red shield with two crossed golden swords in front of it"
+  },
+  {
+   "id": "surcontre",
+   "sheet": "emblems_a",
+   "files": [
+    "emblems/surcontre.png"
+   ],
+   "how": "transparent, one connected object, gap of 50 px",
+   "role": "stronger challenge emblem",
+   "used": "a larger, more dramatic version: a red shield with two crossed golden swords, golden wings left and right and a flame-shaped crown on top"
+  },
+  {
+   "id": "capot",
+   "sheet": "emblems_a",
+   "files": [
+    "emblems/capot.png"
+   ],
+   "how": "transparent, one connected object, gap of 50 px",
+   "role": "all-tricks emblem",
+   "used": "a golden sun with a big emerald star in its center, held by an open golden hand"
+  },
+  {
+   "id": "made",
+   "sheet": "emblems_a",
+   "files": [
+    "emblems/made.png"
+   ],
+   "how": "transparent, one connected object, gap of 50 px",
+   "role": "contract made seal",
+   "used": "a golden seal with a large emerald check mark and a laurel wreath"
+  },
+  {
+   "id": "failed",
+   "sheet": "emblems_a",
+   "files": [
+    "emblems/failed.png"
+   ],
+   "how": "transparent, one connected object, gap of 50 px",
+   "role": "contract failed seal",
+   "used": "a cracked bronze seal with a large red cross and a broken laurel wreath"
+  },
+  {
+   "id": "redeal",
+   "sheet": "emblems_b",
+   "files": [
+    "emblems/redeal.png"
+   ],
+   "how": "transparent, one connected object, gap of 50 px",
+   "role": "new deal",
+   "used": "a fan of five playing cards seen from the back (red backs with gold lattice), with a golden circular arrow wrapped around them"
+  },
+  {
+   "id": "victory",
+   "sheet": "emblems_b",
+   "files": [
+    "emblems/victory.png"
+   ],
+   "how": "transparent, one connected object, gap of 50 px",
+   "role": "match won",
+   "used": "a magnificent golden trophy cup with emerald gems, laurel branches and two small red pennants"
+  },
+  {
+   "id": "defeat",
+   "sheet": "emblems_b",
+   "files": [
+    "emblems/defeat.png"
+   ],
+   "how": "transparent, one connected object, gap of 50 px",
+   "role": "match lost",
+   "used": "a tipped-over dull bronze cup with a crack, a drooping laurel branch and a small torn red pennant"
+  },
+  {
+   "id": "pause",
+   "sheet": "emblems_c",
+   "files": [
+    "emblems/pause.png"
+   ],
+   "how": "transparent, one connected object, gap of 50 px",
+   "role": "pause",
+   "used": "an ornate golden hourglass with emerald sand"
+  },
+  {
+   "id": "connection",
+   "sheet": "emblems_c",
+   "files": [
+    "emblems/connection.png"
+   ],
+   "how": "transparent, one connected object, gap of 50 px",
+   "role": "connection lost",
+   "used": "a broken golden chain link with a small red lightning bolt between the two halves"
+  },
+  {
+   "id": "host",
+   "sheet": "emblems_c",
+   "files": [
+    "emblems/host.png"
+   ],
+   "how": "transparent, one connected object, gap of 50 px",
+   "role": "host ended the game",
+   "used": "a closed golden palace door with an emerald lock"
+  },
+  {
+   "id": "tile",
+   "sheet": "emblems_c",
+   "files": [
+    "emblems/tile.png"
+   ],
+   "how": "transparent, one connected object, gap of 50 px",
+   "role": "bidding tile",
+   "used": "an empty square tile with rounded corners, plain ivory inside, thin gold rim"
+  },
+  {
+   "id": "tile_on",
+   "sheet": "emblems_c",
+   "files": [
+    "emblems/tile_on.png"
+   ],
+   "how": "transparent, one connected object, gap of 50 px",
+   "role": "bidding tile selected",
+   "used": "the same tile, same size, plain bright emerald inside, thicker glowing gold rim"
+  },
+  {
+   "id": "badge_dealer",
+   "sheet": "emblems_c",
+   "files": [
+    "emblems/badge_dealer.png"
+   ],
+   "how": "transparent, one connected object, gap of 50 px",
+   "role": "dealer badge",
+   "used": "a round golden coin with a fan of three small card backs on it"
+  },
+  {
+   "id": "badge_bot",
+   "sheet": "emblems_c",
+   "files": [
+    "emblems/badge_bot.png"
+   ],
+   "how": "transparent, one connected object, gap of 50 px",
+   "role": "bot badge",
+   "used": "a round emerald badge with a small friendly golden robot head"
+  },
+  {
+   "id": "online",
+   "sheet": "icons_home",
+   "files": [
+    "icons/online.png"
+   ],
+   "how": "transparent, one connected object, gap of 50 px",
+   "role": "play online",
+   "used": "a golden globe with emerald continents"
+  },
+  {
+   "id": "solo",
+   "sheet": "icons_home",
+   "files": [
+    "icons/solo.png"
+   ],
+   "how": "transparent, one connected object, gap of 50 px",
+   "role": "play against the AI",
+   "used": "a golden game controller with emerald buttons"
+  },
+  {
+   "id": "learn",
+   "sheet": "icons_home",
+   "files": [
+    "icons/learn.png"
+   ],
+   "how": "transparent, one connected object, gap of 50 px",
+   "role": "tutorial",
+   "used": "an open book with emerald pages' edges and a golden graduation cap on top"
+  },
+  {
+   "id": "private",
+   "sheet": "icons_home",
+   "files": [
+    "icons/private.png"
+   ],
+   "how": "transparent, one connected object, gap of 50 px",
+   "role": "private game",
+   "used": "three golden player busts side by side, the middle one in front"
+  },
+  {
+   "id": "bell",
+   "sheet": "icons_home",
+   "files": [
+    "icons/bell.png"
+   ],
+   "how": "transparent, one connected object, gap of 50 px",
+   "role": "notifications",
+   "used": "a golden bell with an emerald clapper"
+  },
+  {
+   "id": "elo",
+   "sheet": "icons_home",
+   "files": [
+    "icons/elo.png"
+   ],
+   "how": "transparent, one connected object, gap of 50 px",
+   "role": "ELO points",
+   "used": "a flame, golden outside and emerald in its heart"
+  },
+  {
+   "id": "resume",
+   "sheet": "icons_home",
+   "files": [
+    "icons/resume.png"
+   ],
+   "how": "transparent, one connected object, gap of 50 px",
+   "role": "continue a game",
+   "used": "two crossed playing cards seen from the back (red with gold lattice) with a golden play triangle in front"
+  },
+  {
+   "id": "menu",
+   "sheet": "icons_home",
+   "files": [
+    "icons/menu.png"
+   ],
+   "how": "transparent, one connected object, gap of 50 px",
+   "role": "menu",
+   "used": "three stacked horizontal golden bars with small emerald ends (a menu icon)"
+  }
+ ]
+}

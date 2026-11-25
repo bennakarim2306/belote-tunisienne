@@ -310,3 +310,17 @@ export const TILE_BID_ON: ImageSourcePropType = require("../../assets/anime/embl
 /** seat badges */
 export const BADGE_DEALER: ImageSourcePropType = require("../../assets/anime/emblems/badge_dealer.png");
 export const BADGE_BOT: ImageSourcePropType = require("../../assets/anime/emblems/badge_bot.png");
+
+// ---------------------------------------------------------------------------
+// Home view icons (2026-11-25), prepare-emblems.ps1 -Folder icons
+// ---------------------------------------------------------------------------
+export const ICONS = {
+  online: require("../../assets/anime/icons/online.png") as ImageSourcePropType,
+  solo: require("../../assets/anime/icons/solo.png") as ImageSourcePropType,
+  learn: require("../../assets/anime/icons/learn.png") as ImageSourcePropType,
+  privateGame: require("../../assets/anime/icons/private.png") as ImageSourcePropType,
+  bell: require("../../assets/anime/icons/bell.png") as ImageSourcePropType,
+  elo: require("../../assets/anime/icons/elo.png") as ImageSourcePropType,
+  resume: require("../../assets/anime/icons/resume.png") as ImageSourcePropType,
+  menu: require("../../assets/anime/icons/menu.png") as ImageSourcePropType,
+};
