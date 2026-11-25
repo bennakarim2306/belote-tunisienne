@@ -132,4 +132,5 @@ Added 2026-11-25 from a third sheet: `pause`, `connection`, `host` (320 px), `ti
 
 ## Home icons (2026-11-25, candidate)
 
-`assets/anime/icons/`, 8 files, 256 px, from one 4x2 sheet Karim generated with ChatGPT: online, solo, learn, private, bell, elo, resume, menu. All elements and prompts: `docs/design-kit/`.
+`assets/anime/icons/`, 8 files, 256 px, from one 4x2 sheet Karim generated with ChatGPT: online, solo, learn, private, bell, elo, resume, menu.
+Step 2 added 16 icons, 192 px, from two 4x2 sheets: alone, duo, quick, normal, timer, check_off, check_on, arrow / home, ranking, friends, profile, search, add_friend, close, invite. All elements and prompts: `docs/design-kit/`.

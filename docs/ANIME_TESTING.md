@@ -96,3 +96,8 @@ Run it against the flag-off server too: the same 24 checks must pass with the or
 `EXPO_PUBLIC_ANIME_ART=v1` shows the painted portraits and painted court figures; anything else (default)
 shows art set v2 (caricature portraits, classic double-headed courts). Restart Metro with `--clear` after
 changing it. Run `smoke-game.js` for each set.
+
+## Windows opened from home
+
+Start the mock with `MOCK_NOTIFS=1`, then `node scripts/anime/smoke-windows.js <url> <anime|original> <outDir>`.
+Run the browser tests one at a time.
