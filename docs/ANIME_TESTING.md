@@ -107,3 +107,6 @@ Run the browser tests one at a time.
 
 `smoke-design.js <url> <anime|original> <outDir>` tests the design switch (there and back, restart, saved game, no network,
 hanging network, storage failure). It answers the external portrait requests itself, so portraits are plain green there.
+
+`smoke-lobby.js <url> <anime|original> <outDir>`: matchmaking, private room, join, share and their windows (`DESIGN=classic` tests
+the old design chosen by the toggle). `shoot-views.js <url> <outDir>` photographs all views outside home and table.

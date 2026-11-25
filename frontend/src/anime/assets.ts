@@ -288,7 +288,10 @@ export type EmblemKind =
   | "defeat"
   | "pause"
   | "connection"
-  | "host";
+  | "host"
+  | "matchFound"
+  | "roomClosed"
+  | "declined";
 export const EMBLEMS: Record<EmblemKind, ImageSourcePropType | null> = {
   belote: require("../../assets/anime/emblems/belote.png"),
   contre: require("../../assets/anime/emblems/contre.png"),
@@ -302,8 +305,16 @@ export const EMBLEMS: Record<EmblemKind, ImageSourcePropType | null> = {
   pause: require("../../assets/anime/emblems/pause.png"),
   connection: require("../../assets/anime/emblems/connection.png"),
   host: require("../../assets/anime/emblems/host.png"),
+  matchFound: require("../../assets/anime/emblems/match_found.png"),
+  roomClosed: require("../../assets/anime/emblems/room_closed.png"),
+  declined: require("../../assets/anime/emblems/declined.png"),
 };
 
+/** place that still waits for a player */
+export const EMPTY_PLAYER: ImageSourcePropType = require("../../assets/anime/emblems/empty_player.png");
+/** backgrounds of the screens outside home and the table */
+export const BG_DUEL: ImageSourcePropType = require("../../assets/anime/bg/bg_duel.jpg");
+export const BG_SALON: ImageSourcePropType = require("../../assets/anime/bg/bg_salon.jpg");
 /** bidding tiles (suits and values) */
 export const TILE_BID: ImageSourcePropType = require("../../assets/anime/emblems/tile.png");
 export const TILE_BID_ON: ImageSourcePropType = require("../../assets/anime/emblems/tile_on.png");
@@ -339,4 +350,12 @@ export const ICONS = {
   addFriend: require("../../assets/anime/icons/add_friend.png") as ImageSourcePropType,
   close: require("../../assets/anime/icons/close.png") as ImageSourcePropType,
   invite: require("../../assets/anime/icons/invite.png") as ImageSourcePropType,
+  back: require("../../assets/anime/icons/back.png") as ImageSourcePropType,
+  share: require("../../assets/anime/icons/share.png") as ImageSourcePropType,
+  link: require("../../assets/anime/icons/link.png") as ImageSourcePropType,
+  more: require("../../assets/anime/icons/more.png") as ImageSourcePropType,
+  star: require("../../assets/anime/icons/star.png") as ImageSourcePropType,
+  sitHere: require("../../assets/anime/icons/sit_here.png") as ImageSourcePropType,
+  hourglass: require("../../assets/anime/icons/hourglass.png") as ImageSourcePropType,
+  info: require("../../assets/anime/icons/info.png") as ImageSourcePropType,
 };

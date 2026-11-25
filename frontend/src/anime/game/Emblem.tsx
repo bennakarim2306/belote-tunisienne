@@ -21,6 +21,9 @@ const ICON: Record<EmblemKind, keyof typeof Ionicons.glyphMap> = {
   pause: "pause",
   connection: "wifi",
   host: "lock-closed",
+  matchFound: "people",
+  roomClosed: "lock-closed",
+  declined: "mail",
 };
 const RED: EmblemKind[] = ["contre", "surcontre", "failed", "defeat", "connection"];
 

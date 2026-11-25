@@ -30,6 +30,14 @@
   "icons_windows_b": {
    "cols": 4,
    "rows": 2
+  },
+  "lobby_icons": {
+   "cols": 4,
+   "rows": 2
+  },
+  "lobby_emblems": {
+   "cols": 2,
+   "rows": 2
   }
  },
  "elements": [
@@ -883,6 +891,146 @@
    "how": "transparent, one connected object, gap of 50 px",
    "role": "invitation",
    "used": "a golden envelope sealed with an emerald"
+  },
+  {
+   "id": "icon_back",
+   "sheet": "lobby_icons",
+   "files": [
+    "icons/back.png"
+   ],
+   "how": "transparent, one connected object, gap of 60 px",
+   "role": "back",
+   "used": "a thick golden arrow pointing LEFT, with one simple engraved line in the middle"
+  },
+  {
+   "id": "icon_share",
+   "sheet": "lobby_icons",
+   "files": [
+    "icons/share.png"
+   ],
+   "how": "transparent, one connected object, gap of 60 px",
+   "role": "share",
+   "used": "three flat golden discs joined by two thick golden bars (share symbol)"
+  },
+  {
+   "id": "icon_link",
+   "sheet": "lobby_icons",
+   "files": [
+    "icons/link.png"
+   ],
+   "how": "transparent, one connected object, gap of 60 px",
+   "role": "copy link",
+   "used": "two interlocked golden chain links, plain polished metal"
+  },
+  {
+   "id": "icon_more",
+   "sheet": "lobby_icons",
+   "files": [
+    "icons/more.png"
+   ],
+   "how": "transparent, one connected object, gap of 60 px",
+   "role": "more options",
+   "used": "three flat golden discs in one horizontal row on one short dark green enamel bar (more options)"
+  },
+  {
+   "id": "icon_star",
+   "sheet": "lobby_icons",
+   "files": [
+    "icons/star.png"
+   ],
+   "how": "transparent, one connected object, gap of 60 px",
+   "role": "host / rate",
+   "used": "a five-pointed golden star with an engraved edge"
+  },
+  {
+   "id": "icon_sit_here",
+   "sheet": "lobby_icons",
+   "files": [
+    "icons/sit_here.png"
+   ],
+   "how": "transparent, one connected object, gap of 60 px",
+   "role": "free seat, sit here",
+   "used": "a golden hand, palm down, index finger pointing down at a dark green velvet cushion it touches"
+  },
+  {
+   "id": "icon_hourglass",
+   "sheet": "lobby_icons",
+   "files": [
+    "icons/hourglass.png"
+   ],
+   "how": "transparent, one connected object, gap of 60 px",
+   "role": "waiting",
+   "used": "a golden hourglass with light golden sand"
+  },
+  {
+   "id": "icon_info",
+   "sheet": "lobby_icons",
+   "files": [
+    "icons/info.png"
+   ],
+   "how": "transparent, one connected object, gap of 60 px",
+   "role": "information",
+   "used": "a round golden medallion with a dark green enamel ring and, inside, one round golden dot above one short vertical golden bar (information symbol)"
+  },
+  {
+   "id": "match_found",
+   "sheet": "lobby_emblems",
+   "files": [
+    "emblems/match_found.png"
+   ],
+   "how": "transparent, one connected object, gap of 80 px",
+   "role": "match found",
+   "used": "MATCH FOUND: two golden gauntlets bumping fists in front of a round dark green painted shield with a golden laurel rim, energetic and friendly"
+  },
+  {
+   "id": "room_closed",
+   "sheet": "lobby_emblems",
+   "files": [
+    "emblems/room_closed.png"
+   ],
+   "how": "transparent, one connected object, gap of 80 px",
+   "role": "room closed",
+   "used": "ROOM CLOSED: a closed Tunisian double door in a horseshoe arch, dark green painted wood with plain golden studs, held shut by one golden padlock"
+  },
+  {
+   "id": "declined",
+   "sheet": "lobby_emblems",
+   "files": [
+    "emblems/declined.png"
+   ],
+   "how": "transparent, one connected object, gap of 80 px",
+   "role": "invitation declined / cancelled / expired",
+   "used": "INVITATION DECLINED: a dark green paper envelope with a golden rim, torn in the middle but both halves still joined by its red wax seal"
+  },
+  {
+   "id": "empty_player",
+   "sheet": "lobby_emblems",
+   "files": [
+    "emblems/empty_player.png"
+   ],
+   "how": "transparent, one connected object, gap of 80 px",
+   "role": "place waiting for a player, round",
+   "used": "EMPTY PLAYER: a completely round medallion, dark green inside, with the plain golden outline silhouette of one person's head and shoulders wearing a small fez, no face, no ornament outside the circle"
+  },
+  {
+   "id": "bg_duel",
+   "sheet": "single",
+   "files": [
+    "bg/bg_duel.jpg"
+   ],
+   "how": "opaque, 20:9, calm dark middle 60 %",
+   "role": "background of finding players",
+   "used": "Create ONE background image for a mobile card game screen. Very wide landscape, 20:9 (for example 2000 x 900). Opaque, no transparency.\nStyle: the same dark-green-and-gold Tunisian anime style as my previous images: painted, high detail, cinematic light. Palette: deep green #063F32, green #095442, antique gold #D6AC56, light gold #F4D68C, ivory #FFF5DF, near-black brown #17130E, red accent #D92932.\nScene: a monumental Tunisian courtyard at night just before a duel, seen from the front, perfectly symmetric in composition. On the far left a horseshoe arch lit by warm gold lantern light, on the far right a matching arch lit by red-gold light. Thin streams of glowing dust drift from both sides towards the middle. Starry deep green sky at the top, polished zellige floor with soft reflections at the bottom.\nVery important: the middle 60 percent of the width is calm, dark and almost empty, because the app writes text and shows players there. All decoration stays in the outer 20 percent on the left and on the right. Nothing important in the top 12 percent or the bottom 12 percent.\nNo gemstones, jewels or crystals anywhere, also not as small decoration. Green appears only as smooth paint, enamel, fabric, wood or wall color. Where earlier images in this conversation had green stones, leave them out and use plain engraved gold instead.\nNo people, no animals, no cards, no table, no weapons, no text, no letters, no numbers, no logo, no flags, no religious symbols, no frame, no buttons. Original work, not resembling any existing game, film, anime or brand."
+  },
+  {
+   "id": "bg_salon",
+   "sheet": "single",
+   "files": [
+    "bg/bg_salon.jpg"
+   ],
+   "how": "opaque, 20:9, calm dark middle 70 %",
+   "role": "background of the private room",
+   "used": "Create ONE background image for a mobile card game screen. Very wide landscape, 20:9 (for example 2000 x 900). Opaque, no transparency.\nStyle: exactly the same dark-green-and-gold Tunisian anime style as the previous background, painted, high detail. Same palette.\nScene: a private Tunisian salon in the evening, seen from the front, symmetric and cozy. Far left and far right: carved wooden mashrabiya windows with warm lantern light, dark green cushions on a low bench, a small brass tray with tea glasses. Back wall: dark green with a very faint arabesque pattern. Floor: dark carpet with a thin gold border.\nVery important: the middle 70 percent of the width is calm, dark and even, because the app puts panels there. All decoration stays in the outer 15 percent on the left and on the right. Nothing important in the top 12 percent or the bottom 12 percent.\nNo gemstones, jewels or crystals anywhere, also not as small decoration. Green appears only as smooth paint, enamel, fabric, wood or wall color. Where earlier images in this conversation had green stones, leave them out and use plain engraved gold instead.\nNo people, no animals, no cards, no card table, no smoking, no alcohol, no text, no letters, no numbers, no logo, no flags, no religious symbols, no frame, no buttons. Original work, not resembling any existing game, film, anime or brand."
   }
  ]
 }

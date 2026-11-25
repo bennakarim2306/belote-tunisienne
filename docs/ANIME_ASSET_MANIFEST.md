@@ -134,3 +134,9 @@ Added 2026-11-25 from a third sheet: `pause`, `connection`, `host` (320 px), `ti
 
 `assets/anime/icons/`, 8 files, 256 px, from one 4x2 sheet Karim generated with ChatGPT: online, solo, learn, private, bell, elo, resume, menu.
 Step 2 added 16 icons, 192 px, from two 4x2 sheets: alone, duo, quick, normal, timer, check_off, check_on, arrow / home, ranking, friends, profile, search, add_friend, close, invite. All elements and prompts: `docs/design-kit/`.
+
+## Group 1: finding players and private room (2026-11-25)
+
+`bg/bg_duel.jpg`, `bg/bg_salon.jpg` (1870x841, JPEG 88), 8 icons (192 px: back, share, link, more, star, sit_here, hourglass,
+info) and 4 emblems (320 px: match_found, room_closed, declined, empty_player), from 4 images Karim generated with ChatGPT.
+First images without gemstones.

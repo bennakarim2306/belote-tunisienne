@@ -1,7 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
-import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import { Image, Modal, Pressable, StyleSheet, Text, View } from "react-native";
 
+import { BTN_ICON_GREEN, ICONS } from "@/src/anime/assets";
+import { IconTextButton } from "@/src/anime/components/ScreenParts";
+import { useAnime } from "@/src/anime/design";
+import { AnimeTitle, AnimeWindowFrame } from "@/src/anime/game/AnimeUI";
+import { A } from "@/src/anime/tokens";
 import ChunkyButton from "@/src/components/ChunkyButton";
 import { useI18n } from "@/src/i18n";
 import {
@@ -24,6 +29,7 @@ interface Props {
 // Bottom sheet with WhatsApp / Facebook / Instagram / copy-link + native share.
 export default function ShareSheet({ visible, onClose, title, message, url }: Props) {
   const { t } = useI18n();
+  const ANIME = useAnime();
   const [feedback, setFeedback] = useState<string | null>(null);
 
   const flash = (msg: string) => {
@@ -70,14 +76,23 @@ export default function ShareSheet({ visible, onClose, title, message, url }: Pr
 
   return (
     <Modal visible={visible} transparent animationType="slide" supportedOrientations={["landscape", "portrait"]} onRequestClose={onClose}>
-      <Pressable style={styles.scrim} onPress={onClose}>
-        <Pressable style={styles.sheet} onPress={() => {}} testID="share-sheet">
-          <View style={styles.handle} />
-          <Text style={styles.title}>{title}</Text>
-          <Text style={styles.preview} numberOfLines={3}>
+      <Pressable style={[styles.scrim, ANIME && styles.animeScrim]} onPress={onClose}>
+        <Pressable style={[styles.sheet, ANIME && styles.animeSheet]} onPress={() => {}} testID="share-sheet">
+          {ANIME ? (
+            <>
+              <AnimeWindowFrame />
+              <AnimeTitle text={title} />
+            </>
+          ) : (
+            <>
+              <View style={styles.handle} />
+              <Text style={styles.title}>{title}</Text>
+            </>
+          )}
+          <Text style={[styles.preview, ANIME && { color: A.ivoryDim }]} numberOfLines={3}>
             {message}
           </Text>
-          <View style={styles.row}>
+          <View style={[styles.row, ANIME && { marginTop: SP.md }]}>
             {channels.map((ch) => (
               <Pressable
                 key={ch.id}
@@ -85,20 +100,36 @@ export default function ShareSheet({ visible, onClose, title, message, url }: Pr
                 onPress={ch.onPress}
                 style={({ pressed }) => [styles.channel, pressed && { opacity: 0.7 }]}
               >
-                <View style={[styles.channelIcon, { backgroundColor: ch.color }]}>
+                {ANIME && ch.id === "copy" ? (
+                  <View style={[styles.channelIcon, styles.animeCopy]}>
+                    <Image source={BTN_ICON_GREEN} style={styles.animeCopyBg} resizeMode="stretch" fadeDuration={0} />
+                    <Image source={ICONS.link} style={styles.animeCopyIcon} resizeMode="contain" fadeDuration={0} />
+                  </View>
+                ) : (
+                <View style={[styles.channelIcon, { backgroundColor: ch.color }, ANIME && styles.animeRing]}>
                   <Ionicons name={ch.icon} size={26} color="#FFFFFF" />
                 </View>
-                <Text style={styles.channelLabel} numberOfLines={1}>
+                )}
+                <Text style={[styles.channelLabel, ANIME && { color: A.ivory }]} numberOfLines={1}>
                   {ch.label}
                 </Text>
               </Pressable>
             ))}
           </View>
           {feedback && (
-            <Text style={styles.feedback} testID="share-feedback">
+            <Text style={[styles.feedback, ANIME && styles.animeFeedback]} testID="share-feedback">
               {feedback}
             </Text>
           )}
+          {ANIME ? (
+            <IconTextButton
+              testID="share-native-button"
+              icon={ICONS.more}
+              label={t("moreOptions")}
+              onPress={() => shareNative(message)}
+              style={{ marginTop: SP.md, alignSelf: "center", minWidth: 220 }}
+            />
+          ) : (
           <ChunkyButton
             testID="share-native-button"
             label={t("moreOptions")}
@@ -106,6 +137,7 @@ export default function ShareSheet({ visible, onClose, title, message, url }: Pr
             onPress={() => shareNative(message)}
             style={{ marginTop: SP.md }}
           />
+          )}
         </Pressable>
       </Pressable>
     </Modal>
@@ -113,6 +145,24 @@ export default function ShareSheet({ visible, onClose, title, message, url }: Pr
 }
 
 const styles = StyleSheet.create({
+  // ---- new design (brand logos keep their own look) ----
+  animeScrim: { justifyContent: "center", alignItems: "center" },
+  animeSheet: {
+    backgroundColor: "transparent",
+    borderWidth: 0,
+    borderTopLeftRadius: 0,
+    borderTopRightRadius: 0,
+    width: "100%",
+    maxWidth: 560,
+    paddingHorizontal: 34,
+    paddingTop: 22,
+    paddingBottom: 26,
+  },
+  animeRing: { borderWidth: 2, borderColor: A.gold },
+  animeCopy: { backgroundColor: "transparent" },
+  animeCopyBg: { position: "absolute", top: 0, left: 0, width: 56, height: 56 },
+  animeCopyIcon: { width: 32, height: 32 },
+  animeFeedback: { color: A.goldLight, marginTop: SP.sm },
   scrim: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.55)",

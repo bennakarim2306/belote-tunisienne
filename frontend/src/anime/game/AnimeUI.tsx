@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
   titleRibbon: {
     minWidth: 200,
     height: 40,
-    paddingHorizontal: 34,
+    paddingHorizontal: 42,
     alignItems: "center",
     justifyContent: "center",
   },

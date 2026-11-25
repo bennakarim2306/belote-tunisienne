@@ -66,6 +66,11 @@ const ROOM = (host) => ({ code: "DEMO42", host_id: host, match_type: "short", tu
   await view("B7-duo", { url: "/matchmaking?type=short&duo=1&mode=online", api: mm({ status: "duo_declined" }) }, async ({ L, snap }) => { await ready(L, "duo-end-message"); await snap("declined"); });
   await view("B8-found", { url: "/matchmaking?type=short", api: mm({ status: "removed_confirm" }) }, async ({ L, snap }) => { await ready(L, "matchmaking-warn"); await snap("warning"); });
 
+  await view("B9-found", { url: "/matchmaking?type=short", api: mm({ status: "found", game_id: "demo" }) }, async ({ page }) => {
+    await page.getByText("Match trouvé").or(page.locator(tid("emblem-matchFound"))).first().waitFor({ timeout: 60000 });
+    await page.waitForTimeout(330); n++; await page.screenshot({ path: path.join(outDir, "B9-found-moment.png") });
+  });
+
   // C  private room
   const room = (host, extra = {}) => ({ "GET /rooms/DEMO42": ROOM(host), "GET /friends": FRIENDS, "POST /rooms/DEMO42/invite": {}, ...extra });
   await view("C1-room", { url: "/room/DEMO42", api: room("mock_user_1") }, async ({ page, L, snap }) => {

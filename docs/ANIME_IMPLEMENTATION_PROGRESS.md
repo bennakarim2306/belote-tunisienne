@@ -280,6 +280,17 @@ Inventory: 20 old-design elements. Karim approved starting ("let's go"); prompts
 - Inventory, 5 groups and 14 image prompts: `docs/ANIME_REMAINING_VIEWS_PLAN.md`; photographed with `scripts/anime/shoot-views.js`.
 - Waiting for Karim's 4 images of group 1 (replaces the earlier single step 3 prompt).
 
+### Group 1: finding players and private room (2026-11-25)
+
+- Matchmaking, private room, join by link, share, seat choice and invite windows in the new design: `src/anime/screens/`,
+  `src/anime/components/ScreenParts.tsx`. State, polling, server calls, texts and testIDs unchanged; original JSX kept as it was.
+- The wobbling cards are replaced by one steadily turning card; the crowded small-screen layout now fits. Title ribbons everywhere
+  in the new design are 16 px wider (long titles touched the ornaments).
+- `smoke-lobby.js`: 180/180 new design (844, 640, 915 wide; French, Arabic, English), 56/56 original, 56/56 old design by toggle.
+  Before the last narrow-screen correction also: home 54, windows 46, game 29, online 22, design 25 (new design); home 54,
+  windows 45/46 (known), game 29, online 22, design 5 (original).
+- Not verified: phone, real server, iOS.
+
 ## Safety log
 
 No `git push`, no remote branch, no pull request, no GitHub write, no Emergent/Expo/EAS deployment,
