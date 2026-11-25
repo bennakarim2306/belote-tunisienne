@@ -55,6 +55,7 @@ import {
 } from "@/src/anime/assets";
 import { A } from "@/src/anime/tokens";
 import AnimeAlert from "@/src/anime/game/AnimeAlert";
+import Emblem from "@/src/anime/game/Emblem";
 import { AnimeButton, AnimeTitle, AnimeWindowFrame, GameButton, animeWindow } from "@/src/anime/game/AnimeUI";
 import HSlice from "@/src/anime/components/HSlice";
 import NineSlice from "@/src/anime/components/NineSlice";
@@ -106,11 +107,15 @@ function PausedOverlay({
     <View style={styles.pausedScrim} testID="paused-overlay">
       <View style={ANIME ? styles.animeOverlayBox : styles.plainOverlayBox}>
       {ANIME && <AnimeWindowFrame />}
-      <Ionicons
-        name={disconnect ? "wifi" : "pause-circle"}
-        size={44}
-        color={ANIME ? A.goldLight : disconnect ? C.warning : C.gold}
-      />
+      {ANIME ? (
+        <Emblem kind={disconnect ? "connection" : "pause"} size={84} />
+      ) : (
+        <Ionicons
+          name={disconnect ? "wifi" : "pause-circle"}
+          size={44}
+          color={disconnect ? C.warning : C.gold}
+        />
+      )}
       <Text style={[styles.pausedTitle, ANIME && styles.animeHeading]}>
         {disconnect ? t("connLostTitle") : t("pausedTitle")}
       </Text>
@@ -925,7 +930,7 @@ export default function GameScreen() {
         <View style={styles.pausedScrim} testID="cancelled-overlay">
           <View style={ANIME ? styles.animeOverlayBox : styles.plainOverlayBox}>
           {ANIME && <AnimeWindowFrame />}
-          <Ionicons name="close-circle" size={64} color={ANIME ? A.red : C.brand3} />
+          {ANIME ? <Emblem kind="host" size={96} /> : <Ionicons name="close-circle" size={64} color={C.brand3} />}
           <Text style={[styles.pausedTitle, ANIME && styles.animeHeading]}>{t("hostEnded")}</Text>
           <GameButton
             testID="cancelled-home-button"
@@ -1086,12 +1091,18 @@ export default function GameScreen() {
         <View style={styles.quitScrim}>
           <View style={[styles.quitCard, ANIME && animeWindow]} testID="pause-request-modal">
             {ANIME && <AnimeWindowFrame />}
-            <Ionicons
-              name="pause-circle"
-              size={40}
-              color={ANIME ? A.goldLight : C.brand}
-              style={{ alignSelf: "center" }}
-            />
+            {ANIME ? (
+              <View style={{ alignSelf: "center" }}>
+                <Emblem kind="pause" size={72} />
+              </View>
+            ) : (
+              <Ionicons
+                name="pause-circle"
+                size={40}
+                color={C.brand}
+                style={{ alignSelf: "center" }}
+              />
+            )}
             <Text style={[styles.quitTitle, { marginTop: SP.sm }, ANIME && styles.animeHeading]}>
               {t("pauseAsks", {
                 name:

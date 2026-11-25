@@ -292,6 +292,8 @@ export function MatchEndOverlay({
             </Text>
           </View>
         )}
+        {/* anime: buttons share a wrapping row so the window always fits */}
+        <View style={ANIME ? styles.animeButtons : undefined}>
         {onPlayOnline && onlineWaiting > 0 && (
           <GameButton
             testID="match-end-online-button"
@@ -308,7 +310,7 @@ export function MatchEndOverlay({
             onPress={onReplay}
             small
             variant={onPlayOnline && onlineWaiting > 0 ? "secondary" : undefined}
-            style={{ marginTop: onPlayOnline && onlineWaiting > 0 ? SP.sm : SP.md }}
+            style={{ marginTop: !ANIME && onPlayOnline && onlineWaiting > 0 ? SP.sm : SP.md }}
           />
         )}
         <GameButton
@@ -317,8 +319,9 @@ export function MatchEndOverlay({
           onPress={onHome}
           small
           variant={onReplay || (onPlayOnline && onlineWaiting > 0) ? "secondary" : undefined}
-          style={{ marginTop: onReplay ? SP.sm : SP.md }}
+          style={{ marginTop: ANIME || !onReplay ? SP.md : SP.sm }}
         />
+        </View>
       </Animated.View>
       {won && <VictoryCelebration />}
     </View>
@@ -329,6 +332,7 @@ const styles = StyleSheet.create({
   // ---- anime theme ----
   animeCard: { backgroundColor: "transparent", borderRadius: 0, paddingHorizontal: 40, paddingVertical: 24 },
   animeHandEmblem: { position: "absolute", top: 14, left: 26 },
+  animeButtons: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center", columnGap: 8 },
   animeMatchEmblem: { alignSelf: "center", marginBottom: -4 },
   animeTitle: { fontFamily: F.serif, color: A.goldLight },
   animeBadge: { borderWidth: 1.5, borderColor: A.gold },

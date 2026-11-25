@@ -227,6 +227,14 @@ Inventory: 20 old-design elements. Karim approved starting ("let's go"); prompts
   fixes), `smoke-game.js` 29/29 on (twice) and off. In one run with two browsers at once the Contre and sticker checks
   failed; both passed when run alone. The home test was not re-run. tsc / lint baseline.
 - Painted Belote / Rebelote and new-deal emblems not yet photographed in the running app. Phone check pending.
+### Last game-view elements (2026-11-25)
+
+- Pause / connection / host emblems, painted bidding tiles (a chosen suit keeps an ivory plate so its colour stays true),
+  dealer coin and bot badge. Match-end buttons share a wrapping row (with the ELO line the last one overflowed the window).
+- `smoke-online.js` feeds the real game screen prepared states through a fake WebSocket in the page (client only, no
+  multiplayer test): 22/22 on and off. `smoke-game.js` 29/29 and `smoke-home.js` 54/54, on and off. tsc / lint baseline.
+- All 20 inventoried elements are restyled. Not seen: the "players online" strip and the not-found screen. The coach bubble
+  was shown with a made-up hint key, so its real texts were not checked. Phone check pending.
 ## Safety log
 
 No `git push`, no remote branch, no pull request, no GitHub write, no Emergent/Expo/EAS deployment,

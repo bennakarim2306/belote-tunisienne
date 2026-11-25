@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import Animated, {
   cancelAnimation,
   Easing,
@@ -12,7 +12,14 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 
-import { BTN_DARK, BTN_GREEN, BTN_RED, HUD_PANEL } from "@/src/anime/assets";
+import {
+  BTN_DARK,
+  BTN_GREEN,
+  BTN_RED,
+  HUD_PANEL,
+  TILE_BID,
+  TILE_BID_ON,
+} from "@/src/anime/assets";
 import HSlice from "@/src/anime/components/HSlice";
 import NineSlice from "@/src/anime/components/NineSlice";
 import { ANIME_THEME_ENABLED } from "@/src/anime/flags";
@@ -28,6 +35,14 @@ const SUITS = ["S", "H", "C", "D"];
 const ANIME = ANIME_THEME_ENABLED;
 /** painted button background; the Pressable around it stays the control */
 const paint = (slices: typeof BTN_GREEN) => (ANIME ? <HSlice slices={slices} /> : null);
+/** painted bidding tile; a chosen suit keeps an ivory plate so its colour stays true */
+const paintTile = (on: boolean, plate = false) =>
+  ANIME ? (
+    <>
+      <Image source={on ? TILE_BID_ON : TILE_BID} resizeMode="stretch" fadeDuration={0} style={styles.tileImg} />
+      {on && plate && <View style={styles.tilePlate} />}
+    </>
+  ) : null;
 /** painted panel background */
 const paintPanel = () => (ANIME ? <NineSlice slices={HUD_PANEL} corner={20} /> : null);
 
@@ -157,8 +172,10 @@ export default function BiddingPanel({ state, t, onAction }: Props) {
               key={s}
               testID={`bid-suit-${s}`}
               onPress={() => setSuit(s)}
-              style={[styles.suitBtn, suit === s && styles.suitBtnActive]}
+              accessibilityState={{ selected: suit === s }}
+              style={[styles.suitBtn, suit === s && styles.suitBtnActive, ANIME && styles.tileAnime]}
             >
+              {paintTile(suit === s, true)}
               <Text style={[styles.suitText, { color: SUIT_COLOR[s] }]}>
                 {SUIT_SYMBOL[s]}
               </Text>
@@ -177,11 +194,19 @@ export default function BiddingPanel({ state, t, onAction }: Props) {
                 style={[
                   styles.valueChip,
                   value === v && styles.valueChipActive,
+                  ANIME && styles.tileAnime,
                   disabled && { opacity: 0.3 },
                 ]}
                 disabled={disabled}
               >
-                <Text style={[styles.valueText, value === v && { color: C.onBrand }]}>
+                {paintTile(value === v)}
+                <Text
+                  style={[
+                    styles.valueText,
+                    value === v && { color: C.onBrand },
+                    ANIME && (value === v ? styles.tileTextOn : styles.tileText),
+                  ]}
+                >
                   {v}
                 </Text>
               </Pressable>
@@ -260,7 +285,7 @@ export function DeclareDock({ state, t, onAction }: Props) {
     <Animated.View entering={FadeInDown} style={[styles.dock, ANIME && styles.dockAnime]} testID="declare-dock">
       {paintPanel()}
       {capotOpen && (
-        <Animated.View entering={FadeInDown} style={styles.dockSuitRow}>
+        <Animated.View entering={FadeInDown} style={[styles.dockSuitRow, ANIME && { backgroundColor: "transparent" }]}>
           {SUITS.map((s) => (
             <Pressable
               key={s}
@@ -269,9 +294,16 @@ export function DeclareDock({ state, t, onAction }: Props) {
                 setCapotOpen(false);
                 onAction({ action: "capot", suit: s });
               }}
-              style={styles.dockSuitBtn}
+              style={[styles.dockSuitBtn, ANIME && styles.tileAnime]}
             >
-              <Text style={[styles.dockSuitText, { color: s === "H" || s === "D" ? "#FF7A66" : "#FFFFFF" }]}>
+              {paintTile(false)}
+              <Text
+                style={[
+                  styles.dockSuitText,
+                  { color: s === "H" || s === "D" ? "#FF7A66" : "#FFFFFF" },
+                  ANIME && { color: SUIT_COLOR[s] },
+                ]}
+              >
                 {SUIT_SYMBOL[s]}
               </Text>
             </Pressable>
@@ -444,6 +476,19 @@ const styles = StyleSheet.create({
   },
   dockSuitText: { fontSize: 16 },
   // ---- anime theme ----
+  tileAnime: { backgroundColor: "transparent", borderWidth: 0, borderColor: "transparent", borderRadius: 0 },
+  tileImg: { position: "absolute", top: 0, left: 0, width: "100%", height: "100%" },
+  tilePlate: {
+    position: "absolute",
+    top: 6,
+    bottom: 6,
+    left: 8,
+    right: 8,
+    borderRadius: 6,
+    backgroundColor: "#FFF5DF",
+  },
+  tileText: { color: "#17130E" },
+  tileTextOn: { color: "#FFF5DF" },
   panelAnime: {
     backgroundColor: "transparent",
     borderWidth: 0,

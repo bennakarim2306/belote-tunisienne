@@ -9,7 +9,15 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 
-import { BUBBLE_BID, BUBBLE_CONTRACT, CARD_BACK, NAMEPLATE, SEAT_FRAME } from "@/src/anime/assets";
+import {
+  BADGE_BOT,
+  BADGE_DEALER,
+  BUBBLE_BID,
+  BUBBLE_CONTRACT,
+  CARD_BACK,
+  NAMEPLATE,
+  SEAT_FRAME,
+} from "@/src/anime/assets";
 import BubbleSlice from "@/src/anime/components/BubbleSlice";
 import HSlice from "@/src/anime/components/HSlice";
 import { ANIME_THEME_ENABLED } from "@/src/anime/flags";
@@ -171,13 +179,21 @@ export default function PlayerSeat({
           />
         )}
         {isDealer && (
-          <View style={styles.dealerBadge}>
-            <Text style={styles.dealerText}>D</Text>
+          <View style={[styles.dealerBadge, ANIME && styles.dealerBadgeAnime]} testID={`seat-dealer-${player.seat}`}>
+            {ANIME ? (
+              <Image source={BADGE_DEALER} style={styles.badgeImg} fadeDuration={0} />
+            ) : (
+              <Text style={styles.dealerText}>D</Text>
+            )}
           </View>
         )}
         {player.is_bot && (
-          <View style={styles.botBadge}>
-            <Ionicons name="hardware-chip" size={9} color={C.cream} />
+          <View style={[styles.botBadge, ANIME && styles.botBadgeAnime]}>
+            {ANIME ? (
+              <Image source={BADGE_BOT} style={styles.badgeImg} fadeDuration={0} />
+            ) : (
+              <Ionicons name="hardware-chip" size={9} color={C.cream} />
+            )}
           </View>
         )}
         {!player.is_bot && (player.afk || player.left) && (
@@ -381,6 +397,9 @@ const styles = StyleSheet.create({
   },
   cardCountText: { fontFamily: F.bold, fontSize: 10, color: "rgba(255,255,255,0.85)" },
   // ---- anime theme ----
+  dealerBadgeAnime: { width: 25, height: 25, top: -3, right: 0, borderRadius: 13, backgroundColor: "transparent" },
+  botBadgeAnime: { width: 21, height: 21, bottom: 0, right: 3, borderRadius: 11, backgroundColor: "transparent" },
+  badgeImg: { width: "100%", height: "100%" },
   timerPillAnime: { backgroundColor: "#063F32", borderColor: "#D6AC56" },
   chatBubbleAnime: { backgroundColor: "#FFFDF5", borderColor: "#17130E", borderWidth: 2 },
   chatTextAnime: { color: "#17130E" },

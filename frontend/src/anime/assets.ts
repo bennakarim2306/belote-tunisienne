@@ -285,7 +285,10 @@ export type EmblemKind =
   | "made"
   | "failed"
   | "victory"
-  | "defeat";
+  | "defeat"
+  | "pause"
+  | "connection"
+  | "host";
 export const EMBLEMS: Record<EmblemKind, ImageSourcePropType | null> = {
   belote: require("../../assets/anime/emblems/belote.png"),
   contre: require("../../assets/anime/emblems/contre.png"),
@@ -296,4 +299,14 @@ export const EMBLEMS: Record<EmblemKind, ImageSourcePropType | null> = {
   failed: require("../../assets/anime/emblems/failed.png"),
   victory: require("../../assets/anime/emblems/victory.png"),
   defeat: require("../../assets/anime/emblems/defeat.png"),
+  pause: require("../../assets/anime/emblems/pause.png"),
+  connection: require("../../assets/anime/emblems/connection.png"),
+  host: require("../../assets/anime/emblems/host.png"),
 };
+
+/** bidding tiles (suits and values) */
+export const TILE_BID: ImageSourcePropType = require("../../assets/anime/emblems/tile.png");
+export const TILE_BID_ON: ImageSourcePropType = require("../../assets/anime/emblems/tile_on.png");
+/** seat badges */
+export const BADGE_DEALER: ImageSourcePropType = require("../../assets/anime/emblems/badge_dealer.png");
+export const BADGE_BOT: ImageSourcePropType = require("../../assets/anime/emblems/badge_bot.png");

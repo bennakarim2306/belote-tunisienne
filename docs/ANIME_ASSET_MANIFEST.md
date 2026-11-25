@@ -126,3 +126,6 @@ Size note: 12 × 8 stickers ≈ 12 MB as PNG; plan a compression pass (pngquant 
 (cut by `slice-sticker-sheet.ps1 -Cols 3`, then `prepare-emblems.ps1`): belote (also Rebelote), contre, surcontre,
 capot, made, failed, redeal, victory, defeat. The tower on the victory cup has a finial that can read as a cross
 when enlarged; Karim to decide. Window art re-sliced the same day with full-width centres (no visible seams).
+
+Added 2026-11-25 from a third sheet: `pause`, `connection`, `host` (320 px), `tile`, `tile_on`, `badge_dealer`,
+`badge_bot` (144 px), all in `assets/anime/emblems/`, made with `prepare-emblems.ps1 -Size`.

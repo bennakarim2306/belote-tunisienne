@@ -18,8 +18,11 @@ const ICON: Record<EmblemKind, keyof typeof Ionicons.glyphMap> = {
   failed: "close",
   victory: "trophy",
   defeat: "sad-outline",
+  pause: "pause",
+  connection: "wifi",
+  host: "lock-closed",
 };
-const RED: EmblemKind[] = ["contre", "surcontre", "failed", "defeat"];
+const RED: EmblemKind[] = ["contre", "surcontre", "failed", "defeat", "connection"];
 
 export default function Emblem({ kind, size }: { kind: EmblemKind; size: number }) {
   const src = EMBLEMS[kind];
