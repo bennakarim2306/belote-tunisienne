@@ -267,3 +267,29 @@ export const BUBBLE_CONTRACT: BubbleSliceSource | null = {
   tailRatio: 34 / 96,
   body: 0.875,
 };
+
+// ---------------------------------------------------------------------------
+// Alert / result emblems (2026-11-25). null = coded icon until the painted
+// emblem is delivered.
+// ---------------------------------------------------------------------------
+export type EmblemKind =
+  | "belote"
+  | "contre"
+  | "surcontre"
+  | "capot"
+  | "redeal"
+  | "made"
+  | "failed"
+  | "victory"
+  | "defeat";
+export const EMBLEMS: Record<EmblemKind, ImageSourcePropType | null> = {
+  belote: null,
+  contre: null,
+  surcontre: null,
+  capot: null,
+  redeal: null,
+  made: null,
+  failed: null,
+  victory: null,
+  defeat: null,
+};

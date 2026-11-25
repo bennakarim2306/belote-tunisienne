@@ -10,6 +10,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 
+import { ANIME_THEME_ENABLED } from "@/src/anime/flags";
 import PlayingCard from "@/src/components/PlayingCard";
 import { TrickCard } from "@/src/game/useGameSocket";
 import { C, F } from "@/src/theme";
@@ -125,8 +126,8 @@ function PointsFly({
     };
   });
   return (
-    <Animated.View style={[styles.pointsFly, style]} testID="trick-points-fly">
-      <Text style={styles.pointsText}>+{points}</Text>
+    <Animated.View style={[styles.pointsFly, ANIME_THEME_ENABLED && styles.pointsFlyAnime, style]} testID="trick-points-fly">
+      <Text style={[styles.pointsText, ANIME_THEME_ENABLED && styles.pointsTextAnime]}>+{points}</Text>
     </Animated.View>
   );
 }
@@ -229,6 +230,8 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     elevation: 8,
   },
+  pointsFlyAnime: { backgroundColor: "#063F32", borderWidth: 2, borderColor: "#F4D68C" },
+  pointsTextAnime: { color: "#F4D68C" },
   pointsText: {
     fontFamily: F.display,
     fontSize: 18,

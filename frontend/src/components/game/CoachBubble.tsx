@@ -2,6 +2,10 @@ import { Ionicons } from "@expo/vector-icons";
 import { StyleSheet, Text, View } from "react-native";
 import Animated, { FadeInDown, FadeOut } from "react-native-reanimated";
 
+import { HUD_PANEL } from "@/src/anime/assets";
+import NineSlice from "@/src/anime/components/NineSlice";
+import { ANIME_THEME_ENABLED } from "@/src/anime/flags";
+import { A } from "@/src/anime/tokens";
 import { C, F, R, SP } from "@/src/theme";
 
 // Animated coach bubble shown in the teaching (tutorial) game.
@@ -11,16 +15,17 @@ export default function CoachBubble({ text, label }: { text: string; label: stri
       key={text}
       entering={FadeInDown.duration(260)}
       exiting={FadeOut.duration(150)}
-      style={styles.bubble}
+      style={[styles.bubble, ANIME_THEME_ENABLED && styles.bubbleAnime]}
       pointerEvents="none"
       testID="coach-bubble"
     >
+      {ANIME_THEME_ENABLED && <NineSlice slices={HUD_PANEL} corner={14} />}
       <View style={styles.iconWrap}>
         <Ionicons name="school" size={15} color="#1A1200" />
       </View>
       <View style={{ flex: 1, minWidth: 0 }}>
-        <Text style={styles.label}>{label}</Text>
-        <Text style={styles.text}>{text}</Text>
+        <Text style={[styles.label, ANIME_THEME_ENABLED && { color: A.goldLight }]}>{label}</Text>
+        <Text style={[styles.text, ANIME_THEME_ENABLED && { color: A.ivory }]}>{text}</Text>
       </View>
     </Animated.View>
   );
@@ -37,6 +42,13 @@ const styles = StyleSheet.create({
     borderRadius: R.md,
     paddingVertical: SP.sm,
     paddingHorizontal: SP.md,
+  },
+  bubbleAnime: {
+    backgroundColor: "transparent",
+    borderWidth: 0,
+    borderRadius: 0,
+    paddingVertical: 14,
+    paddingHorizontal: 22,
   },
   iconWrap: {
     width: 28,

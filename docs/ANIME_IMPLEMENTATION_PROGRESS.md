@@ -205,6 +205,20 @@ reaction, the existing text in a manga bubble in the user's language; texts must
 - i18n texts unchanged. `mock-backend.js` accepts `MOCK_AVATAR`. `smoke-game.js` sends a phrase and, with
   `EXPECT_STICKER=1`, checks the sticker: 29/29 on (avatar av12), 29/29 off.
 - 2026-11-24: all 12 characters done (av4–av11 from one 4x2 sheet each, cut by slice-sticker-sheet.ps1). Full check: 96/96 stickers present, smoke-game.js 29/29 on and off, smoke-home.js 54/54 on and off, tsc/lint baseline. Stickers total 12.6 MB (compression pass needed before release).
+## Game view: alerts, results, remaining elements (2026-11-25)
+
+Inventory: 20 old-design elements. Karim approved starting ("let's go"); prompts for 9 emblems (2 sheets) sent.
+
+- New `src/anime/game/AnimeAlert.tsx` (table alerts), `Emblem.tsx`, `EMBLEMS` slots in `assets.ts` (null = coded stand-in).
+- `GameButton` in `AnimeUI.tsx`: painted button when the flag is on, the untouched ChunkyButton when off; keeps the tap haptic.
+- Flag-guarded restyle: end of hand, end of match, pause / connection lost / host ended overlays, pause request, quit
+  confirmation, player card, pills and strips, coach bubble, points fly, seat timer, emoji bubble, loading, confetti colours.
+- Not yet: bidding tiles, seat badges, pause / connection / host emblems (7 images, next batch).
+- `scripts/anime/smoke-match.js` plays a whole match: 7/7 on (3 runs) and 7/7 off. The first two runs with the flag off
+  failed: the script tapped a tilted card at its corner and never hit the only legal card; it now taps the centre.
+  `smoke-game.js` 29/29 on and off, `smoke-home.js` 54/54 on (off not re-run). tsc / lint baseline.
+- Not seen running: quit confirmation, player card, pause request, connection lost, host ended, bot-replaced strip, online
+  strip, coach bubble, Victoire, Sur-contre, Capot. They need an online game or did not occur.
 ## Safety log
 
 No `git push`, no remote branch, no pull request, no GitHub write, no Emergent/Expo/EAS deployment,

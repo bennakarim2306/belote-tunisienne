@@ -1,5 +1,6 @@
+import * as Haptics from "expo-haptics";
 import React from "react";
-import { Pressable, StyleProp, StyleSheet, Text, View, ViewStyle } from "react-native";
+import { Platform, Pressable, StyleProp, StyleSheet, Text, View, ViewStyle } from "react-native";
 
 import {
   BTN_DARK,
@@ -11,7 +12,9 @@ import {
 } from "@/src/anime/assets";
 import HSlice from "@/src/anime/components/HSlice";
 import NineSlice from "@/src/anime/components/NineSlice";
+import { ANIME_THEME_ENABLED } from "@/src/anime/flags";
 import { A } from "@/src/anime/tokens";
+import ChunkyButton from "@/src/components/ChunkyButton";
 import { F, SP } from "@/src/theme";
 
 // Shared building blocks for the in-game windows of the anime theme
@@ -60,7 +63,11 @@ export function AnimeButton({
   return (
     <Pressable
       testID={testID}
-      onPress={onPress}
+      onPress={() => {
+        // same light tap feedback as the original ChunkyButton
+        if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        onPress();
+      }}
       accessibilityRole="button"
       accessibilityLabel={label}
       style={({ pressed }) => [styles.button, pressed && styles.pressed, style]}
@@ -70,6 +77,30 @@ export function AnimeButton({
         {label}
       </Text>
     </Pressable>
+  );
+}
+
+type ChunkyProps = React.ComponentProps<typeof ChunkyButton>;
+const FROM_CHUNKY: Record<NonNullable<ChunkyProps["variant"]>, "green" | "red" | "dark"> = {
+  primary: "green",
+  gold: "green",
+  danger: "red",
+  secondary: "dark",
+  ghost: "dark",
+};
+
+/** Drop-in for ChunkyButton on the game screen: painted button in the anime
+ *  theme, the untouched ChunkyButton otherwise. */
+export function GameButton(props: ChunkyProps) {
+  if (!ANIME_THEME_ENABLED) return <ChunkyButton {...props} />;
+  return (
+    <AnimeButton
+      label={props.label}
+      onPress={props.onPress}
+      testID={props.testID}
+      variant={FROM_CHUNKY[props.variant ?? "primary"]}
+      style={[props.style?.flex ? { minWidth: 0, alignSelf: "auto", paddingHorizontal: SP.lg } : null, props.style]}
+    />
   );
 }
 

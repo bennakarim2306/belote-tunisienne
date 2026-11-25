@@ -9,9 +9,13 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 
+import { ANIME_THEME_ENABLED } from "@/src/anime/flags";
+import { A } from "@/src/anime/tokens";
 import { C } from "@/src/theme";
 
-const COLORS = [C.brand, C.gold, C.brand2, C.brand3, C.cream];
+const COLORS = ANIME_THEME_ENABLED
+  ? [A.gold, A.goldLight, A.jade, A.red, A.ivory]
+  : [C.brand, C.gold, C.brand2, C.brand3, C.cream];
 const PIECE_COUNT = 36;
 
 interface PieceParams {

@@ -35,6 +35,7 @@ function SeatTimer({ deadline, side = "right" }: { deadline: number; side?: "lef
       style={[
         styles.timerPill,
         side === "left" ? styles.timerLeft : styles.timerRight,
+        ANIME_THEME_ENABLED && styles.timerPillAnime,
         remaining <= 10 && styles.timerPillUrgent,
       ]}
       testID="seat-timer"
@@ -237,6 +238,7 @@ export default function PlayerSeat({
           style={[
             styles.bubble,
             styles.chatBubble,
+            ANIME && styles.chatBubbleAnime,
             hasBid && bubbleSide === "top" && { top: -60 },
             bubbleSide === "right" && [
               styles.bubbleRight,
@@ -249,7 +251,7 @@ export default function PlayerSeat({
           ]}
           testID={`chat-bubble-${player.seat}`}
         >
-          <Text style={styles.chatText} numberOfLines={1}>
+          <Text style={[styles.chatText, ANIME && styles.chatTextAnime]} numberOfLines={1}>
             {chatText}
           </Text>
         </Animated.View>
@@ -379,6 +381,9 @@ const styles = StyleSheet.create({
   },
   cardCountText: { fontFamily: F.bold, fontSize: 10, color: "rgba(255,255,255,0.85)" },
   // ---- anime theme ----
+  timerPillAnime: { backgroundColor: "#063F32", borderColor: "#D6AC56" },
+  chatBubbleAnime: { backgroundColor: "#FFFDF5", borderColor: "#17130E", borderWidth: 2 },
+  chatTextAnime: { color: "#17130E" },
   animeBidBubble: {
     backgroundColor: BUBBLE_BID ? "transparent" : "#063F32",
     borderWidth: BUBBLE_BID ? 0 : 1.5,
