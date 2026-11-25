@@ -34,6 +34,9 @@ row plaque, portraits, seat frame, card back, logo, 24 icons, 16 emblems.
 
 ## Rules inside every prompt
 
+No gemstones in any new image (Karim, 2026-11-25). Green only as paint, enamel, fabric, wood or wall color. The word
+"emerald" is avoided in prompts because it makes the generator draw stones.
+
 Transparent background (except backgrounds), no text, letters or numbers, original work. Elements on a sheet are one
 connected object each, with a wide empty gap. The app writes all texts and numbers itself.
 
@@ -72,9 +75,10 @@ Seen while photographing: on small phones the matchmaking screen is too full (ca
 
 ```
 Create ONE background image for a mobile card game screen. Very wide landscape, 20:9 (for example 2000 x 900). Opaque, no transparency.
-Style: the same emerald-and-gold Tunisian anime style as my previous images: painted, high detail, cinematic light. Palette: deep emerald #063F32, emerald #095442, antique gold #D6AC56, light gold #F4D68C, ivory #FFF5DF, near-black brown #17130E, red accent #D92932.
-Scene: a monumental Tunisian courtyard at night just before a duel, seen from the front, perfectly symmetric in composition. On the far left a horseshoe arch lit by warm gold lantern light, on the far right a matching arch lit by red-gold light. Thin streams of glowing dust drift from both sides towards the middle. Starry deep emerald sky at the top, polished zellige floor with soft reflections at the bottom.
+Style: the same dark-green-and-gold Tunisian anime style as my previous images: painted, high detail, cinematic light. Palette: deep green #063F32, green #095442, antique gold #D6AC56, light gold #F4D68C, ivory #FFF5DF, near-black brown #17130E, red accent #D92932.
+Scene: a monumental Tunisian courtyard at night just before a duel, seen from the front, perfectly symmetric in composition. On the far left a horseshoe arch lit by warm gold lantern light, on the far right a matching arch lit by red-gold light. Thin streams of glowing dust drift from both sides towards the middle. Starry deep green sky at the top, polished zellige floor with soft reflections at the bottom.
 Very important: the middle 60 percent of the width is calm, dark and almost empty, because the app writes text and shows players there. All decoration stays in the outer 20 percent on the left and on the right. Nothing important in the top 12 percent or the bottom 12 percent.
+No gemstones, jewels or crystals anywhere, also not as small decoration. Green appears only as smooth paint, enamel, fabric, wood or wall color. Where earlier images in this conversation had green stones, leave them out and use plain engraved gold instead.
 No people, no animals, no cards, no table, no weapons, no text, no letters, no numbers, no logo, no flags, no religious symbols, no frame, no buttons. Original work, not resembling any existing game, film, anime or brand.
 ```
 
@@ -82,9 +86,10 @@ No people, no animals, no cards, no table, no weapons, no text, no letters, no n
 
 ```
 Create ONE background image for a mobile card game screen. Very wide landscape, 20:9 (for example 2000 x 900). Opaque, no transparency.
-Style: exactly the same emerald-and-gold Tunisian anime style as the previous background, painted, high detail. Same palette.
-Scene: a private Tunisian salon in the evening, seen from the front, symmetric and cozy. Far left and far right: carved wooden mashrabiya windows with warm lantern light, emerald cushions on a low bench, a small brass tray with tea glasses. Back wall: dark emerald with a very faint arabesque pattern. Floor: dark carpet with a thin gold border.
+Style: exactly the same dark-green-and-gold Tunisian anime style as the previous background, painted, high detail. Same palette.
+Scene: a private Tunisian salon in the evening, seen from the front, symmetric and cozy. Far left and far right: carved wooden mashrabiya windows with warm lantern light, dark green cushions on a low bench, a small brass tray with tea glasses. Back wall: dark green with a very faint arabesque pattern. Floor: dark carpet with a thin gold border.
 Very important: the middle 70 percent of the width is calm, dark and even, because the app puts panels there. All decoration stays in the outer 15 percent on the left and on the right. Nothing important in the top 12 percent or the bottom 12 percent.
+No gemstones, jewels or crystals anywhere, also not as small decoration. Green appears only as smooth paint, enamel, fabric, wood or wall color. Where earlier images in this conversation had green stones, leave them out and use plain engraved gold instead.
 No people, no animals, no cards, no card table, no smoking, no alcohol, no text, no letters, no numbers, no logo, no flags, no religious symbols, no frame, no buttons. Original work, not resembling any existing game, film, anime or brand.
 ```
 
@@ -92,18 +97,19 @@ No people, no animals, no cards, no card table, no smoking, no alcohol, no text,
 
 ```
 Create ONE image: a sheet of 8 separate game icons in 4 columns and 2 rows. Landscape 1536 x 1024, real transparent background (PNG with alpha).
-Style: exactly the same as my previous icon sheets: polished antique gold with emerald green enamel, fine Tunisian ornament, manga-style highlights, clean dark outline. Palette: gold #D6AC56, light gold #F4D68C, emerald #095442, deep emerald #063F32.
+Style: exactly the same as my previous icon sheets: polished antique gold with small areas of smooth dark green enamel, fine Tunisian ornament, manga-style highlights, clean dark outline. Palette: gold #D6AC56, light gold #F4D68C, green #095442, deep green #063F32.
 Each icon is ONE connected object, front view, centered in its cell, all about the same size, with at least 60 pixels of empty transparent space around it, also towards the edges of the image. Bold simple shapes, readable when only 24 pixels tall. No loose particles.
 Row 1, left to right:
-1. a thick golden arrow pointing LEFT, with an emerald gem in the middle
-2. three golden spheres joined by two thick golden bars (share symbol), emerald centers
-3. two interlocked golden chain links, emerald inlay
-4. three golden spheres in one horizontal row on one short emerald bar (more options)
+1. a thick golden arrow pointing LEFT, with one simple engraved line in the middle
+2. three flat golden discs joined by two thick golden bars (share symbol)
+3. two interlocked golden chain links, plain polished metal
+4. three flat golden discs in one horizontal row on one short dark green enamel bar (more options)
 Row 2, left to right:
-5. a five-pointed golden star with a round emerald in the center
-6. a golden hand, palm down, index finger pointing down at an emerald cushion it touches
-7. a golden hourglass with emerald sand
-8. a round golden medallion with an emerald ring and, inside, one round golden dot above one short vertical golden bar (information symbol)
+5. a five-pointed golden star with an engraved edge
+6. a golden hand, palm down, index finger pointing down at a dark green velvet cushion it touches
+7. a golden hourglass with light golden sand
+8. a round golden medallion with a dark green enamel ring and, inside, one round golden dot above one short vertical golden bar (information symbol)
+No gemstones, jewels or crystals anywhere, also not as small decoration. Green appears only as smooth paint, enamel, fabric, wood or wall color. Where earlier images in this conversation had green stones, leave them out and use plain engraved gold instead.
 Absolutely no text, no letters, no numbers, no grid lines, no cell borders, no background panels, no shadows on the ground, no religious symbols, no brand logos. Original work, not resembling any existing game, film, anime or brand.
 ```
 
@@ -111,14 +117,15 @@ Absolutely no text, no letters, no numbers, no grid lines, no cell borders, no b
 
 ```
 Create ONE image: a sheet of 4 separate large emblems in 2 columns and 2 rows. Landscape 1536 x 1024, real transparent background (PNG with alpha).
-Style: exactly the same as my previous emblem sheets: emerald-and-gold Tunisian anime style, painted, high detail, polished gold, emerald enamel, manga-style highlights, clean dark outline.
+Style: exactly the same as my previous emblem sheets: dark-green-and-gold Tunisian anime style, painted, high detail, polished gold, smooth dark green enamel, manga-style highlights, clean dark outline.
 Each emblem is ONE connected object, front view, centered in its cell, all about the same size, with at least 80 pixels of empty transparent space around it, also towards the edges of the image. No loose particles, no rays that leave the object.
 Row 1, left to right:
-1. MATCH FOUND: two golden gauntlets bumping fists in front of a round emerald shield with a golden laurel rim, energetic and friendly
-2. ROOM CLOSED: a closed Tunisian double door in a horseshoe arch, emerald wood with golden studs, held shut by one golden padlock
+1. MATCH FOUND: two golden gauntlets bumping fists in front of a round dark green painted shield with a golden laurel rim, energetic and friendly
+2. ROOM CLOSED: a closed Tunisian double door in a horseshoe arch, dark green painted wood with plain golden studs, held shut by one golden padlock
 Row 2, left to right:
-3. INVITATION DECLINED: an emerald envelope with a golden rim, torn in the middle but both halves still joined by its red wax seal
-4. EMPTY PLAYER: a completely round medallion, dark emerald inside, with the plain golden outline silhouette of one person's head and shoulders wearing a small fez, no face, no ornament outside the circle
+3. INVITATION DECLINED: a dark green paper envelope with a golden rim, torn in the middle but both halves still joined by its red wax seal
+4. EMPTY PLAYER: a completely round medallion, dark green inside, with the plain golden outline silhouette of one person's head and shoulders wearing a small fez, no face, no ornament outside the circle
+No gemstones, jewels or crystals anywhere, also not as small decoration. Green appears only as smooth paint, enamel, fabric, wood or wall color. Where earlier images in this conversation had green stones, leave them out and use plain engraved gold instead.
 Absolutely no text, no letters, no numbers, no grid lines, no cell borders, no background panels, no shadows on the ground, no religious symbols, no brand logos. Original work, not resembling any existing game, film, anime or brand.
 ```
 
@@ -144,9 +151,10 @@ Check before sending: 1.1 and 1.2 calm and dark in the middle; 1.3 exactly 8 and
 
 ```
 Create ONE background image for a mobile card game screen. Very wide landscape, 20:9 (for example 2000 x 900). Opaque, no transparency.
-Style: exactly the same emerald-and-gold Tunisian anime style as my previous backgrounds, painted, high detail. Palette: deep emerald #063F32, emerald #095442, antique gold #D6AC56, near-black brown #17130E.
-Scene: a quiet palace hall at night, seen from the front, symmetric. Far left and far right: one slim carved column with a hanging lantern. Back wall: very dark emerald with an extremely faint, even geometric zellige pattern.
+Style: exactly the same dark-green-and-gold Tunisian anime style as my previous backgrounds, painted, high detail. Palette: deep green #063F32, green #095442, antique gold #D6AC56, near-black brown #17130E.
+Scene: a quiet palace hall at night, seen from the front, symmetric. Far left and far right: one slim carved column with a hanging lantern. Back wall: very dark green with an extremely faint, even geometric zellige pattern.
 Very important: this is a background for long lists. The middle 80 percent of the width is dark, even and calm from top to bottom. All decoration stays in the outer 10 percent on the left and on the right.
+No gemstones, jewels or crystals anywhere, also not as small decoration. Green appears only as smooth paint, enamel, fabric, wood or wall color. Where earlier images in this conversation had green stones, leave them out and use plain engraved gold instead.
 No people, no animals, no cards, no table, no text, no letters, no numbers, no logo, no flags, no religious symbols, no frame, no buttons. Original work, not resembling any existing game, film, anime or brand.
 ```
 
@@ -154,7 +162,8 @@ No people, no animals, no cards, no table, no text, no letters, no numbers, no l
 
 ```
 Create ONE single image: an empty horizontal progress bar frame, very wide 16:1, on a 1536 x 1024 canvas with real transparent background (PNG with alpha), centered, 1400 pixels wide.
-Style: the same emerald-and-gold Tunisian anime style: thin polished gold rim, very dark emerald empty inside, one small gold diamond ornament at each rounded end.
+Style: the same dark-green-and-gold Tunisian anime style: thin polished gold rim, very dark green empty inside, one small engraved gold leaf ornament at each rounded end.
+No gemstones, jewels or crystals anywhere, also not as small decoration. Green appears only as smooth paint, enamel, fabric, wood or wall color. Where earlier images in this conversation had green stones, leave them out and use plain engraved gold instead.
 The long middle part must be completely plain and uniform, because the app stretches it. Nothing inside, no fill, no ticks. No text, no letters, no numbers, no shadow, no background panel. Original work, not resembling any existing game, film, anime or brand.
 ```
 
@@ -162,18 +171,19 @@ The long middle part must be completely plain and uniform, because the app stret
 
 ```
 Create ONE image: a sheet of 8 separate game icons in 4 columns and 2 rows. Landscape 1536 x 1024, real transparent background (PNG with alpha).
-Style: exactly the same as my previous icon sheets: polished antique gold with emerald green enamel, fine Tunisian ornament, manga-style highlights, clean dark outline.
+Style: exactly the same as my previous icon sheets: polished antique gold with small areas of smooth dark green enamel, fine Tunisian ornament, manga-style highlights, clean dark outline.
 Each icon is ONE connected object, centered in its cell, all about the same size, with at least 60 pixels of empty transparent space around it, also towards the edges of the image. Bold simple shapes, readable when only 32 pixels tall. No loose particles. Playing cards are blank or show only their back.
 Row 1, left to right:
 1. a blank golden playing card wearing a crown (trump)
 2. a stack of three blank golden cards rising like stairs (values)
 3. two golden hands holding one fan of card backs (the deal)
-4. a golden megaphone with an emerald ring (the bidding)
+4. a golden megaphone with a dark green enamel band (the bidding)
 Row 2, left to right:
 5. a blank card with a thick golden arrow pointing up growing out of it (follow and go higher)
 6. golden scissors cutting into a blank card (cut)
 7. two blank cards joined by two curved golden arrows pointing in opposite directions (wrong card, swap)
-8. a golden abacus with emerald beads (scoring)
+8. a golden abacus with plain dark green wooden beads (scoring)
+No gemstones, jewels or crystals anywhere, also not as small decoration. Green appears only as smooth paint, enamel, fabric, wood or wall color. Where earlier images in this conversation had green stones, leave them out and use plain engraved gold instead.
 Absolutely no text, no letters, no numbers, no card suits, no grid lines, no cell borders, no background panels, no shadows on the ground, no religious symbols. Original work, not resembling any existing game, film, anime or brand.
 ```
 
@@ -181,18 +191,19 @@ Absolutely no text, no letters, no numbers, no card suits, no grid lines, no cel
 
 ```
 Create ONE image: a sheet of 8 separate game icons in 4 columns and 2 rows. Landscape 1536 x 1024, real transparent background (PNG with alpha).
-Style: exactly the same as the sheet before: polished antique gold with emerald green enamel, fine Tunisian ornament, manga-style highlights, clean dark outline.
+Style: exactly the same as the sheet before: polished antique gold with small areas of smooth dark green enamel, fine Tunisian ornament, manga-style highlights, clean dark outline.
 Each icon is ONE connected object, front view, centered in its cell, all about the same size, with at least 60 pixels of empty transparent space around it, also towards the edges of the image. Bold simple shapes, readable when only 24 pixels tall. No loose particles.
 Row 1, left to right:
-1. a golden magnifying eye: one stylized eye with an emerald iris in a golden frame (reading the bids)
-2. a golden fez with a glowing emerald gear attached to its front (playing cleverly)
+1. a golden magnifying eye: one stylized eye with a dark green iris in a golden frame (reading the bids)
+2. a dark green fez with a golden gear attached to its front (playing cleverly)
 3. a golden lantern with a bright light inside, shaped like a light bulb (tip)
-4. a closed golden padlock with an emerald body (locked)
+4. a closed golden padlock with a dark green enamel body (locked)
 Row 2, left to right:
-5. a round emerald seal with a golden rim and a large golden check mark (done)
+5. a round dark green enamel seal with a golden rim and a large golden check mark (done)
 6. a golden speaker with two sound waves joined to it by a thin bar (listen)
-7. a golden square with rounded corners and an emerald center in a golden ring (stop)
-8. a thick golden chevron pointing DOWN with an emerald gem (open section)
+7. a plain golden square with rounded corners inside a golden ring (stop)
+8. a thick golden chevron pointing DOWN with one simple engraved line (open section)
+No gemstones, jewels or crystals anywhere, also not as small decoration. Green appears only as smooth paint, enamel, fabric, wood or wall color. Where earlier images in this conversation had green stones, leave them out and use plain engraved gold instead.
 Absolutely no text, no letters, no numbers, no grid lines, no cell borders, no background panels, no shadows on the ground, no religious symbols, no brand logos. Original work, not resembling any existing game, film, anime or brand.
 ```
 
@@ -209,7 +220,7 @@ Absolutely no text, no letters, no numbers, no grid lines, no cell borders, no b
 | ranking | rows, my row, places 1 to 3, others | row plaque, **3.1 medals** (numbers written by the app) |
 | ranking | scroll mark | gold line from the app |
 | ranking | empty | **3.2 empty_ranking** |
-| friends | online filter, presence dots | button, **3.1 gems** |
+| friends | online filter, presence dots | button, **3.1 presence dots** |
 | friends | invite, search, clear | existing icons, pill, share (1.3) |
 | friends | requests: accept / decline | **3.1 accept**, existing close icon |
 | friends | rows: invite to game, offline heart, add, sent, friend | buttons, **3.1 heart**, existing add-friend, done (2.4) |
@@ -221,18 +232,19 @@ Absolutely no text, no letters, no numbers, no grid lines, no cell borders, no b
 
 ```
 Create ONE image: a sheet of 8 separate game icons in 4 columns and 2 rows. Landscape 1536 x 1024, real transparent background (PNG with alpha).
-Style: exactly the same as my previous icon sheets: emerald-and-gold Tunisian anime style, polished metal, enamel, fine ornament, manga-style highlights, clean dark outline.
+Style: exactly the same as my previous icon sheets: dark-green-and-gold Tunisian anime style, polished metal, enamel, fine ornament, manga-style highlights, clean dark outline.
 Each icon is ONE connected object, front view, centered in its cell, with at least 60 pixels of empty transparent space around it, also towards the edges of the image. Bold simple shapes, readable when only 28 pixels tall. No loose particles.
 Row 1, left to right, four round medals of exactly the same size and shape, each with a thin ornate rim and a PLAIN EMPTY flat center, because the app writes the number there:
 1. gold medal
 2. silver medal
 3. bronze medal
-4. dark emerald medal with a thin gold rim
+4. dark green enamel medal with a thin gold rim
 Row 2, left to right:
-5. a small round bright green glowing gem in a thin gold ring (online)
-6. the same gem in dull grey in the same gold ring (offline)
-7. a thick golden check mark with an emerald gem in its corner (accept)
-8. a golden heart with an emerald center (friend)
+5. a small flat round bright green enamel dot in a thin gold ring (online)
+6. the same flat dot in dull grey enamel in the same gold ring (offline)
+7. a thick plain golden check mark with an engraved edge (accept)
+8. a golden heart with a smooth red enamel center (friend)
+No gemstones, jewels or crystals anywhere, also not as small decoration. Green appears only as smooth paint, enamel, fabric, wood or wall color. Where earlier images in this conversation had green stones, leave them out and use plain engraved gold instead.
 Absolutely no text, no letters, no numbers, no grid lines, no cell borders, no background panels, no shadows on the ground, no religious symbols. Original work, not resembling any existing game, film, anime or brand.
 ```
 
@@ -240,10 +252,11 @@ Absolutely no text, no letters, no numbers, no grid lines, no cell borders, no b
 
 ```
 Create ONE image: a sheet of 2 separate large emblems side by side (2 columns, 1 row). Landscape 1536 x 1024, real transparent background (PNG with alpha).
-Style: exactly the same as my previous emblem sheets: emerald-and-gold Tunisian anime style, painted, high detail, clean dark outline.
+Style: exactly the same as my previous emblem sheets: dark-green-and-gold Tunisian anime style, painted, high detail, clean dark outline.
 Each emblem is ONE connected object, front view, centered in its half, about the same size, with at least 100 pixels of empty transparent space around it, also towards the edges of the image. No loose particles.
-Left: NO FRIENDS YET: a small round low Tunisian table with two tea glasses and two empty emerald cushions, all joined together, warm and inviting.
-Right: NO RANKING YET: an empty golden podium with three steps and an emerald curtain behind it, all joined together.
+Left: NO FRIENDS YET: a small round low Tunisian table with two tea glasses and two empty dark green cushions, all joined together, warm and inviting.
+Right: NO RANKING YET: an empty golden podium with three steps and a dark green curtain behind it, all joined together.
+No gemstones, jewels or crystals anywhere, also not as small decoration. Green appears only as smooth paint, enamel, fabric, wood or wall color. Where earlier images in this conversation had green stones, leave them out and use plain engraved gold instead.
 Absolutely no text, no letters, no numbers, no people, no background panels, no shadows on the ground, no religious symbols. Original work, not resembling any existing game, film, anime or brand.
 ```
 
@@ -269,18 +282,19 @@ Absolutely no text, no letters, no numbers, no people, no background panels, no 
 
 ```
 Create ONE image: a sheet of 8 separate game icons in 4 columns and 2 rows. Landscape 1536 x 1024, real transparent background (PNG with alpha).
-Style: exactly the same as my previous icon sheets: polished antique gold with emerald green enamel, fine Tunisian ornament, manga-style highlights, clean dark outline.
+Style: exactly the same as my previous icon sheets: polished antique gold with small areas of smooth dark green enamel, fine Tunisian ornament, manga-style highlights, clean dark outline.
 Each icon is ONE connected object, front view, centered in its cell, all about the same size, with at least 60 pixels of empty transparent space around it, also towards the edges of the image. Bold simple shapes, readable when only 24 pixels tall. No loose particles.
 Row 1, left to right:
-1. a golden hand mirror with an emerald glass (choose avatar)
-2. three golden bars of rising height on one emerald base (statistics)
+1. a golden hand mirror with plain silver glass (choose avatar)
+2. three golden bars of rising height on one dark green enamel base (statistics)
 3. a golden speaker with two sound waves joined to it by a thin bar (sound on)
 4. the same golden speaker crossed by one thick diagonal bar (sound off)
 Row 2, left to right:
-5. a golden paint brush lying on an emerald palette (design)
-6. a golden globe carrying an emerald speech bubble without content (language)
-7. an emerald speech bubble with a golden rim and three golden dots (feedback)
-8. an emerald shield with a golden rim and a golden keyhole (privacy)
+5. a golden paint brush lying on a dark green wooden palette (design)
+6. a golden globe carrying a dark green enamel speech bubble without content (language)
+7. a dark green enamel speech bubble with a golden rim and three golden dots (feedback)
+8. a dark green painted shield with a golden rim and a golden keyhole (privacy)
+No gemstones, jewels or crystals anywhere, also not as small decoration. Green appears only as smooth paint, enamel, fabric, wood or wall color. Where earlier images in this conversation had green stones, leave them out and use plain engraved gold instead.
 Absolutely no text, no letters, no numbers, no grid lines, no cell borders, no background panels, no shadows on the ground, no religious symbols, no brand logos. Original work, not resembling any existing game, film, anime or brand.
 ```
 
@@ -296,10 +310,11 @@ Row 1, left to right:
 3. a golden square frame with a thick golden arrow leaving through its top right corner (open outside)
 4. a golden triangle with rounded corners, red enamel inside, with one short vertical golden bar above one golden dot (warning)
 Row 2, left to right:
-5. a small stack of card backs tied with an emerald ribbon (games played)
-6. a round golden target with an emerald center and one golden arrow in it (win rate)
-7. a golden scroll sealed with an emerald seal (contracts taken)
-8. a golden flame with an emerald heart inside on a rising golden step (best streak)
+5. a small stack of card backs tied with a dark green ribbon (games played)
+6. a round target with golden and dark green painted rings and one golden arrow in it (win rate)
+7. a golden scroll sealed with a red wax seal (contracts taken)
+8. a golden flame with a red inner flame on a rising golden step (best streak)
+No gemstones, jewels or crystals anywhere, also not as small decoration. Green appears only as smooth paint, enamel, fabric, wood or wall color. Where earlier images in this conversation had green stones, leave them out and use plain engraved gold instead.
 Absolutely no text, no letters, no numbers, no card suits, no grid lines, no cell borders, no background panels, no shadows on the ground, no religious symbols, no brand logos. Original work, not resembling any existing game, film, anime or brand.
 ```
 
@@ -309,14 +324,15 @@ Absolutely no text, no letters, no numbers, no card suits, no grid lines, no cel
 Create ONE image: a sheet of 6 separate game icons in 3 columns and 2 rows. Landscape 1536 x 1024, real transparent background (PNG with alpha).
 Style: exactly the same as the sheets before.
 Each icon is ONE connected object, front view, centered in its cell, with at least 70 pixels of empty transparent space around it, also towards the edges of the image. Bold simple shapes. No loose particles.
-Row 1, left to right, three round golden faces of exactly the same size, each wearing the same small emerald fez:
+Row 1, left to right, three round golden faces of exactly the same size, each wearing the same small dark green fez:
 1. sad face
 2. neutral face
-3. delighted face with two emerald hearts as eyes
+3. delighted face with two flat red hearts as eyes
 Row 2, left to right:
-4. a horizontal pill-shaped switch in the OFF position: dark emerald track with a thin gold rim, golden knob on the LEFT
-5. the same switch, exactly the same size, in the ON position: bright emerald track, golden knob on the RIGHT
-6. a golden podium with three steps and an emerald front
+4. a horizontal pill-shaped switch in the OFF position: dark green track with a thin gold rim, golden knob on the LEFT
+5. the same switch, exactly the same size, in the ON position: bright green enamel track, golden knob on the RIGHT
+6. a golden podium with three steps and a dark green painted front
+No gemstones, jewels or crystals anywhere, also not as small decoration. Green appears only as smooth paint, enamel, fabric, wood or wall color. Where earlier images in this conversation had green stones, leave them out and use plain engraved gold instead.
 Absolutely no text, no letters, no numbers, no grid lines, no cell borders, no background panels, no shadows on the ground, no religious symbols. Original work, not resembling any existing game, film, anime or brand.
 ```
 
@@ -336,9 +352,10 @@ Absolutely no text, no letters, no numbers, no grid lines, no cell borders, no b
 
 ```
 Create ONE background image for the start screen of a mobile card game. Very wide landscape, 20:9 (for example 2000 x 900). Opaque, no transparency.
-Style: exactly the same emerald-and-gold Tunisian anime style as my previous backgrounds, painted, high detail, cinematic.
-Scene: the entrance of a white-and-blue Tunisian hillside village at blue hour above the sea, lanterns lighting up, bougainvillea, one large emerald studded door in a horseshoe arch on the far left, the sea and the stars on the far right.
+Style: exactly the same dark-green-and-gold Tunisian anime style as my previous backgrounds, painted, high detail, cinematic.
+Scene: the entrance of a white-and-blue Tunisian hillside village at blue hour above the sea, lanterns lighting up, bougainvillea, one large dark green wooden door with plain iron studs in a horseshoe arch on the far left, the sea and the stars on the far right.
 Very important: the middle and right part (from 15 to 90 percent of the width) is calm and rather dark, because the app puts the logo and the sign-in window there. Nothing important in the top 12 percent or the bottom 12 percent.
+No gemstones, jewels or crystals anywhere, also not as small decoration. Green appears only as smooth paint, enamel, fabric, wood or wall color. Where earlier images in this conversation had green stones, leave them out and use plain engraved gold instead.
 No people, no animals, no text, no letters, no numbers, no logo, no flags, no religious buildings or symbols, no frame, no buttons. Original work, not resembling any existing place photo, game, film, anime or brand.
 ```
 
