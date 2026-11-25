@@ -4,7 +4,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useEffect, useRef, useState } from "react";
 
-import { ANIME_THEME_ENABLED } from "@/src/anime/flags";
+import { isAnime } from "@/src/anime/design";
 import { AVATARS } from "@/src/avatars";
 import { useAuth } from "@/src/context/AuthContext";
 import { api } from "@/src/api";
@@ -60,7 +60,7 @@ function shuffle<T>(pool: T[]): T[] {
 }
 
 function makeBots(takenName: string, takenAvatar?: string): EnginePlayerInfo[] {
-  if (ANIME_THEME_ENABLED) {
+  if (isAnime()) {
     // one bot = one character: portrait, stickers and (short) name belong
     // together, three different ones, never the player's own character
     const characters = AVATARS.filter((a) => a.id !== takenAvatar && a.seed !== takenName);

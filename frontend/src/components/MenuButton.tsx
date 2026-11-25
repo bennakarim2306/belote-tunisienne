@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { BTN_GREEN, ICONS, LOGO } from "@/src/anime/assets";
 import HSlice from "@/src/anime/components/HSlice";
-import { ANIME_THEME_ENABLED } from "@/src/anime/flags";
+import { useAnime } from "@/src/anime/design";
 import { AnimeWindowFrame } from "@/src/anime/game/AnimeUI";
 import { A } from "@/src/anime/tokens";
 import { useNotifications } from "@/src/context/NotificationsContext";
@@ -21,7 +21,6 @@ const ITEMS = [
   { key: "profile", icon: "person", label: "tabProfile" },
 ] as const;
 
-const ANIME = ANIME_THEME_ENABLED;
 const ANIME_ICON = {
   home: ICONS.home,
   leaderboard: ICONS.ranking,
@@ -41,6 +40,7 @@ interface MenuButtonProps {
 }
 
 export default function MenuButton({ buttonStyle, iconColor, icon }: MenuButtonProps = {}) {
+  const ANIME = useAnime();
   const [open, setOpen] = useState(false);
   const router = useRouter();
   const pathname = usePathname();

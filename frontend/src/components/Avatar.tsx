@@ -2,6 +2,7 @@ import { Image } from "expo-image";
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 
+import { useAnime } from "@/src/anime/design";
 import { avatarSource } from "@/src/avatars";
 import { C, F } from "@/src/theme";
 
@@ -20,6 +21,7 @@ export default function Avatar({
   ringWidth = 2.5,
   testID,
 }: Props) {
+  useAnime(); // avatarSource() depends on the design: re-render when it changes
   return (
     <View
       testID={testID}

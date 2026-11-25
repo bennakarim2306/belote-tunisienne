@@ -33,7 +33,7 @@ import {
 } from "@/src/anime/assets";
 import HSlice from "@/src/anime/components/HSlice";
 import NineSlice from "@/src/anime/components/NineSlice";
-import { ANIME_THEME_ENABLED } from "@/src/anime/flags";
+import { useAnime } from "@/src/anime/design";
 import { AnimeTitle, AnimeWindowFrame, GameButton } from "@/src/anime/game/AnimeUI";
 import { A } from "@/src/anime/tokens";
 import AnimeHomeMain from "@/src/anime/home/AnimeHomeMain";
@@ -51,7 +51,6 @@ import {
 import { useI18n } from "@/src/i18n";
 import { C, F, R, SP, shadow } from "@/src/theme";
 
-const ANIME = ANIME_THEME_ENABLED;
 
 interface CurrentGame {
   game_id: string;
@@ -79,6 +78,7 @@ function GoldDivider() {
 }
 
 export default function HomeScreen() {
+  const ANIME = useAnime();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user, refreshUser } = useAuth();
@@ -279,7 +279,7 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container} testID="home-screen">
-      {ANIME_THEME_ENABLED ? (
+      {ANIME ? (
         // Anime redesign (local flag EXPO_PUBLIC_ANIME_THEME=1): visual layer
         // only — same actions, labels and live values as the original below.
         <AnimeHomeMain

@@ -14,14 +14,13 @@ import {
 import { BTN_DARK, BTN_GREEN, CHAT_CHIP, EMBLEMS, HUD_PANEL, ICONS } from "@/src/anime/assets";
 import HSlice from "@/src/anime/components/HSlice";
 import NineSlice from "@/src/anime/components/NineSlice";
-import { ANIME_THEME_ENABLED } from "@/src/anime/flags";
+import { useAnime } from "@/src/anime/design";
 import { A } from "@/src/anime/tokens";
 import { api } from "@/src/api";
 import Avatar from "@/src/components/Avatar";
 import { useI18n } from "@/src/i18n";
 import { C, F, R, SP } from "@/src/theme";
 
-const ANIME = ANIME_THEME_ENABLED;
 
 export interface DuoCandidate {
   user_id: string;
@@ -43,6 +42,7 @@ interface Props {
 // when "En duo" is active. Online duo is strictly duo-vs-duo, rated on the
 // separate duo ELO — hence showDuoElo for the online variant.
 export default function DuoSetup({ partner, onPartner, showDuoElo = false }: Props) {
+  const ANIME = useAnime();
   const { t } = useI18n();
   const [loading, setLoading] = useState(true);
   const [friends, setFriends] = useState<DuoCandidate[]>([]);

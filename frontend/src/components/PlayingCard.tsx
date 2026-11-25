@@ -13,7 +13,8 @@ import Svg, {
 } from "react-native-svg";
 
 import { CARD_BACK, CARD_FACE, CLASSIC_COURTS, COURT_FIGURES } from "@/src/anime/assets";
-import { ANIME_ART_SET, ANIME_THEME_ENABLED } from "@/src/anime/flags";
+import { useAnime } from "@/src/anime/design";
+import { ANIME_ART_SET } from "@/src/anime/flags";
 
 import { C } from "@/src/theme";
 
@@ -331,8 +332,9 @@ export default function PlayingCard({
   dimmed,
   trumpSuit,
 }: Props) {
+  const ANIME = useAnime();
   const height = width * 1.45;
-  if ((faceDown || !card) && ANIME_THEME_ENABLED) {
+  if ((faceDown || !card) && ANIME) {
     return (
       <Image
         source={CARD_BACK}
@@ -358,7 +360,7 @@ export default function PlayingCard({
   return (
     <View style={[{ width, height }, dimmed && { opacity: 0.4 }]}>
       <Svg width={width} height={height} viewBox="0 0 100 145">
-        {ANIME_THEME_ENABLED && (
+        {ANIME && (
           <>
             <Defs>
               <ClipPath id="cardClip">
@@ -376,14 +378,14 @@ export default function PlayingCard({
           width={97}
           height={142}
           rx={13}
-          fill={ANIME_THEME_ENABLED ? "none" : CARD_BG}
-          stroke={isTrump ? C.gold : ANIME_THEME_ENABLED ? "none" : "#CFC6B8"}
+          fill={ANIME ? "none" : CARD_BG}
+          stroke={isTrump ? C.gold : ANIME ? "none" : "#CFC6B8"}
           strokeWidth={isTrump ? 3.5 : 1.5}
         />
         {/* center: court figure, single ace pip, or the classic pip grid */}
-        {isCourt && ANIME_THEME_ENABLED && ANIME_ART_SET === "v2" ? (
+        {isCourt && ANIME && ANIME_ART_SET === "v2" ? (
           <ClassicCourtFace rank={rank} suit={suit} />
-        ) : isCourt && ANIME_THEME_ENABLED ? (
+        ) : isCourt && ANIME ? (
           <AnimeCourtFace rank={rank} suit={suit} />
         ) : isCourt ? (
           <CourtFace rank={rank} suit={suit} />

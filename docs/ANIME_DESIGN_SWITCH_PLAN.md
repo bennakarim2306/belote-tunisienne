@@ -1,7 +1,7 @@
 # Design switch in the profile — plan
 
 Requested by Karim on 2026-11-25: a toggle in the profile to go back to the old design, with a loading animation while
-the design changes. Status: plan only, nothing implemented, nothing measured on a phone yet.
+the design changes. Status: parts A and B implemented on 2026-11-25 (browser only, nothing measured on a phone yet); part C comes with the profile.
 
 ## Where we are
 
@@ -59,7 +59,14 @@ No new images are needed for A and B (existing logo, card back, window frame).
   not remounted.
 - Phone (Karim): time of the first and second switch in both directions, memory on an older phone.
 
-## Open decisions for Karim
+## Decisions (Karim, 2026-11-25)
 
-1. Which design do players see after the update: the new one (recommended) or the old one until they switch?
-2. Part A and B now, before home step 3 (recommended), or everything later with the profile?
+1. The new design is the default.
+2. Parts A and B now, before home step 3.
+
+## Code
+
+`src/anime/design.ts` (store, `useAnime()`, `isAnime()`), `src/anime/DesignSwitchOverlay.tsx` (loading animation), `app/_layout.tsx`
+(read at start), `app/(tabs)/profile.tsx` (toggle). Test: `scripts/anime/smoke-design.js`.
+
+The hook is called `useAnime()`. When a third design arrives, screens need a design-specific image table instead of yes / no.

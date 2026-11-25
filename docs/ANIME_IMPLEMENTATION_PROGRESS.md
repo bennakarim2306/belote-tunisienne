@@ -254,7 +254,7 @@ Inventory: 20 old-design elements. Karim approved starting ("let's go"); prompts
 - Private game, match type (create / online / solo), duo partner, notifications and the side menu (shared by all tab
   screens) restyled behind the flag. 16 icons in `assets/anime/icons/`. `GameButton` honours disabled / loading again.
 - `smoke-windows.js` (needs `MOCK_NOTIFS=1`): 34/34 on; 33/34 off. The one failure (640x360, original look: the two
-  match types do not both fit without scrolling) matches the original sheet's layout but was not compared with a run of `main`. `smoke-home.js` 54/54 and `smoke-game.js`
+  match types do not both fit without scrolling) is the same in a run of untouched `main` (bottom edge 362 of 360). `smoke-home.js` 54/54 and `smoke-game.js`
   on and off. The first run had hung before the tests started (wait loop), not in the app.
 - Karim's decisions (2026-11-25): keep Si Mongi's current stickers for now, keep the victory cup, fix the hidden error.
 - Error fix (both modes, one small logic change in `home.tsx`): when creating a room or sending a duo invite fails, the match type
@@ -263,6 +263,18 @@ Inventory: 20 old-design elements. Karim approved starting ("let's go"); prompts
 - Offline bots (Karim, 2026-11-25): with the flag on each bot is one character (portrait, stickers, short name from `avatars.ts`),
   three different ones, never the player's own. Flag off and online bots (named by the backend) unchanged; a saved game keeps its
   old names. `smoke-bots.js` 8/8 on (12 games), 5/5 off; `smoke-game.js` 29/29 on and off; `smoke-match.js` 7/7 on (about 190 s).
+### Design switch in the profile (2026-11-25)
+
+- Home step 2 approved by Karim after a phone test. New design is the default, switch built before home step 3.
+- `src/anime/design.ts` (saved choice, `useAnime()` / `isAnime()`), `src/anime/DesignSwitchOverlay.tsx` (loading animation), toggle in
+  the profile, texts in French, Arabic, English. All file-level `const ANIME` copies are gone. Build flag off: no toggle, nothing read.
+- `smoke-design.js` 25/25 on, 5/5 with the build flag off. All other tests, flag on: home 54, game 29, windows 46, alerts 5,
+  online 22, bots 8, match 7, all pass. Flag off: home 54, game 29, windows 45/46 (see above), alerts 5, online 22, bots 5, match 7.
+  Old design chosen by the toggle (flag on): home 54, game 29, match 7, alerts 5.
+- `smoke-alerts.js` missed the Contre alert at random (it clicked 30 ms too early). Untouched `main` and this branch show the alert
+  identically (compared inside the page); the test now notes alerts inside the page. It can take 5 minutes.
+- Not verified: phone (duration, memory, iOS), ads on a real device, Arabic and English on screen.
+
 ## Safety log
 
 No `git push`, no remote branch, no pull request, no GitHub write, no Emergent/Expo/EAS deployment,

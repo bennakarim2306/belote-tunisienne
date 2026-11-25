@@ -11,7 +11,7 @@ import Animated, {
 } from "react-native-reanimated";
 
 import { CARD_BACK } from "@/src/anime/assets";
-import { ANIME_THEME_ENABLED } from "@/src/anime/flags";
+import { useAnime } from "@/src/anime/design";
 
 const CARD_DELAY = 55;
 const CARD_DUR = 360;
@@ -25,6 +25,7 @@ const TARGETS = [
 ];
 
 function FlyingCard({ rel, index }: { rel: number; index: number }) {
+  const ANIME = useAnime();
   const p = useSharedValue(0);
 
   useEffect(() => {
@@ -47,8 +48,8 @@ function FlyingCard({ rel, index }: { rel: number; index: number }) {
   }));
 
   return (
-    <Animated.View style={[styles.card, ANIME_THEME_ENABLED && styles.cardAnime, style]}>
-      {ANIME_THEME_ENABLED && <CardBackFace />}
+    <Animated.View style={[styles.card, ANIME && styles.cardAnime, style]}>
+      {ANIME && <CardBackFace />}
     </Animated.View>
   );
 }
@@ -65,6 +66,7 @@ interface Props {
 }
 
 export default function DealAnimation({ mySeat, dealer, onDone }: Props) {
+  const ANIME = useAnime();
   // deal order: one card at a time, starting left of dealer, round robin, 8 rounds
   const order = useMemo(() => {
     const arr: number[] = [];
@@ -99,11 +101,11 @@ export default function DealAnimation({ mySeat, dealer, onDone }: Props) {
             style={[
               styles.card,
               styles.deckCard,
-              ANIME_THEME_ENABLED && styles.cardAnime,
+              ANIME && styles.cardAnime,
               { top: -i * 2, left: -i * 2 },
             ]}
           >
-            {ANIME_THEME_ENABLED && <CardBackFace />}
+            {ANIME && <CardBackFace />}
           </View>
         ))}
       </View>

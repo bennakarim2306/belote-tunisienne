@@ -12,7 +12,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 
-import { ANIME_THEME_ENABLED } from "@/src/anime/flags";
+import { useAnime } from "@/src/anime/design";
 import { AnimeWindowFrame, GameButton } from "@/src/anime/game/AnimeUI";
 import Emblem from "@/src/anime/game/Emblem";
 import { A } from "@/src/anime/tokens";
@@ -25,7 +25,6 @@ import { maybeAskStoreReview } from "@/src/review";
 import { playSound } from "@/src/sound";
 import { C, F, R, SP } from "@/src/theme";
 
-const ANIME = ANIME_THEME_ENABLED;
 
 type TFunc = (key: TKey, vars?: Record<string, string | number>) => string;
 
@@ -59,6 +58,7 @@ export function HandEndModal({
   onReady: () => void;
   t: TFunc;
 }) {
+  const ANIME = useAnime();
   const remaining = useCountdown(deadline);
   const myTeam = mySeat % 2;
   const otherTeam = 1 - myTeam;
@@ -201,6 +201,7 @@ export function MatchEndOverlay({
   onlineWaiting?: number;
   onPlayOnline?: () => void;
 }) {
+  const ANIME = useAnime();
   const myTeam = state.my_seat % 2;
   const won = state.winner_team === myTeam;
   const eloDelta = state.elo_changes?.[myUserId] ?? 0;

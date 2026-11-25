@@ -19,6 +19,9 @@ import Animated, { FadeInDown } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { api } from "@/src/api";
+import { startDesignSwitch } from "@/src/anime/DesignSwitchOverlay";
+import { useAnime } from "@/src/anime/design";
+import { ANIME_THEME_ENABLED } from "@/src/anime/flags";
 import { AVATARS, avatarSource } from "@/src/avatars";
 import Avatar from "@/src/components/Avatar";
 import MenuButton from "@/src/components/MenuButton";
@@ -46,6 +49,7 @@ export default function ProfileScreen() {
   const router = useRouter();
   const { user, setUser, logout, refreshUser } = useAuth();
   const { t, lang, setLang } = useI18n();
+  const ANIME = useAnime();
   const [rank, setRank] = useState<number | null>(null);
   const [winRate, setWinRate] = useState(0);
   const [showAvatars, setShowAvatars] = useState(false);
@@ -286,6 +290,20 @@ export default function ProfileScreen() {
             thumbColor={soundOn ? C.brand : C.ink3}
           />
         </View>
+
+        {ANIME_THEME_ENABLED && (
+          <View style={[styles.sectionToggle, { marginTop: SP.md }]}>
+            <Ionicons name="color-palette" size={18} color={C.goldSoft} />
+            <Text style={styles.sectionToggleText}>{t("newDesign")}</Text>
+            <Switch
+              testID="design-toggle"
+              value={ANIME}
+              onValueChange={(v) => startDesignSwitch(v ? "emerald" : "classic")}
+              trackColor={{ false: C.bg3, true: "rgba(0,229,122,0.45)" }}
+              thumbColor={ANIME ? C.brand : C.ink3}
+            />
+          </View>
+        )}
 
         <Text style={styles.sectionTitle}>{t("language")}</Text>
         <View style={styles.langRow}>

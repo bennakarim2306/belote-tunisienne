@@ -59,11 +59,10 @@ import Emblem from "@/src/anime/game/Emblem";
 import { AnimeButton, AnimeTitle, AnimeWindowFrame, GameButton, animeWindow } from "@/src/anime/game/AnimeUI";
 import HSlice from "@/src/anime/components/HSlice";
 import NineSlice from "@/src/anime/components/NineSlice";
-import { ANIME_THEME_ENABLED } from "@/src/anime/flags";
+import { useAnime } from "@/src/anime/design";
 import TableBackdrop from "@/src/anime/game/TableBackdrop";
 import { STICKERS } from "@/src/anime/stickers";
 
-const ANIME = ANIME_THEME_ENABLED;
 
 // raise the bidding panel by 5% of the screen height so it never covers the
 // top of the player's cards (dimensions frozen at app start; landscape lock)
@@ -90,6 +89,7 @@ function PausedOverlay({
   onResume: () => void;
   t: TFunc;
 }) {
+  const ANIME = useAnime();
   const [remaining, setRemaining] = useState(() =>
     Math.max(0, Math.round(until - Date.now() / 1000)),
   );
@@ -142,6 +142,7 @@ function PausedOverlay({
 }
 
 export default function GameScreen() {
+  const ANIME = useAnime();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -586,7 +587,7 @@ export default function GameScreen() {
 
   return (
     <View style={styles.container} testID="game-screen">
-      {ANIME_THEME_ENABLED ? (
+      {ANIME ? (
         // anime redesign (local flag): painted courtyard + table top, visual only
         <TableBackdrop />
       ) : (
@@ -616,9 +617,9 @@ export default function GameScreen() {
             testID="quit-game-button"
             onPress={() => (isLocal ? quit() : setQuitOpen(true))}
             hitSlop={10}
-            style={[styles.quitBtn, ANIME_THEME_ENABLED && styles.animeIconBtn]}
+            style={[styles.quitBtn, ANIME && styles.animeIconBtn]}
           >
-            {ANIME_THEME_ENABLED && <Image source={BTN_ICON_RED} style={styles.animeIconBg} fadeDuration={0} />}
+            {ANIME && <Image source={BTN_ICON_RED} style={styles.animeIconBg} fadeDuration={0} />}
             <Ionicons name="close" size={22} color={C.cream} />
           </Pressable>
           {canPause && (
@@ -626,9 +627,9 @@ export default function GameScreen() {
               testID="pause-request-button"
               onPress={() => send({ action: "pause_request" })}
               hitSlop={10}
-              style={[styles.quitBtn, ANIME_THEME_ENABLED && styles.animeIconBtn]}
+              style={[styles.quitBtn, ANIME && styles.animeIconBtn]}
             >
-              {ANIME_THEME_ENABLED && <Image source={BTN_ICON_GREEN} style={styles.animeIconBg} fadeDuration={0} />}
+              {ANIME && <Image source={BTN_ICON_GREEN} style={styles.animeIconBg} fadeDuration={0} />}
               <Ionicons name="pause" size={20} color={C.cream} />
             </Pressable>
           )}
@@ -640,9 +641,9 @@ export default function GameScreen() {
               setSoundEnabled(next);
             }}
             hitSlop={10}
-            style={[styles.quitBtn, ANIME_THEME_ENABLED && styles.animeIconBtn]}
+            style={[styles.quitBtn, ANIME && styles.animeIconBtn]}
           >
-            {ANIME_THEME_ENABLED && <Image source={BTN_ICON_GREEN} style={styles.animeIconBg} fadeDuration={0} />}
+            {ANIME && <Image source={BTN_ICON_GREEN} style={styles.animeIconBg} fadeDuration={0} />}
             <Ionicons
               name={soundOn ? "volume-high" : "volume-mute"}
               size={20}
@@ -654,11 +655,11 @@ export default function GameScreen() {
         <View style={{ flex: 1 }} />
 
         <Pressable
-          style={[styles.scoreBox, ANIME_THEME_ENABLED && styles.animeHudBox]}
+          style={[styles.scoreBox, ANIME && styles.animeHudBox]}
           testID="match-score-header"
           onPress={() => setScoresOpen(true)}
         >
-          {ANIME_THEME_ENABLED && <NineSlice slices={HUD_PANEL} corner={11} />}
+          {ANIME && <NineSlice slices={HUD_PANEL} corner={11} />}
           <Text style={styles.scoreText}>
             {t("us")} <Text style={styles.scoreNum}>{state.match_scores[myTeam]}</Text>
             {"  ·  "}
@@ -675,13 +676,13 @@ export default function GameScreen() {
             style={[
               styles.contractChip,
               { borderColor: contract!.team === myTeam ? C.goldLine : "rgba(194,59,34,0.75)" },
-              ANIME_THEME_ENABLED && styles.animeHudBox,
+              ANIME && styles.animeHudBox,
             ]}
             testID="contract-chip"
           >
-            {ANIME_THEME_ENABLED && <NineSlice slices={HUD_PANEL} corner={11} />}
+            {ANIME && <NineSlice slices={HUD_PANEL} corner={11} />}
             {/* same meaning as the original border colour: red mark = their contract */}
-            {ANIME_THEME_ENABLED && contract!.team !== myTeam && <View style={styles.animeThemMark} />}
+            {ANIME && contract!.team !== myTeam && <View style={styles.animeThemMark} />}
             <Text style={styles.contractText}>
               {contract!.capot ? t("capot") : contract!.value}
               <Text style={{ color: SUIT_COLOR_ON_DARK[contract!.suit] }}>
@@ -854,9 +855,9 @@ export default function GameScreen() {
               <Pressable
                 testID="last-trick-button"
                 onPress={() => setLastTrickOpen(true)}
-                style={[styles.sideTextBtn, ANIME_THEME_ENABLED && styles.animeTextBtn]}
+                style={[styles.sideTextBtn, ANIME && styles.animeTextBtn]}
               >
-                {ANIME_THEME_ENABLED && <HSlice slices={BTN_DARK} />}
+                {ANIME && <HSlice slices={BTN_DARK} />}
                 <Text style={styles.sideTextBtnLabel}>{t("lastTrick")}</Text>
               </Pressable>
             )}
@@ -864,9 +865,9 @@ export default function GameScreen() {
               <Pressable
                 testID="chat-button"
                 onPress={() => setChatOpen(true)}
-                style={[styles.sideBtn, ANIME_THEME_ENABLED && styles.animeIconBtn]}
+                style={[styles.sideBtn, ANIME && styles.animeIconBtn]}
               >
-                {ANIME_THEME_ENABLED && <Image source={BTN_ICON_GREEN} style={styles.animeIconBg} fadeDuration={0} />}
+                {ANIME && <Image source={BTN_ICON_GREEN} style={styles.animeIconBg} fadeDuration={0} />}
                 <Ionicons name="chatbubble-ellipses" size={20} color={C.cream} />
               </Pressable>
             )}
@@ -1360,7 +1361,7 @@ export default function GameScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.feltDark },
-  // ---- anime theme (only applied when ANIME_THEME_ENABLED) ----
+  // ---- anime theme (only applied with the new design) ----
   animeIconBtn: { backgroundColor: "transparent", borderWidth: 0, borderRadius: 10 },
   animeIconBg: { position: "absolute", top: 0, left: 0, width: "100%", height: "100%", resizeMode: "stretch" },
   animeHudBox: {

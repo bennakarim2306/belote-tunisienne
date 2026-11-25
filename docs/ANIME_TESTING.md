@@ -104,3 +104,6 @@ Run the browser tests one at a time.
 
 `smoke-bots.js <url> <anime|original> <outDir>` starts 12 offline games and checks the bots' names and portraits.
 `smoke-match.js` needs up to 5 minutes.
+
+`smoke-design.js <url> <anime|original> <outDir>` tests the design switch (there and back, restart, saved game, no network,
+hanging network, storage failure). It answers the external portrait requests itself, so portraits are plain green there.

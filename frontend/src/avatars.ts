@@ -1,7 +1,7 @@
 import { ImageSourcePropType } from "react-native";
 
 import { AVATAR_PORTRAITS } from "@/src/anime/assets";
-import { ANIME_THEME_ENABLED } from "@/src/anime/flags";
+import { isAnime } from "@/src/anime/design";
 
 // Funny avatar catalogue. Custom purchasable avatars can be appended later.
 export interface AvatarDef {
@@ -30,7 +30,7 @@ export const AVATARS: AvatarDef[] = [
  *  same 12 identities are shown as painted portraits bundled with the app;
  *  otherwise the original remote DiceBear image is used, exactly as before. */
 export const avatarSource = (id: string): ImageSourcePropType => {
-  if (ANIME_THEME_ENABLED) {
+  if (isAnime()) {
     const known = AVATARS.some((a) => a.id === id) ? id : AVATARS[0].id;
     const portrait = AVATAR_PORTRAITS[known];
     if (portrait) return portrait;

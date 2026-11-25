@@ -22,7 +22,7 @@ import {
 } from "@/src/anime/assets";
 import HSlice from "@/src/anime/components/HSlice";
 import NineSlice from "@/src/anime/components/NineSlice";
-import { ANIME_THEME_ENABLED } from "@/src/anime/flags";
+import { isAnime, useAnime } from "@/src/anime/design";
 import { SUIT_COLOR, SUIT_SYMBOL } from "@/src/components/PlayingCard";
 import { GameState } from "@/src/game/useGameSocket";
 import { TKey } from "@/src/i18n";
@@ -32,19 +32,18 @@ const BID_VALUES = [90, 100, 110, 120, 130, 140, 150, 160];
 const SUITS = ["S", "H", "C", "D"];
 
 // ---- anime theme helpers (visual only; no-ops when the flag is off) ----
-const ANIME = ANIME_THEME_ENABLED;
 /** painted button background; the Pressable around it stays the control */
-const paint = (slices: typeof BTN_GREEN) => (ANIME ? <HSlice slices={slices} /> : null);
+const paint = (slices: typeof BTN_GREEN) => (isAnime() ? <HSlice slices={slices} /> : null);
 /** painted bidding tile; a chosen suit keeps an ivory plate so its colour stays true */
 const paintTile = (on: boolean, plate = false) =>
-  ANIME ? (
+  isAnime() ? (
     <>
       <Image source={on ? TILE_BID_ON : TILE_BID} resizeMode="stretch" fadeDuration={0} style={styles.tileImg} />
       {on && plate && <View style={styles.tilePlate} />}
     </>
   ) : null;
 /** painted panel background */
-const paintPanel = () => (ANIME ? <NineSlice slices={HUD_PANEL} corner={20} /> : null);
+const paintPanel = () => (isAnime() ? <NineSlice slices={HUD_PANEL} corner={20} /> : null);
 
 interface Props {
   state: GameState;
@@ -71,6 +70,7 @@ function SurcontreCountdown({ deadline }: { deadline: number }) {
 }
 
 export default function BiddingPanel({ state, t, onAction }: Props) {
+  const ANIME = useAnime();
   const [suit, setSuit] = useState<string | null>(null);
   const [value, setValue] = useState<number | null>(null);
 
@@ -270,6 +270,7 @@ export default function BiddingPanel({ state, t, onAction }: Props) {
 // Out-of-turn auction actions (contre + capot), docked bottom-right above the
 // "last trick"/chat buttons in a bordered block so they never cover a player.
 export function DeclareDock({ state, t, onAction }: Props) {
+  const ANIME = useAnime();
   const [capotOpen, setCapotOpen] = useState(false);
 
   // close the capot suit picker only when the auction context truly changes —

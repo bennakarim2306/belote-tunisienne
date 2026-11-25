@@ -16,6 +16,12 @@ fs.mkdirSync(outDir, { recursive: true });
 async function open(browser) {
   const ctx = await browser.newContext({ viewport: { width: 844, height: 390 }, deviceScaleFactor: 2 });
   await ctx.addInitScript(() => { try { localStorage.setItem("auth_token", JSON.stringify("mock-token")); } catch {} });
+  // every alert text is noted inside the page: polling from outside can miss one
+  await ctx.addInitScript(() => {
+    window.__alerts = new Set();
+    const look = () => document.querySelectorAll('[data-testid="game-banner-text"]').forEach((e) => window.__alerts.add(e.textContent));
+    new MutationObserver(look).observe(document, { childList: true, subtree: true, characterData: true });
+  });
   const page = await ctx.newPage();
   const has = async (id) => (await page.locator(tid(id)).count()) > 0;
   await page.goto(baseUrl + "/", { waitUntil: "domcontentloaded" });
@@ -86,6 +92,8 @@ async function playTurn(page, has) {
         if (/^Contre/.test(txt) && !contre) { contre = true; await page.waitForTimeout(250); await shot(page, "contre"); }
         if (await has("surcontre-button")) {
           await shot(page, "surcontre-panel");
+          await page.waitForTimeout(300);
+          if (await page.evaluate(() => [...window.__alerts].some((t) => /^Contre/.test(t)))) { contre = true; await shot(page, "contre"); }
           await page.locator(tid("surcontre-button")).click();
           await page.waitForTimeout(420);
           sur = /Sur-contre/.test(await page.locator(tid("game-banner-text")).first().innerText().catch(() => ""));

@@ -12,7 +12,7 @@ import {
 } from "@/src/anime/assets";
 import HSlice from "@/src/anime/components/HSlice";
 import NineSlice from "@/src/anime/components/NineSlice";
-import { ANIME_THEME_ENABLED } from "@/src/anime/flags";
+import { useAnime } from "@/src/anime/design";
 import { A } from "@/src/anime/tokens";
 import ChunkyButton from "@/src/components/ChunkyButton";
 import { F, SP } from "@/src/theme";
@@ -92,7 +92,8 @@ const FROM_CHUNKY: Record<NonNullable<ChunkyProps["variant"]>, "green" | "red" |
 /** Drop-in for ChunkyButton on the game screen: painted button in the anime
  *  theme, the untouched ChunkyButton otherwise. */
 export function GameButton(props: ChunkyProps) {
-  if (!ANIME_THEME_ENABLED) return <ChunkyButton {...props} />;
+  const ANIME = useAnime();
+  if (!ANIME) return <ChunkyButton {...props} />;
   return (
     <AnimeButton
       label={props.label}

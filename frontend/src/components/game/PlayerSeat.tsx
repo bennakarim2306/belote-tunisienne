@@ -20,7 +20,7 @@ import {
 } from "@/src/anime/assets";
 import BubbleSlice from "@/src/anime/components/BubbleSlice";
 import HSlice from "@/src/anime/components/HSlice";
-import { ANIME_THEME_ENABLED } from "@/src/anime/flags";
+import { useAnime } from "@/src/anime/design";
 import ChatSticker from "@/src/anime/game/ChatSticker";
 import Avatar from "@/src/components/Avatar";
 import { SUIT_COLOR_ON_DARK, SUIT_SYMBOL } from "@/src/components/PlayingCard";
@@ -28,6 +28,7 @@ import { GamePlayer } from "@/src/game/useGameSocket";
 import { C, F, R } from "@/src/theme";
 
 function SeatTimer({ deadline, side = "right" }: { deadline: number; side?: "left" | "right" }) {
+  const ANIME = useAnime();
   const [remaining, setRemaining] = useState(() =>
     Math.max(0, Math.round(deadline - Date.now() / 1000)),
   );
@@ -43,7 +44,7 @@ function SeatTimer({ deadline, side = "right" }: { deadline: number; side?: "lef
       style={[
         styles.timerPill,
         side === "left" ? styles.timerLeft : styles.timerRight,
-        ANIME_THEME_ENABLED && styles.timerPillAnime,
+        ANIME && styles.timerPillAnime,
         remaining <= 10 && styles.timerPillUrgent,
       ]}
       testID="seat-timer"
@@ -77,7 +78,6 @@ interface Props {
   onPress?: () => void;
 }
 
-const ANIME = ANIME_THEME_ENABLED;
 
 /** Anime theme: painted speech-bubble background (or a coded plaque until the
  *  painted bubbles are delivered). `pointer` = small tail toward the avatar. */
@@ -111,6 +111,7 @@ export default function PlayerSeat({
   timerSide = "right",
   onPress,
 }: Props) {
+  const ANIME = useAnime();
   const pulse = useSharedValue(0);
 
   useEffect(() => {
@@ -154,7 +155,7 @@ export default function PlayerSeat({
           style={[
             styles.turnRing,
             { width: ringSize, height: ringSize, borderRadius: ringSize / 2 },
-            ANIME_THEME_ENABLED && {
+            ANIME && {
               width: frameW + 8,
               height: frameW + 8,
               borderRadius: (frameW + 8) / 2,
@@ -170,7 +171,7 @@ export default function PlayerSeat({
           ringColor={isMe ? C.gold : "rgba(233,196,106,0.7)"}
           ringWidth={2}
         />
-        {ANIME_THEME_ENABLED && (
+        {ANIME && (
           <Image
             source={SEAT_FRAME.source}
             resizeMode="stretch"
@@ -211,14 +212,14 @@ export default function PlayerSeat({
           <SeatTimer deadline={deadline} side={timerSide} />
         ) : null}
       </Pressable>
-      <View style={[styles.nameRow, ANIME_THEME_ENABLED && styles.nameRowAnime]}>
-        {ANIME_THEME_ENABLED && <HSlice slices={NAMEPLATE} />}
-        <Text style={[styles.name, ANIME_THEME_ENABLED && styles.nameAnime]} numberOfLines={1}>
+      <View style={[styles.nameRow, ANIME && styles.nameRowAnime]}>
+        {ANIME && <HSlice slices={NAMEPLATE} />}
+        <Text style={[styles.name, ANIME && styles.nameAnime]} numberOfLines={1}>
           {player.username}
         </Text>
       </View>
       {!isMe &&
-        (ANIME_THEME_ENABLED ? (
+        (ANIME ? (
           // painted card backs + the REAL number of cards still in hand
           <View style={styles.cardFan} testID={`seat-cards-${player.seat}`}>
             {player.card_count > 0 && (
