@@ -260,7 +260,9 @@ Inventory: 20 old-design elements. Karim approved starting ("let's go"); prompts
 - Error fix (both modes, one small logic change in `home.tsx`): when creating a room or sending a duo invite fails, the match type
   window stays open and shows the message; for "create" the window now closes when the server answers, not before.
   `smoke-windows.js` 46/46 on, 45/46 off (same 640x360 check as before); `smoke-home.js` 54/54 on and off.
-- Open: offline bot names (no answer yet, unchanged).
+- Offline bots (Karim, 2026-11-25): with the flag on each bot is one character (portrait, stickers, short name from `avatars.ts`),
+  three different ones, never the player's own. Flag off and online bots (named by the backend) unchanged; a saved game keeps its
+  old names. `smoke-bots.js` 8/8 on (12 games), 5/5 off; `smoke-game.js` 29/29 on and off; `smoke-match.js` 7/7 on (about 190 s).
 ## Safety log
 
 No `git push`, no remote branch, no pull request, no GitHub write, no Emergent/Expo/EAS deployment,

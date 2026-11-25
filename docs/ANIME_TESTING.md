@@ -101,3 +101,6 @@ changing it. Run `smoke-game.js` for each set.
 
 Start the mock with `MOCK_NOTIFS=1`, then `node scripts/anime/smoke-windows.js <url> <anime|original> <outDir>`.
 Run the browser tests one at a time.
+
+`smoke-bots.js <url> <anime|original> <outDir>` starts 12 offline games and checks the bots' names and portraits.
+`smoke-match.js` needs up to 5 minutes.
