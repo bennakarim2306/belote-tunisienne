@@ -235,6 +235,14 @@ Inventory: 20 old-design elements. Karim approved starting ("let's go"); prompts
   multiplayer test): 22/22 on and off. `smoke-game.js` 29/29 and `smoke-home.js` 54/54, on and off. tsc / lint baseline.
 - All 20 inventoried elements are restyled. Not seen: the "players online" strip and the not-found screen. The coach bubble
   was shown with a made-up hint key, so its real texts were not checked. Phone check pending.
+## Game view approved, home view started (2026-11-25)
+
+- Karim approved the game view after testing it ("All works as expected").
+- Next: home view and everything linked to it. Inventory done from the code, no code changed yet. Plan in 4 steps:
+  1 home screen itself (icons, bell, resume pill, pills); 2 windows opened from home (private game, match type, duo
+  partner, notifications, side menu); 3 matchmaking, private room, join link, share and invite sheets; 4 tutorial.
+- Existing behaviour noted, not changed: when creating a room or inviting a duo partner fails, home.tsx sets `joinError`,
+  but the only place that shows it is the private-game window, which is closed at that moment.
 ## Safety log
 
 No `git push`, no remote branch, no pull request, no GitHub write, no Emergent/Expo/EAS deployment,
