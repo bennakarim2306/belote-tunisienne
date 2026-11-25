@@ -275,6 +275,11 @@ Inventory: 20 old-design elements. Karim approved starting ("let's go"); prompts
   identically (compared inside the page); the test now notes alerts inside the page. It can take 5 minutes.
 - Not verified: phone (duration, memory, iOS), ads on a real device, Arabic and English on screen.
 
+### Remaining views (2026-11-25)
+
+- Inventory, 5 groups and 14 image prompts: `docs/ANIME_REMAINING_VIEWS_PLAN.md`; photographed with `scripts/anime/shoot-views.js`.
+- Waiting for Karim's 4 images of group 1 (replaces the earlier single step 3 prompt).
+
 ## Safety log
 
 No `git push`, no remote branch, no pull request, no GitHub write, no Emergent/Expo/EAS deployment,
