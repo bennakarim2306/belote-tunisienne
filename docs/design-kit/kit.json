@@ -22,6 +22,14 @@
   "icons_home": {
    "cols": 4,
    "rows": 2
+  },
+  "icons_windows_a": {
+   "cols": 4,
+   "rows": 2
+  },
+  "icons_windows_b": {
+   "cols": 4,
+   "rows": 2
   }
  },
  "elements": [
@@ -715,6 +723,166 @@
    "how": "transparent, one connected object, gap of 50 px",
    "role": "menu",
    "used": "three stacked horizontal golden bars with small emerald ends (a menu icon)"
+  },
+  {
+   "id": "icon_alone",
+   "sheet": "icons_windows_a",
+   "files": [
+    "icons/alone.png"
+   ],
+   "how": "transparent, one connected object, gap of 50 px",
+   "role": "play alone",
+   "used": "one golden player bust with an emerald fez"
+  },
+  {
+   "id": "icon_duo",
+   "sheet": "icons_windows_a",
+   "files": [
+    "icons/duo.png"
+   ],
+   "how": "transparent, one connected object, gap of 50 px",
+   "role": "play as a duo",
+   "used": "two golden player busts side by side with emerald fezzes"
+  },
+  {
+   "id": "icon_quick",
+   "sheet": "icons_windows_a",
+   "files": [
+    "icons/quick.png"
+   ],
+   "how": "transparent, one connected object, gap of 50 px",
+   "role": "quick match",
+   "used": "a golden lightning bolt with an emerald core"
+  },
+  {
+   "id": "icon_normal",
+   "sheet": "icons_windows_a",
+   "files": [
+    "icons/normal.png"
+   ],
+   "how": "transparent, one connected object, gap of 50 px",
+   "role": "normal match",
+   "used": "a golden sundial with an emerald gem"
+  },
+  {
+   "id": "icon_timer",
+   "sheet": "icons_windows_a",
+   "files": [
+    "icons/timer.png"
+   ],
+   "how": "transparent, one connected object, gap of 50 px",
+   "role": "time limit",
+   "used": "a golden stopwatch with an emerald face"
+  },
+  {
+   "id": "icon_check_off",
+   "sheet": "icons_windows_a",
+   "files": [
+    "icons/check_off.png"
+   ],
+   "how": "transparent, one connected object, gap of 50 px",
+   "role": "checkbox empty",
+   "used": "an empty square checkbox with a golden rim, dark emerald inside"
+  },
+  {
+   "id": "icon_check_on",
+   "sheet": "icons_windows_a",
+   "files": [
+    "icons/check_on.png"
+   ],
+   "how": "transparent, one connected object, gap of 50 px",
+   "role": "checkbox checked",
+   "used": "the same checkbox, same size, with a large golden check mark"
+  },
+  {
+   "id": "icon_arrow",
+   "sheet": "icons_windows_a",
+   "files": [
+    "icons/arrow.png"
+   ],
+   "how": "transparent, one connected object, gap of 50 px",
+   "role": "go / join arrow",
+   "used": "a thick golden arrow pointing right with an emerald gem"
+  },
+  {
+   "id": "icon_home",
+   "sheet": "icons_windows_b",
+   "files": [
+    "icons/home.png"
+   ],
+   "how": "transparent, one connected object, gap of 50 px",
+   "role": "home",
+   "used": "a golden palace gate with an emerald arch"
+  },
+  {
+   "id": "icon_ranking",
+   "sheet": "icons_windows_b",
+   "files": [
+    "icons/ranking.png"
+   ],
+   "how": "transparent, one connected object, gap of 50 px",
+   "role": "ranking",
+   "used": "a golden trophy cup with one emerald"
+  },
+  {
+   "id": "icon_friends",
+   "sheet": "icons_windows_b",
+   "files": [
+    "icons/friends.png"
+   ],
+   "how": "transparent, one connected object, gap of 50 px",
+   "role": "friends",
+   "used": "two golden hands shaking in front of an emerald shield"
+  },
+  {
+   "id": "icon_profile",
+   "sheet": "icons_windows_b",
+   "files": [
+    "icons/profile.png"
+   ],
+   "how": "transparent, one connected object, gap of 50 px",
+   "role": "profile",
+   "used": "a golden medallion with one player bust inside"
+  },
+  {
+   "id": "icon_search",
+   "sheet": "icons_windows_b",
+   "files": [
+    "icons/search.png"
+   ],
+   "how": "transparent, one connected object, gap of 50 px",
+   "role": "search",
+   "used": "a golden magnifying glass with an emerald lens"
+  },
+  {
+   "id": "icon_add_friend",
+   "sheet": "icons_windows_b",
+   "files": [
+    "icons/add_friend.png"
+   ],
+   "how": "transparent, one connected object, gap of 50 px",
+   "role": "add a friend",
+   "used": "a golden player bust with a golden plus sign attached to its shoulder"
+  },
+  {
+   "id": "icon_close",
+   "sheet": "icons_windows_b",
+   "files": [
+    "icons/close.png"
+   ],
+   "how": "transparent, one connected object, gap of 50 px",
+   "role": "close / decline",
+   "used": "a thick golden cross (close symbol) with an emerald gem in the center"
+  },
+  {
+   "id": "icon_invite",
+   "sheet": "icons_windows_b",
+   "files": [
+    "icons/invite.png"
+   ],
+   "how": "transparent, one connected object, gap of 50 px",
+   "role": "invitation",
+   "used": "a golden envelope sealed with an emerald"
   }
  ]
 }

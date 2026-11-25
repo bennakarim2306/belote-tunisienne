@@ -96,10 +96,12 @@ export function GameButton(props: ChunkyProps) {
   return (
     <AnimeButton
       label={props.label}
-      onPress={props.onPress}
+      onPress={() => {
+        if (!props.disabled && !props.loading) props.onPress();
+      }}
       testID={props.testID}
       variant={FROM_CHUNKY[props.variant ?? "primary"]}
-      style={[props.style?.flex ? { minWidth: 0, alignSelf: "auto", paddingHorizontal: SP.lg } : null, props.style]}
+      style={[props.style?.flex ? { minWidth: 0, alignSelf: "auto", paddingHorizontal: SP.lg } : null, props.style, props.disabled || props.loading ? { opacity: 0.45 } : null]}
     />
   );
 }

@@ -11,6 +11,7 @@
 const http = require("http");
 
 const PORT = Number(process.env.MOCK_PORT || 8787);
+const NOTIFS = process.env.MOCK_NOTIFS === "1";
 const WITH_GAME = process.env.MOCK_CURRENT_GAME !== "0";
 
 const user = {
@@ -33,9 +34,9 @@ const sync = () => ({
   waiting: 0,
   h: "mock",
   data: {
-    friend_requests: [],
-    invites: [],
-    duo_invites: [],
+    friend_requests: NOTIFS ? [{ friendship_id: "f1", user_id: "u5", username: "Fatma_demo", avatar_id: "av5", elo: 1040 }] : [],
+    invites: NOTIFS ? [{ invite_id: "i1", room_code: "DEMO42", match_type: "short", from_user: { username: "Slim_demo", avatar_id: "av3" } }] : [],
+    duo_invites: NOTIFS ? [{ invite_id: "d1", match_type: "short", mode: "online", from_user: { user_id: "u2", username: "Zakia_demo", avatar_id: "av2" } }] : [],
     current_game: WITH_GAME
       ? {
           game_id: "mock_game_1",
@@ -71,6 +72,10 @@ http
     if (url.pathname === "/api/auth/me") return json(200, user);
     if (url.pathname === "/api/auth/login" || url.pathname === "/api/auth/register") {
       return json(200, { token: "mock-token", user });
+    }
+    if (NOTIFS && url.pathname === "/api/matchmaking/duo/candidates") {
+      const c = (i, n, extra) => ({ user_id: "u" + i, username: n, avatar_id: "av" + i, elo: 1000 + i * 21, elo_duo: 990 + i * 17, ...extra });
+      return json(200, { friends: [c(2, "Zakia", { friend_status: "friends", online: true }), c(6, "Mongi", { friend_status: "friends" })], recent: [c(9, "Zohra", { friend_status: "none", online: true }), c(10, "Farhat", { friend_status: "pending" })] });
     }
     if (url.pathname === "/api/sync") return json(200, sync());
     if (req.method === "GET") return json(404, { detail: "mock_not_found" });

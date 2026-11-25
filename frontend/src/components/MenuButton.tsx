@@ -1,10 +1,15 @@
 import { Ionicons } from "@expo/vector-icons";
 import { usePathname, useRouter } from "expo-router";
 import React, { useState } from "react";
-import { Modal, Pressable, StyleProp, StyleSheet, Text, View, ViewStyle } from "react-native";
+import { Image, Modal, Pressable, StyleProp, StyleSheet, Text, View, ViewStyle } from "react-native";
 import Animated, { SlideInLeft } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { BTN_GREEN, ICONS, LOGO } from "@/src/anime/assets";
+import HSlice from "@/src/anime/components/HSlice";
+import { ANIME_THEME_ENABLED } from "@/src/anime/flags";
+import { AnimeWindowFrame } from "@/src/anime/game/AnimeUI";
+import { A } from "@/src/anime/tokens";
 import { useNotifications } from "@/src/context/NotificationsContext";
 import { useI18n } from "@/src/i18n";
 import { C, F, R, SP } from "@/src/theme";
@@ -15,6 +20,14 @@ const ITEMS = [
   { key: "friends", icon: "people", label: "tabFriends" },
   { key: "profile", icon: "person", label: "tabProfile" },
 ] as const;
+
+const ANIME = ANIME_THEME_ENABLED;
+const ANIME_ICON = {
+  home: ICONS.home,
+  leaderboard: ICONS.ranking,
+  friends: ICONS.friends,
+  profile: ICONS.profile,
+};
 
 /** Hamburger button (top-left of every tab screen) opening a left side menu.
  *  Replaces the bottom tab bar to free vertical space in landscape. */
@@ -58,8 +71,8 @@ export default function MenuButton({ buttonStyle, iconColor, icon }: MenuButtonP
       >
         {icon ?? <Ionicons name="menu" size={24} color={iconColor ?? C.ink} />}
         {totalBadge > 0 && (
-          <View style={styles.btnBadge}>
-            <Text style={styles.btnBadgeText}>{totalBadge}</Text>
+          <View style={[styles.btnBadge, ANIME && styles.badgeAnime]}>
+            <Text style={[styles.btnBadgeText, ANIME && { color: A.ivory }]}>{totalBadge}</Text>
           </View>
         )}
       </Pressable>
@@ -70,11 +83,17 @@ export default function MenuButton({ buttonStyle, iconColor, icon }: MenuButtonP
             entering={SlideInLeft.duration(200)}
             style={[
               styles.panel,
+              ANIME && styles.panelAnime,
               { paddingTop: insets.top + SP.lg, paddingBottom: insets.bottom + SP.lg },
             ]}
           >
+            {ANIME && <AnimeWindowFrame />}
             <Pressable style={{ flex: 1 }} onPress={() => {}} testID="side-menu">
-              <Text style={styles.brand}>♠ ♥ Belote ♦ ♣</Text>
+              {ANIME ? (
+                <Image source={LOGO.source} style={styles.logoAnime} resizeMode="contain" fadeDuration={0} />
+              ) : (
+                <Text style={styles.brand}>♠ ♥ Belote ♦ ♣</Text>
+              )}
               {ITEMS.map((item) => {
                 const active = pathname === `/${item.key}`;
                 const badge = badges[item.key] ?? 0;
@@ -86,20 +105,26 @@ export default function MenuButton({ buttonStyle, iconColor, icon }: MenuButtonP
                     style={({ pressed }) => [
                       styles.item,
                       active && styles.itemActive,
+                      ANIME && styles.itemAnime,
                       pressed && { opacity: 0.85 },
                     ]}
                   >
-                    <Ionicons
-                      name={item.icon as never}
-                      size={20}
-                      color={active ? C.brand : C.ink2}
-                    />
-                    <Text style={[styles.itemText, active && { color: C.brand }]}>
+                    {ANIME && active && <HSlice slices={BTN_GREEN} />}
+                    {ANIME ? (
+                      <Image source={ANIME_ICON[item.key]} style={styles.iconAnime} fadeDuration={0} />
+                    ) : (
+                      <Ionicons
+                        name={item.icon as never}
+                        size={20}
+                        color={active ? C.brand : C.ink2}
+                      />
+                    )}
+                    <Text style={[styles.itemText, active && { color: C.brand }, ANIME && { fontFamily: F.serif, color: active ? A.ivory : A.goldLight }]}>
                       {t(item.label as never)}
                     </Text>
                     {badge > 0 && (
-                      <View style={styles.itemBadge}>
-                        <Text style={styles.itemBadgeText}>{badge}</Text>
+                      <View style={[styles.itemBadge, ANIME && styles.badgeAnime]}>
+                        <Text style={[styles.itemBadgeText, ANIME && { color: A.ivory }]}>{badge}</Text>
                       </View>
                     )}
                   </Pressable>
@@ -114,6 +139,12 @@ export default function MenuButton({ buttonStyle, iconColor, icon }: MenuButtonP
 }
 
 const styles = StyleSheet.create({
+  // ---- anime theme ----
+  panelAnime: { width: 268, backgroundColor: "transparent", borderRightWidth: 0, paddingHorizontal: 26 },
+  logoAnime: { width: 136, height: 58, alignSelf: "center", marginBottom: SP.sm },
+  itemAnime: { backgroundColor: "transparent", borderRadius: 0, height: 48, paddingHorizontal: 26 },
+  iconAnime: { width: 30, height: 30, resizeMode: "contain" },
+  badgeAnime: { backgroundColor: A.red, borderWidth: 1, borderColor: A.goldLight },
   btn: {
     width: 44,
     height: 44,

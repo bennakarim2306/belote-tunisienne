@@ -4,6 +4,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
+  Image,
   Modal,
   Pressable,
   ScrollView,
@@ -22,11 +23,22 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import {
+  BTN_DARK,
+  BTN_GREEN,
+  BTN_ICON_GREEN,
+  CHAT_CHIP,
+  HUD_PANEL,
+  ICONS,
+} from "@/src/anime/assets";
+import HSlice from "@/src/anime/components/HSlice";
+import NineSlice from "@/src/anime/components/NineSlice";
 import { ANIME_THEME_ENABLED } from "@/src/anime/flags";
+import { AnimeTitle, AnimeWindowFrame, GameButton } from "@/src/anime/game/AnimeUI";
+import { A } from "@/src/anime/tokens";
 import AnimeHomeMain from "@/src/anime/home/AnimeHomeMain";
 import { api, ApiError } from "@/src/api";
 import Avatar from "@/src/components/Avatar";
-import ChunkyButton from "@/src/components/ChunkyButton";
 import DuoSetup, { DuoCandidate } from "@/src/components/DuoSetup";
 import MenuButton from "@/src/components/MenuButton";
 import { useAuth } from "@/src/context/AuthContext";
@@ -38,6 +50,8 @@ import {
 } from "@/src/context/NotificationsContext";
 import { useI18n } from "@/src/i18n";
 import { C, F, R, SP, shadow } from "@/src/theme";
+
+const ANIME = ANIME_THEME_ENABLED;
 
 interface CurrentGame {
   game_id: string;
@@ -475,16 +489,30 @@ export default function HomeScreen() {
 
       {/* private game: join by code or create */}
       <Modal visible={privateOpen} transparent animationType="fade" supportedOrientations={["landscape", "portrait"]}>
-        <Pressable style={styles.modalScrim} onPress={() => setPrivateOpen(false)}>
-          <Pressable style={styles.modalSheet} onPress={() => {}} testID="private-game-modal">
-            <View style={styles.sheetHandle} />
-            <Text style={styles.modalTitle}>{t("privateParty")}</Text>
-            <View style={styles.joinRow}>
+        <Pressable style={[styles.modalScrim, ANIME && styles.animeScrimTop]} onPress={() => setPrivateOpen(false)}>
+          <Pressable style={[styles.modalSheet, ANIME && styles.animeSheet]} onPress={() => {}} testID="private-game-modal">
+            {ANIME ? (
+              <>
+                <AnimeWindowFrame />
+                <AnimeTitle text={t("privateParty")} />
+              </>
+            ) : (
+              <>
+                <View style={styles.sheetHandle} />
+                <Text style={styles.modalTitle}>{t("privateParty")}</Text>
+              </>
+            )}
+            <View style={[styles.joinRow, ANIME && { marginTop: SP.md }]}>
+              {ANIME && (
+                <View style={styles.animeInputBg} pointerEvents="none">
+                  <HSlice slices={CHAT_CHIP} />
+                </View>
+              )}
               <TextInput
                 testID="join-code-input"
-                style={styles.joinInput}
+                style={[styles.joinInput, ANIME && styles.animeInput]}
                 placeholder={t("roomCodePlaceholder")}
-                placeholderTextColor={C.ink3}
+                placeholderTextColor={ANIME ? A.ivoryDim : C.ink3}
                 value={joinCode}
                 onChangeText={(v) => setJoinCode(v.toUpperCase())}
                 autoCapitalize="characters"
@@ -496,17 +524,24 @@ export default function HomeScreen() {
               <Pressable
                 testID="join-room-button"
                 onPress={joinRoom}
-                style={({ pressed }) => [styles.joinBtn, pressed && { opacity: 0.85 }]}
+                style={({ pressed }) => [styles.joinBtn, ANIME && styles.animeClear, pressed && { opacity: 0.85 }]}
               >
-                <Ionicons name="arrow-forward" size={22} color={C.onBrand} />
+                {ANIME ? (
+                  <>
+                    <Image source={BTN_ICON_GREEN} style={styles.animeBg} fadeDuration={0} />
+                    <Image source={ICONS.arrow} style={{ width: 30, height: 30 }} resizeMode="contain" fadeDuration={0} />
+                  </>
+                ) : (
+                  <Ionicons name="arrow-forward" size={22} color={C.onBrand} />
+                )}
               </Pressable>
             </View>
             {joinError && (
-              <Text testID="join-error-text" style={styles.joinError}>
+              <Text testID="join-error-text" style={[styles.joinError, ANIME && styles.animeError]}>
                 {joinError}
               </Text>
             )}
-            <ChunkyButton
+            <GameButton
               testID="create-party-button"
               label={t("createParty")}
               onPress={() => {
@@ -521,21 +556,34 @@ export default function HomeScreen() {
       </Modal>
 
       <Modal visible={notifOpen} transparent animationType="slide" supportedOrientations={["landscape", "portrait"]}>
-        <Pressable style={styles.modalScrim} onPress={() => setNotifOpen(false)}>
-          <Pressable style={styles.modalSheet} onPress={() => {}} testID="notifications-panel">
-            <View style={styles.sheetHandle} />
-            <Text style={styles.modalTitle}>{t("notifications")}</Text>
-            <ScrollView style={{ maxHeight: 170 }}>
+        <Pressable style={[styles.modalScrim, ANIME && styles.animeScrim]} onPress={() => setNotifOpen(false)}>
+          <Pressable style={[styles.modalSheet, ANIME && styles.animeSheet]} onPress={() => {}} testID="notifications-panel">
+            {ANIME ? (
+              <>
+                <AnimeWindowFrame />
+                <AnimeTitle text={t("notifications")} />
+              </>
+            ) : (
+              <>
+                <View style={styles.sheetHandle} />
+                <Text style={styles.modalTitle}>{t("notifications")}</Text>
+              </>
+            )}
+            <ScrollView style={{ maxHeight: 170, marginTop: ANIME ? SP.sm : 0 }}>
               {notifCount === 0 && (
-                <Text style={styles.notifEmpty}>{t("noNotifications")}</Text>
+                <View style={ANIME ? styles.animeEmpty : undefined}>
+                  {ANIME && <Image source={ICONS.invite} style={{ width: 54, height: 54 }} resizeMode="contain" fadeDuration={0} />}
+                  <Text style={[styles.notifEmpty, ANIME && styles.animeEmptyText]}>{t("noNotifications")}</Text>
+                </View>
               )}
               {invites.length > 0 && (
-                <Text style={styles.notifSection}>{t("invitesSection")}</Text>
+                <Text style={[styles.notifSection, ANIME && styles.animeSection]}>{t("invitesSection")}</Text>
               )}
               {invites.map((inv) => (
-                <View key={inv.invite_id} style={styles.notifRow} testID={`notif-invite-${inv.room_code}`}>
-                  <Avatar avatarId={inv.from_user.avatar_id} size={38} />
-                  <Text style={styles.notifText} numberOfLines={2}>
+                <View key={inv.invite_id} style={[styles.notifRow, ANIME && styles.animeRow]} testID={`notif-invite-${inv.room_code}`}>
+                  {ANIME && <NineSlice slices={HUD_PANEL} corner={9} />}
+                  <Avatar avatarId={inv.from_user.avatar_id} size={38} ringColor={ANIME ? A.gold : undefined} />
+                  <Text style={[styles.notifText, ANIME && { color: A.ivory }]} numberOfLines={2}>
                     {t("invitedYou", { name: inv.from_user.username })}
                   </Text>
                   <Pressable
@@ -544,23 +592,29 @@ export default function HomeScreen() {
                       setNotifOpen(false);
                       acceptInvite(inv);
                     }}
-                    style={styles.notifPrimary}
+                    style={[styles.notifPrimary, ANIME && styles.animeNotifBtn]}
                   >
-                    <Text style={styles.notifPrimaryText}>{t("join")}</Text>
+                    {ANIME && <HSlice slices={BTN_GREEN} />}
+                    <Text style={[styles.notifPrimaryText, ANIME && { color: A.ivory }]}>{t("join")}</Text>
                   </Pressable>
                   <Pressable
                     testID={`notif-invite-dismiss-${inv.room_code}`}
                     onPress={() => dismissInvite(inv)}
                     hitSlop={8}
                   >
-                    <Ionicons name="close" size={20} color={C.ink3} />
+                    {ANIME ? (
+                      <Image source={ICONS.close} style={{ width: 24, height: 24 }} resizeMode="contain" fadeDuration={0} />
+                    ) : (
+                      <Ionicons name="close" size={20} color={C.ink3} />
+                    )}
                   </Pressable>
                 </View>
               ))}
               {duoInvites.map((inv) => (
-                <View key={inv.invite_id} style={styles.notifRow} testID={`notif-duo-${inv.invite_id}`}>
-                  <Avatar avatarId={inv.from_user.avatar_id} size={38} />
-                  <Text style={styles.notifText} numberOfLines={2}>
+                <View key={inv.invite_id} style={[styles.notifRow, ANIME && styles.animeRow]} testID={`notif-duo-${inv.invite_id}`}>
+                  {ANIME && <NineSlice slices={HUD_PANEL} corner={9} />}
+                  <Avatar avatarId={inv.from_user.avatar_id} size={38} ringColor={ANIME ? A.gold : undefined} />
+                  <Text style={[styles.notifText, ANIME && { color: A.ivory }]} numberOfLines={2}>
                     {t(inv.mode === "vs_ai" ? "duoInvitedYouAI" : "duoInvitedYou", {
                       name: inv.from_user.username,
                     })}
@@ -568,46 +622,57 @@ export default function HomeScreen() {
                   <Pressable
                     testID={`notif-duo-accept-${inv.invite_id}`}
                     onPress={() => acceptDuoInvite(inv)}
-                    style={styles.notifPrimary}
+                    style={[styles.notifPrimary, ANIME && styles.animeNotifBtn]}
                   >
-                    <Text style={styles.notifPrimaryText}>{t("accept")}</Text>
+                    {ANIME && <HSlice slices={BTN_GREEN} />}
+                    <Text style={[styles.notifPrimaryText, ANIME && { color: A.ivory }]}>{t("accept")}</Text>
                   </Pressable>
                   <Pressable
                     testID={`notif-duo-decline-${inv.invite_id}`}
                     onPress={() => declineDuoInvite(inv)}
                     hitSlop={8}
                   >
-                    <Ionicons name="close" size={20} color={C.ink3} />
+                    {ANIME ? (
+                      <Image source={ICONS.close} style={{ width: 24, height: 24 }} resizeMode="contain" fadeDuration={0} />
+                    ) : (
+                      <Ionicons name="close" size={20} color={C.ink3} />
+                    )}
                   </Pressable>
                 </View>
               ))}
               {friendRequests.length > 0 && (
-                <Text style={styles.notifSection}>{t("friendRequestsSection")}</Text>
+                <Text style={[styles.notifSection, ANIME && styles.animeSection]}>{t("friendRequestsSection")}</Text>
               )}
               {friendRequests.map((fr) => (
-                <View key={fr.friendship_id} style={styles.notifRow} testID={`notif-friend-${fr.username}`}>
-                  <Avatar avatarId={fr.avatar_id} size={38} />
-                  <Text style={styles.notifText} numberOfLines={2}>
+                <View key={fr.friendship_id} style={[styles.notifRow, ANIME && styles.animeRow]} testID={`notif-friend-${fr.username}`}>
+                  {ANIME && <NineSlice slices={HUD_PANEL} corner={9} />}
+                  <Avatar avatarId={fr.avatar_id} size={38} ringColor={ANIME ? A.gold : undefined} />
+                  <Text style={[styles.notifText, ANIME && { color: A.ivory }]} numberOfLines={2}>
                     {t("friendAsks", { name: fr.username })}
                   </Text>
                   <Pressable
                     testID={`notif-friend-accept-${fr.username}`}
                     onPress={() => respondFriend(fr.friendship_id, true)}
-                    style={styles.notifPrimary}
+                    style={[styles.notifPrimary, ANIME && styles.animeNotifBtn]}
                   >
-                    <Text style={styles.notifPrimaryText}>{t("accept")}</Text>
+                    {ANIME && <HSlice slices={BTN_GREEN} />}
+                    <Text style={[styles.notifPrimaryText, ANIME && { color: A.ivory }]}>{t("accept")}</Text>
                   </Pressable>
                   <Pressable
                     testID={`notif-friend-decline-${fr.username}`}
                     onPress={() => respondFriend(fr.friendship_id, false)}
                     hitSlop={8}
                   >
-                    <Ionicons name="close" size={20} color={C.ink3} />
+                    {ANIME ? (
+                      <Image source={ICONS.close} style={{ width: 24, height: 24 }} resizeMode="contain" fadeDuration={0} />
+                    ) : (
+                      <Ionicons name="close" size={20} color={C.ink3} />
+                    )}
                   </Pressable>
                 </View>
               ))}
             </ScrollView>
-            <ChunkyButton
+            <GameButton
               label={t("close")}
               variant="secondary"
               onPress={() => setNotifOpen(false)}
@@ -618,42 +683,75 @@ export default function HomeScreen() {
       </Modal>
 
       <Modal visible={typeModal !== null} transparent animationType="fade" supportedOrientations={["landscape", "portrait"]}>
-        <Pressable style={styles.modalScrim} onPress={() => setTypeModal(null)}>
-          <Pressable style={[styles.modalSheet, { maxHeight: "88%" }]} onPress={() => {}}>
-            <View style={styles.sheetHandle} />
-            <Text style={styles.modalTitle}>{t("chooseMatchType")}</Text>
+        <Pressable style={[styles.modalScrim, ANIME && styles.animeScrim]} onPress={() => setTypeModal(null)}>
+          <Pressable style={[styles.modalSheet, { maxHeight: "88%" }, ANIME && styles.animeSheet, ANIME && { maxHeight: "96%" }]} testID="match-type-modal" onPress={() => {}}>
+            {ANIME ? (
+              <>
+                <AnimeWindowFrame />
+                <AnimeTitle text={t("chooseMatchType")} />
+              </>
+            ) : (
+              <>
+                <View style={styles.sheetHandle} />
+                <Text style={styles.modalTitle}>{t("chooseMatchType")}</Text>
+              </>
+            )}
             <ScrollView
               showsVerticalScrollIndicator={false}
               nestedScrollEnabled
               keyboardShouldPersistTaps="handled"
             >
             {(typeModal === "online" || typeModal === "solo") && (
-              <View style={styles.segmentRow}>
+              <View style={[styles.segmentRow, ANIME && styles.animeSegmentRow]}>
                 <Pressable
                   testID="online-mode-solo"
                   onPress={() => setOnlineMode("solo")}
-                  style={[styles.segment, onlineMode === "solo" && styles.segmentActive]}
+                  accessibilityState={{ selected: onlineMode === "solo" }}
+                  style={[styles.segment, onlineMode === "solo" && styles.segmentActive, ANIME && styles.animeSegment]}
                 >
-                  <Ionicons
-                    name="person"
-                    size={15}
-                    color={onlineMode === "solo" ? C.onBrand : C.ink2}
-                  />
-                  <Text style={[styles.segmentText, onlineMode === "solo" && styles.segmentTextActive]}>
+                  {ANIME && <HSlice slices={onlineMode === "solo" ? BTN_GREEN : BTN_DARK} />}
+                  {ANIME ? (
+                    <Image source={ICONS.alone} style={styles.animeSegIcon} fadeDuration={0} />
+                  ) : (
+                    <Ionicons
+                      name="person"
+                      size={15}
+                      color={onlineMode === "solo" ? C.onBrand : C.ink2}
+                    />
+                  )}
+                  <Text
+                    style={[
+                      styles.segmentText,
+                      onlineMode === "solo" && styles.segmentTextActive,
+                      ANIME && { color: onlineMode === "solo" ? A.ivory : A.ivoryDim },
+                    ]}
+                  >
                     {t("playAlone")}
                   </Text>
                 </Pressable>
                 <Pressable
                   testID="online-mode-duo"
                   onPress={() => setOnlineMode("duo")}
-                  style={[styles.segment, onlineMode === "duo" && styles.segmentActive]}
+                  accessibilityState={{ selected: onlineMode === "duo" }}
+                  style={[styles.segment, onlineMode === "duo" && styles.segmentActive, ANIME && styles.animeSegment]}
                 >
-                  <Ionicons
-                    name="people"
-                    size={15}
-                    color={onlineMode === "duo" ? C.onBrand : C.ink2}
-                  />
-                  <Text style={[styles.segmentText, onlineMode === "duo" && styles.segmentTextActive]}>
+                  {ANIME && <HSlice slices={onlineMode === "duo" ? BTN_GREEN : BTN_DARK} />}
+                  {ANIME ? (
+                    <Image source={ICONS.duo} style={styles.animeSegIcon} fadeDuration={0} />
+                  ) : (
+                    <Ionicons
+                      name="people"
+                      size={15}
+                      color={onlineMode === "duo" ? C.onBrand : C.ink2}
+                    />
+                  )}
+                  <Text
+                    style={[
+                      styles.segmentText,
+                      onlineMode === "duo" && styles.segmentTextActive,
+                      ANIME && { color: onlineMode === "duo" ? A.ivory : A.ivoryDim },
+                    ]}
+                  >
                     {t("playDuo")}
                   </Text>
                 </Pressable>
@@ -670,22 +768,36 @@ export default function HomeScreen() {
               <Pressable
                 testID="room-timer-toggle"
                 onPress={() => setTimerOn((v) => !v)}
-                style={styles.timerToggle}
+                style={[styles.timerToggle, ANIME && styles.animePanel]}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: timerOn }}
               >
-                <Ionicons
-                  name={timerOn ? "checkbox" : "square-outline"}
-                  size={22}
-                  color={timerOn ? C.brand : C.ink3}
-                />
+                {ANIME ? (
+                  <>
+                    <NineSlice slices={HUD_PANEL} corner={11} />
+                    <Image source={timerOn ? ICONS.checkOn : ICONS.checkOff} style={styles.animeCheck} fadeDuration={0} />
+                  </>
+                ) : (
+                  <Ionicons
+                    name={timerOn ? "checkbox" : "square-outline"}
+                    size={22}
+                    color={timerOn ? C.brand : C.ink3}
+                  />
+                )}
                 <View style={{ flex: 1, marginLeft: SP.md }}>
-                  <Text style={styles.timerToggleLabel}>{t("timerSetting")}</Text>
-                  <Text style={styles.timerToggleValue}>
+                  <Text style={[styles.timerToggleLabel, ANIME && { color: A.ivory }]}>{t("timerSetting")}</Text>
+                  <Text style={[styles.timerToggleValue, ANIME && { color: A.ivoryDim }]}>
                     {timerOn ? t("timerOn") : t("timerOff")}
                   </Text>
                 </View>
-                <Ionicons name="timer" size={20} color={timerOn ? C.brand : C.ink3} />
+                {ANIME ? (
+                  <Image source={ICONS.timer} style={[styles.animeCheck, !timerOn && { opacity: 0.45 }]} fadeDuration={0} />
+                ) : (
+                  <Ionicons name="timer" size={20} color={timerOn ? C.brand : C.ink3} />
+                )}
               </Pressable>
             )}
+            <View style={ANIME ? styles.animeTypeRow : undefined}>
             <Pressable
               testID="match-type-short"
               // NOTE: no `disabled` prop — on Android a disabled Pressable
@@ -697,16 +809,22 @@ export default function HomeScreen() {
               }}
               style={({ pressed }) => [
                 styles.typeOption,
+                ANIME && styles.animeType,
                 pressed && styles.pressed,
                 duoNeedsPartner && { opacity: 0.45 },
               ]}
             >
-              <Ionicons name="flash" size={26} color={C.brand} />
+              {ANIME && <NineSlice slices={HUD_PANEL} corner={13} />}
+              {ANIME ? (
+                <Image source={ICONS.quick} style={styles.animeTypeIcon} fadeDuration={0} />
+              ) : (
+                <Ionicons name="flash" size={26} color={C.brand} />
+              )}
               <View style={{ flex: 1, marginLeft: SP.md }}>
-                <Text style={styles.typeTitle}>{t("shortMatch")}</Text>
-                <Text style={styles.typeDesc}>{t("pointsTarget", { n: 500 })}</Text>
+                <Text style={[styles.typeTitle, ANIME && styles.animeTypeTitle]}>{t("shortMatch")}</Text>
+                <Text style={[styles.typeDesc, ANIME && { color: A.ivoryDim }]}>{t("pointsTarget", { n: 500 })}</Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color={C.ink3} />
+              {!ANIME && <Ionicons name="chevron-forward" size={20} color={C.ink3} />}
             </Pressable>
             <Pressable
               testID="match-type-long"
@@ -716,17 +834,24 @@ export default function HomeScreen() {
               }}
               style={({ pressed }) => [
                 styles.typeOption,
+                ANIME && styles.animeType,
                 pressed && styles.pressed,
                 duoNeedsPartner && { opacity: 0.45 },
               ]}
             >
-              <Ionicons name="hourglass" size={26} color={C.brand2} />
+              {ANIME && <NineSlice slices={HUD_PANEL} corner={13} />}
+              {ANIME ? (
+                <Image source={ICONS.normal} style={styles.animeTypeIcon} fadeDuration={0} />
+              ) : (
+                <Ionicons name="hourglass" size={26} color={C.brand2} />
+              )}
               <View style={{ flex: 1, marginLeft: SP.md }}>
-                <Text style={styles.typeTitle}>{t("longMatch")}</Text>
-                <Text style={styles.typeDesc}>{t("pointsTarget", { n: 1000 })}</Text>
+                <Text style={[styles.typeTitle, ANIME && styles.animeTypeTitle]}>{t("longMatch")}</Text>
+                <Text style={[styles.typeDesc, ANIME && { color: A.ivoryDim }]}>{t("pointsTarget", { n: 1000 })}</Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color={C.ink3} />
+              {!ANIME && <Ionicons name="chevron-forward" size={20} color={C.ink3} />}
             </Pressable>
+            </View>
             </ScrollView>
           </Pressable>
         </Pressable>
@@ -736,6 +861,52 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
+  // ---- anime theme: windows opened from home ----
+  animeScrim: { justifyContent: "center" },
+  animeScrimTop: { justifyContent: "flex-start", paddingTop: 18 },
+  animeSheet: {
+    backgroundColor: "transparent",
+    borderTopLeftRadius: 0,
+    borderTopRightRadius: 0,
+    paddingHorizontal: 34,
+    paddingTop: 22,
+    paddingBottom: 26,
+  },
+  animeClear: { backgroundColor: "transparent", borderRadius: 0 },
+  animeBg: { position: "absolute", top: 0, left: 0, width: "100%", height: "100%", resizeMode: "stretch" },
+  animeInputBg: { position: "absolute", left: 0, right: 60, top: 0, bottom: 0 },
+  // positioned so the text paints above the absolute painted field (web)
+  animeInput: {
+    position: "relative",
+    zIndex: 1,
+    backgroundColor: "transparent",
+    borderWidth: 0,
+    paddingHorizontal: 26,
+    color: A.ivory,
+  },
+  animeError: { color: "#FF8A80", textAlign: "center" },
+  animeEmpty: { alignItems: "center", paddingTop: SP.sm },
+  animeEmptyText: { color: A.ivoryDim, paddingVertical: SP.sm },
+  animeSection: { fontFamily: F.serif, color: A.goldLight },
+  animeRow: { borderBottomWidth: 0, paddingHorizontal: SP.md, marginTop: 5, minHeight: 54 },
+  animeNotifBtn: { backgroundColor: "transparent", borderRadius: 0, paddingHorizontal: 26, height: 38 },
+  animeSegmentRow: { backgroundColor: "transparent", borderWidth: 0, gap: SP.sm, marginTop: SP.sm, padding: 0 },
+  animeSegment: { backgroundColor: "transparent", height: 46, borderRadius: 0 },
+  animeSegIcon: { width: 28, height: 28, resizeMode: "contain" },
+  animePanel: { backgroundColor: "transparent", borderWidth: 0, borderRadius: 0, marginTop: SP.sm, marginBottom: SP.sm, paddingHorizontal: SP.lg },
+  animeCheck: { width: 30, height: 30, resizeMode: "contain" },
+  animeTypeRow: { flexDirection: "row", gap: SP.sm, marginTop: SP.xs },
+  animeType: {
+    flex: 1,
+    backgroundColor: "transparent",
+    borderWidth: 0,
+    borderRadius: 0,
+    marginBottom: 0,
+    paddingVertical: SP.md,
+    minHeight: 84,
+  },
+  animeTypeIcon: { width: 48, height: 48, resizeMode: "contain" },
+  animeTypeTitle: { fontFamily: F.serif, color: A.goldLight },
   container: { flex: 1, backgroundColor: C.bg },
   header: {
     paddingHorizontal: SP.lg,

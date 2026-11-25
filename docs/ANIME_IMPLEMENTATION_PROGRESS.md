@@ -249,6 +249,14 @@ Inventory: 20 old-design elements. Karim approved starting ("let's go"); prompts
   about 1 MB). `MenuButton` got an optional `icon` prop; nothing else changes when the flag is off.
 - `smoke-home.js` 54/54 on and off. tsc / lint: nothing new. Game test not re-run. Phone check pending.
 - Design kit added in `docs/design-kit/` (66 elements, 233 images covered, `kit.mjs check` clean).
+### Home view step 2: windows opened from home (2026-11-25)
+
+- Private game, match type (create / online / solo), duo partner, notifications and the side menu (shared by all tab
+  screens) restyled behind the flag. 16 icons in `assets/anime/icons/`. `GameButton` honours disabled / loading again.
+- `smoke-windows.js` (needs `MOCK_NOTIFS=1`): 34/34 on; 33/34 off. The one failure is the original layout at 640x360,
+  where the second match type needs scrolling; the original was not changed. `smoke-home.js` 54/54 and `smoke-game.js`
+  on and off. The first run had hung before the tests started (wait loop), not in the app.
+- Error text after a failed room creation / duo invite still hidden: waiting for Karim's decision.
 ## Safety log
 
 No `git push`, no remote branch, no pull request, no GitHub write, no Emergent/Expo/EAS deployment,
