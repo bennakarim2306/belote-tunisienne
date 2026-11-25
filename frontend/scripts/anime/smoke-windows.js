@@ -28,6 +28,30 @@ fs.mkdirSync(outDir, { recursive: true });
     const home = async () => { await page.goto(baseUrl + "/", { waitUntil: "domcontentloaded", timeout: 180000 }); await L("home-grid").waitFor({ timeout: 120000 }); await page.waitForTimeout(1200); };
     await home();
 
+    // failures: the message shows in the open window and a retry works
+    const fail = (glob) => page.route(glob, (r) => r.request().method() === "POST"
+      ? r.fulfill({ status: 500, headers: { "Access-Control-Allow-Origin": "*" }, contentType: "application/json", body: '{"detail":"boom"}' })
+      : r.fallback());
+    await L("private-game-card").click(); await L("create-party-button").click(); await L("room-timer-toggle").waitFor(); await page.waitForTimeout(700);
+    check(`[${tag}] create: no error at first`, !(await has("type-error-text")));
+    await fail("**/api/rooms"); await L("match-type-short").scrollIntoViewIfNeeded(); await L("match-type-short").click(); await page.waitForTimeout(900);
+    check(`[${tag}] create failure: message in view, window open`, (await has("type-error-text")) && (await inView("type-error-text")) && (await has("room-timer-toggle")));
+    await shot("create-error");
+    await page.unroute("**/api/rooms"); const r0 = posts.filter((p) => p.startsWith("/rooms ")).length;
+    await L("match-type-short").scrollIntoViewIfNeeded(); await L("match-type-short").click(); await page.waitForTimeout(900);
+    check(`[${tag}] create retry sends again and closes the window`, posts.filter((p) => p.startsWith("/rooms ")).length === r0 + 1 && !(await has("match-type-short")));
+    await home();
+    await L("play-online-card").click(); await L("online-mode-duo").click(); await L("duo-candidate-Zakia").waitFor(); await page.waitForTimeout(700); await L("duo-candidate-Zakia").click();
+    await fail("**/api/matchmaking/duo/invite"); await L("match-type-short").scrollIntoViewIfNeeded(); await L("match-type-short").click(); await page.waitForTimeout(900);
+    check(`[${tag}] duo failure: message in view, partner kept`, (await has("type-error-text")) && (await inView("type-error-text")) && (await has("duo-setup")));
+    await shot("duo-error");
+    await page.unroute("**/api/matchmaking/duo/invite");
+    await close();
+    check(`[${tag}] error window can be closed`, !(await has("match-type-short")));
+    await L("play-online-card").click(); await L("online-mode-duo").waitFor(); await page.waitForTimeout(600);
+    check(`[${tag}] error is gone when reopened`, !(await has("type-error-text")));
+    await close(); await home();
+
     // private game
     await L("private-game-card").click(); await L("private-game-modal").waitFor(); await page.waitForTimeout(700);
     check(`[${tag}] private game: input, join and create visible`, (await inView("join-code-input")) && (await inView("join-room-button")) && (await inView("create-party-button")));

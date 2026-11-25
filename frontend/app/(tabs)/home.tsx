@@ -116,6 +116,7 @@ export default function HomeScreen() {
   const [timerOn, setTimerOn] = useState(false);
   const [joinCode, setJoinCode] = useState("");
   const [joinError, setJoinError] = useState<string | null>(null);
+  const [typeError, setTypeError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [privateOpen, setPrivateOpen] = useState(false);
@@ -129,6 +130,7 @@ export default function HomeScreen() {
     if (typeModal === null) {
       setOnlineMode("solo");
       setDuoPartner(null);
+      setTypeError(null);
     }
   }, [typeModal]);
 
@@ -145,6 +147,7 @@ export default function HomeScreen() {
 
   const chooseType = async (matchType: "short" | "long") => {
     const mode = typeModal;
+    setTypeError(null);
     if ((mode === "online" || mode === "solo") && onlineMode === "duo") {
       if (!duoPartner) return;
       setBusy(true);
@@ -162,14 +165,15 @@ export default function HomeScreen() {
           });
         }, 150);
       } catch {
-        setTypeModal(null);
-        setJoinError(t("error_generic"));
+        // keep the window open so the message is seen and the player can retry
+        setTypeModal((cur) => cur ?? mode);
+        setTypeError(t("error_generic"));
       } finally {
         setBusy(false);
       }
       return;
     }
-    setTypeModal(null);
+    if (mode !== "create") setTypeModal(null);
     if (mode === "online") {
       // let the modal close before navigating (web Modal can linger otherwise)
       setTimeout(() => {
@@ -185,11 +189,13 @@ export default function HomeScreen() {
       setBusy(true);
       try {
         const room = await api.post("/rooms", { match_type: matchType, turn_timer: timerOn });
+        setTypeModal(null);
         setTimeout(() => {
           router.push({ pathname: "/room/[code]", params: { code: room.code } });
         }, 150);
       } catch {
-        setJoinError(t("error_generic"));
+        setTypeModal((cur) => cur ?? mode);
+        setTypeError(t("error_generic"));
       } finally {
         setBusy(false);
       }
@@ -695,6 +701,11 @@ export default function HomeScreen() {
                 <View style={styles.sheetHandle} />
                 <Text style={styles.modalTitle}>{t("chooseMatchType")}</Text>
               </>
+            )}
+            {typeError && (
+              <Text testID="type-error-text" style={[styles.joinError, ANIME && styles.animeError]}>
+                {typeError}
+              </Text>
             )}
             <ScrollView
               showsVerticalScrollIndicator={false}

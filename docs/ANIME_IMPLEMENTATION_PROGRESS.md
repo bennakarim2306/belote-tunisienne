@@ -256,7 +256,11 @@ Inventory: 20 old-design elements. Karim approved starting ("let's go"); prompts
 - `smoke-windows.js` (needs `MOCK_NOTIFS=1`): 34/34 on; 33/34 off. The one failure (640x360, original look: the two
   match types do not both fit without scrolling) matches the original sheet's layout but was not compared with a run of `main`. `smoke-home.js` 54/54 and `smoke-game.js`
   on and off. The first run had hung before the tests started (wait loop), not in the app.
-- Error text after a failed room creation / duo invite still hidden: waiting for Karim's decision.
+- Karim's decisions (2026-11-25): keep Si Mongi's current stickers for now, keep the victory cup, fix the hidden error.
+- Error fix (both modes, one small logic change in `home.tsx`): when creating a room or sending a duo invite fails, the match type
+  window stays open and shows the message; for "create" the window now closes when the server answers, not before.
+  `smoke-windows.js` 46/46 on, 45/46 off (same 640x360 check as before); `smoke-home.js` 54/54 on and off.
+- Open: offline bot names (no answer yet, unchanged).
 ## Safety log
 
 No `git push`, no remote branch, no pull request, no GitHub write, no Emergent/Expo/EAS deployment,
