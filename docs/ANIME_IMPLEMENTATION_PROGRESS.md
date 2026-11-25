@@ -219,6 +219,14 @@ Inventory: 20 old-design elements. Karim approved starting ("let's go"); prompts
   `smoke-game.js` 29/29 on and off, `smoke-home.js` 54/54 on (off not re-run). tsc / lint baseline.
 - Not seen running: quit confirmation, player card, pause request, connection lost, host ended, bot-replaced strip, online
   strip, coach bubble, Victoire, Sur-contre, Capot. They need an online game or did not occur.
+### Emblems swapped in (2026-11-25)
+
+- 9 painted emblems; Contre alert is compact and high while the Sur-contre choice is open; no shadow box behind the
+  turn banner; seams removed from scroll, ribbons, rows, chips and bubbles (`BubbleSliceSource.mr` added).
+- `smoke-alerts.js` forces Capot, Contre, Sur-contre and Victoire: 5/5. Whole match 7/7 on and 7/7 off (before the last
+  fixes), `smoke-game.js` 29/29 on (twice) and off. In one run with two browsers at once the Contre and sticker checks
+  failed; both passed when run alone. The home test was not re-run. tsc / lint baseline.
+- Painted Belote / Rebelote and new-deal emblems not yet photographed in the running app. Phone check pending.
 ## Safety log
 
 No `git push`, no remote branch, no pull request, no GitHub write, no Emergent/Expo/EAS deployment,

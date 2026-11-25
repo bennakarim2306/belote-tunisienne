@@ -89,8 +89,8 @@ function Get-Prepared([string]$key, [int]$height = 0, [int]$width = 0) {
 function Save-HSlice($b, [string]$name, [int]$cap) {
   $w = $b.Width; $h = $b.Height
   $p = [UiAssets]::Crop($b, 0, 0, $cap, $h); Save-Png $p "$($name)_l.png"; $p.Dispose()
-  # centre: a thin strip from the plain middle, stretched by the app
-  $p = [UiAssets]::Crop($b, [int]($w / 2) - 4, 0, 8, $h); Save-Png $p "$($name)_c.png"; $p.Dispose()
+  # centre: the whole middle part, so its painted gradient meets both caps without a seam
+  $p = [UiAssets]::Crop($b, $cap, 0, $w - 2 * $cap, $h); Save-Png $p "$($name)_c.png"; $p.Dispose()
   $p = [UiAssets]::Crop($b, $w - $cap, 0, $cap, $h); Save-Png $p "$($name)_r.png"; $p.Dispose()
   [void]$report.Add("  -> $($name): ${w}x${h}, cap $cap (capRatio $([math]::Round($cap / $h, 4)))")
 }
@@ -113,14 +113,15 @@ $b.Dispose()
 $b = Get-Prepared "title" -height 100; Save-HSlice $b "title_ribbon" 72; $b.Dispose()
 $b = Get-Prepared "scoreRow" -height 64; Save-HSlice $b "score_row" 40; $b.Dispose()
 $b = Get-Prepared "chip" -height 120; Save-HSlice $b "chat_chip" 66; $b.Dispose()
-$b = Get-Prepared "turn" -height 100; Save-HSlice $b "turn_banner" 58; $b.Dispose()
+$b = Get-Prepared "turn" -height 100; Save-HSlice $b "turn_banner" 90; $b.Dispose()
 
 # ---- speech bubbles: 5-slice (cap / stretch / fixed tail / stretch / cap) ----
 foreach ($bb in @(@{ key = "bid"; name = "bubble_bid" }, @{ key = "contract"; name = "bubble_contract" })) {
   $b = Get-Prepared $bb.key -height 96
   $w = $b.Width; $h = $b.Height; $cap = 28; $tail = 34; $tx = [int](($w - $tail) / 2)
   $p = [UiAssets]::Crop($b, 0, 0, $cap, $h); Save-Png $p "$($bb.name)_l.png"; $p.Dispose()
-  $p = [UiAssets]::Crop($b, $cap + 6, 0, 6, $h); Save-Png $p "$($bb.name)_m.png"; $p.Dispose()
+  $p = [UiAssets]::Crop($b, $cap, 0, $tx - $cap, $h); Save-Png $p "$($bb.name)_m.png"; $p.Dispose()
+  $p = [UiAssets]::Crop($b, $tx + $tail, 0, $w - $cap - $tx - $tail, $h); Save-Png $p "$($bb.name)_mr.png"; $p.Dispose()
   $p = [UiAssets]::Crop($b, $tx, 0, $tail, $h); Save-Png $p "$($bb.name)_tail.png"; $p.Dispose()
   $p = [UiAssets]::Crop($b, $w - $cap, 0, $cap, $h); Save-Png $p "$($bb.name)_r.png"; $p.Dispose()
   # where the body ends and the tail starts (for clipping the tail off)

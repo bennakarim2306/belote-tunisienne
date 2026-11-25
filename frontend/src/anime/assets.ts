@@ -234,13 +234,15 @@ export const TURN_BANNER: HSliceSource | null = {
   l: require("../../assets/anime/ui/turn_banner_l.png"),
   c: require("../../assets/anime/ui/turn_banner_c.png"),
   r: require("../../assets/anime/ui/turn_banner_r.png"),
-  capRatio: 0.58,
+  capRatio: 0.9,
 };
 
 /** Speech bubble: fixed caps and centred tail, stretchable body on both sides. */
 export interface BubbleSliceSource {
   l: ImageSourcePropType;
+  /** body left / right of the tail */
   m: ImageSourcePropType;
+  mr: ImageSourcePropType;
   tail: ImageSourcePropType;
   r: ImageSourcePropType;
   /** cap width / height, tail width / height */
@@ -252,6 +254,7 @@ export interface BubbleSliceSource {
 export const BUBBLE_BID: BubbleSliceSource | null = {
   l: require("../../assets/anime/ui/bubble_bid_l.png"),
   m: require("../../assets/anime/ui/bubble_bid_m.png"),
+  mr: require("../../assets/anime/ui/bubble_bid_mr.png"),
   tail: require("../../assets/anime/ui/bubble_bid_tail.png"),
   r: require("../../assets/anime/ui/bubble_bid_r.png"),
   capRatio: 28 / 96,
@@ -261,6 +264,7 @@ export const BUBBLE_BID: BubbleSliceSource | null = {
 export const BUBBLE_CONTRACT: BubbleSliceSource | null = {
   l: require("../../assets/anime/ui/bubble_contract_l.png"),
   m: require("../../assets/anime/ui/bubble_contract_m.png"),
+  mr: require("../../assets/anime/ui/bubble_contract_mr.png"),
   tail: require("../../assets/anime/ui/bubble_contract_tail.png"),
   r: require("../../assets/anime/ui/bubble_contract_r.png"),
   capRatio: 28 / 96,
@@ -269,8 +273,8 @@ export const BUBBLE_CONTRACT: BubbleSliceSource | null = {
 };
 
 // ---------------------------------------------------------------------------
-// Alert / result emblems (2026-11-25). null = coded icon until the painted
-// emblem is delivered.
+// Alert / result emblems (2026-11-25). Painted by
+// prepare-emblems.ps1 (null would show a coded icon).
 // ---------------------------------------------------------------------------
 export type EmblemKind =
   | "belote"
@@ -283,13 +287,13 @@ export type EmblemKind =
   | "victory"
   | "defeat";
 export const EMBLEMS: Record<EmblemKind, ImageSourcePropType | null> = {
-  belote: null,
-  contre: null,
-  surcontre: null,
-  capot: null,
-  redeal: null,
-  made: null,
-  failed: null,
-  victory: null,
-  defeat: null,
+  belote: require("../../assets/anime/emblems/belote.png"),
+  contre: require("../../assets/anime/emblems/contre.png"),
+  surcontre: require("../../assets/anime/emblems/surcontre.png"),
+  capot: require("../../assets/anime/emblems/capot.png"),
+  redeal: require("../../assets/anime/emblems/redeal.png"),
+  made: require("../../assets/anime/emblems/made.png"),
+  failed: require("../../assets/anime/emblems/failed.png"),
+  victory: require("../../assets/anime/emblems/victory.png"),
+  defeat: require("../../assets/anime/emblems/defeat.png"),
 };

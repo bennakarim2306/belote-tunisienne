@@ -19,16 +19,25 @@ const POP = new Keyframe({
   100: { opacity: 1, transform: [{ scale: 1 }], easing: Easing.inOut(Easing.quad) },
 }).duration(300);
 
-export default function AnimeAlert({ text, emblem }: { text: string; emblem?: EmblemKind }) {
+export default function AnimeAlert({
+  text,
+  emblem,
+  compact,
+}: {
+  text: string;
+  emblem?: EmblemKind;
+  /** small and high up, so the panel with the player's buttons stays readable */
+  compact?: boolean;
+}) {
   return (
-    <View style={styles.layer} pointerEvents="none">
+    <View style={[styles.layer, compact && styles.layerCompact]} pointerEvents="none">
       <Animated.View entering={POP} exiting={FadeOut} style={styles.box}>
         {emblem ? (
           <>
-            <Emblem kind={emblem} size={116} />
-            <View style={styles.scroll}>
+            <Emblem kind={emblem} size={compact ? 62 : 116} />
+            <View style={[styles.scroll, compact && styles.scrollCompact]}>
               {TURN_BANNER && <HSlice slices={TURN_BANNER} />}
-              <Text style={styles.scrollText} numberOfLines={1} adjustsFontSizeToFit testID="game-banner-text">
+              <Text style={[styles.scrollText, compact && styles.scrollTextCompact]} numberOfLines={1} adjustsFontSizeToFit testID="game-banner-text">
                 {text}
               </Text>
             </View>
@@ -54,6 +63,9 @@ const styles = StyleSheet.create({
     zIndex: 60,
     elevation: 60,
   },
+  layerCompact: { justifyContent: "flex-start", paddingTop: 40 },
+  scrollCompact: { height: 36, minWidth: 140, paddingHorizontal: 32, marginTop: -8 },
+  scrollTextCompact: { fontSize: 16 },
   box: { alignItems: "center", maxWidth: "80%", marginBottom: 40 },
   scroll: {
     minWidth: 200,

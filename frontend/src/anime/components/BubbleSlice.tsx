@@ -29,7 +29,7 @@ function BubbleSlice({ slices, tail = true }: { slices: BubbleSliceSource; tail?
       {box.w > 0 && (
         <>
           {piece(slices.m, cap - 0.5, tx - cap + 1)}
-          {piece(slices.m, tx + tw - 0.5, box.w - cap - tx - tw + 1)}
+          {piece(slices.mr, tx + tw - 0.5, box.w - cap - tx - tw + 1)}
           {piece(slices.tail, tx, tw)}
           {piece(slices.l, 0, cap)}
           {piece(slices.r, box.w - cap, cap)}

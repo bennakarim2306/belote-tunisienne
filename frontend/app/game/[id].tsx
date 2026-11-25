@@ -886,7 +886,12 @@ export default function GameScreen() {
 
       {/* banner */}
       {banner && ANIME && (
-        <AnimeAlert key={banner.key} text={banner.text} emblem={banner.emblem} />
+        <AnimeAlert
+          key={banner.key}
+          text={banner.text}
+          emblem={banner.emblem}
+          compact={state.phase === "surcontre"}
+        />
       )}
       {banner && !ANIME && (
         <Animated.View
@@ -1372,9 +1377,9 @@ const styles = StyleSheet.create({
     height: 36,
     shadowColor: A.goldLight,
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
+    shadowOpacity: TURN_BANNER ? 0 : 0.8,
     shadowRadius: 10,
-    elevation: 8,
+    elevation: TURN_BANNER ? 0 : 8,
   },
   animeTurnText: { fontFamily: F.serif, fontSize: 14, color: A.ink },
   // alerts, overlays and strips
