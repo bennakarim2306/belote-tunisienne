@@ -6,7 +6,7 @@ the design changes. Status: plan only, nothing implemented, nothing measured on 
 ## Where we are
 
 - The design is chosen when the app is built: `ANIME_THEME_ENABLED` in `src/anime/flags.ts`.
-- 17 files read the flag. Seven of them copy it into a file-level `const ANIME` (home, game, DuoSetup, BiddingPanel,
+- 15 files read the flag. Seven of them copy it into a file-level `const ANIME` (home, game, DuoSetup, BiddingPanel,
   HandEndModal, PlayerSeat, MenuButton), and VictoryCelebration fixes its colours from it. These
   copies can never change while the app runs.
 - Both designs are already in the same code and both sets of images ship in the app, so nothing has to be downloaded for
@@ -45,7 +45,7 @@ offline game keeps its score and its bot names; only portraits and table change.
 
 | Part | Content | When |
 |---|---|---|
-| A. Foundation | store, hook, splash loading; convert the 17 files; no visible change | after home step 2 is approved, before step 3 |
+| A. Foundation | store, hook, splash loading; convert the 15 files; no visible change | after home step 2 is approved, before step 3 |
 | B. Toggle + loading | overlay, image preparation, toggle in the current profile, texts in 3 languages | right after A, needs approval |
 | C. Profile redesign | painted toggle and painted loading screen | with the profile step |
 
