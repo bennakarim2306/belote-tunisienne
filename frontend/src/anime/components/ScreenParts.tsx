@@ -34,6 +34,7 @@ import HSlice from "@/src/anime/components/HSlice";
 import { AnimeTitle } from "@/src/anime/game/AnimeUI";
 import { A } from "@/src/anime/tokens";
 import { avatarSource } from "@/src/avatars";
+import MenuButton from "@/src/components/MenuButton";
 import { F, SP } from "@/src/theme";
 
 // Building blocks of the full screens of the new design (matchmaking, private
@@ -185,7 +186,61 @@ export function ScreenHeader({ title, onBack, backTestID }: { title: string; onB
   );
 }
 
+/** Side-menu button on the painted square (as on home). */
+export function PaintedMenuButton() {
+  return (
+    <MenuButton
+      buttonStyle={styles.menuBtn}
+      icon={
+        <>
+          <Image source={BTN_ICON_GREEN} style={[styles.over, styles.menuBtn]} resizeMode="stretch" fadeDuration={0} />
+          <Image source={ICONS.menu} style={styles.backIcon} resizeMode="contain" fadeDuration={0} />
+        </>
+      }
+    />
+  );
+}
+
+/** Two-way switch on painted buttons (solo / duo, quick / normal…). */
+export function Segments<K extends string>({
+  items,
+  value,
+  onChange,
+  height = 36,
+}: {
+  items: { key: K; label: string; icon?: ImageSourcePropType; testID?: string }[];
+  value: K;
+  onChange: (k: K) => void;
+  height?: number;
+}) {
+  return (
+    <View style={styles.segments}>
+      {items.map((it) => (
+        <Pressable
+          key={it.key}
+          testID={it.testID}
+          onPress={() => onChange(it.key)}
+          accessibilityRole="button"
+          accessibilityState={{ selected: value === it.key }}
+          style={({ pressed }) => [styles.segment, { height }, pressed && styles.pressed]}
+        >
+          <HSlice slices={value === it.key ? BTN_GREEN : BTN_DARK} />
+          {it.icon && <Image source={it.icon} style={styles.segIcon} resizeMode="contain" fadeDuration={0} />}
+          <Text style={[styles.segText, value !== it.key && { color: A.ivoryDim }]} numberOfLines={1}>
+            {it.label}
+          </Text>
+        </Pressable>
+      ))}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
+  menuBtn: { width: 44, height: 44, backgroundColor: "transparent", borderWidth: 0, borderRadius: 0 },
+  segments: { flexDirection: "row", gap: 6 },
+  segment: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5, paddingHorizontal: 20, minWidth: 96 },
+  segIcon: { width: 20, height: 20 },
+  segText: { fontFamily: F.bold, fontSize: 12.5, color: A.ivory },
   bg: { backgroundColor: A.emeraldInk },
   fill: { width: "100%", height: "100%" },
   center: { alignItems: "center", justifyContent: "center" },

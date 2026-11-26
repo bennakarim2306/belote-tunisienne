@@ -146,3 +146,8 @@ First images without gemstones.
 `bg/bg_hall.jpg` (1870x841), `ui/progress_l|c|r.png` (cap 130 of 126 px height, fill drawn by the app between the ornaments),
 16 icons (192 px): 10 lesson pictures, tip, lock, done, speaker, stop, chevron_down. Lessons 1, 6, 7, 11 reuse learn, contre, capot,
 belote; the final game reuses the victory emblem.
+
+## Group 3: ranking and friends (2026-11-26)
+
+8 icons (128 px): medal_gold, medal_silver, medal_bronze, medal_plain (rank number written by the app), dot_online, dot_offline,
+accept, heart; 2 emblems (384 px): empty_friends, empty_ranking.

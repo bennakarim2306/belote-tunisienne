@@ -112,3 +112,6 @@ hanging network, storage failure). It answers the external portrait requests its
 the old design chosen by the toggle). `shoot-views.js <url> <outDir>` photographs all views outside home and table.
 
 `smoke-tutorial.js <url> <anime|original> <outDir>`: lesson list and pages, progress stored, listen / stop, locked lessons, final game.
+
+`smoke-social.js <url> <anime|original> <outDir>`: ranking (solo / duo, scrolling, empty) and friends (filter, requests, search, add,
+invite to a game, share, empty).

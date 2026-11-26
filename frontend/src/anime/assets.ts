@@ -312,6 +312,9 @@ export const EMBLEMS: Record<EmblemKind, ImageSourcePropType | null> = {
 
 /** place that still waits for a player */
 export const EMPTY_PLAYER: ImageSourcePropType = require("../../assets/anime/emblems/empty_player.png");
+/** empty lists */
+export const EMPTY_FRIENDS: ImageSourcePropType = require("../../assets/anime/emblems/empty_friends.png");
+export const EMPTY_RANKING: ImageSourcePropType = require("../../assets/anime/emblems/empty_ranking.png");
 /** backgrounds of the screens outside home and the table */
 export const BG_DUEL: ImageSourcePropType = require("../../assets/anime/bg/bg_duel.jpg");
 export const BG_SALON: ImageSourcePropType = require("../../assets/anime/bg/bg_salon.jpg");
@@ -382,4 +385,12 @@ export const ICONS = {
   speaker: require("../../assets/anime/icons/speaker.png") as ImageSourcePropType,
   stop: require("../../assets/anime/icons/stop.png") as ImageSourcePropType,
   chevronDown: require("../../assets/anime/icons/chevron_down.png") as ImageSourcePropType,
+  medalGold: require("../../assets/anime/icons/medal_gold.png") as ImageSourcePropType,
+  medalSilver: require("../../assets/anime/icons/medal_silver.png") as ImageSourcePropType,
+  medalBronze: require("../../assets/anime/icons/medal_bronze.png") as ImageSourcePropType,
+  medalPlain: require("../../assets/anime/icons/medal_plain.png") as ImageSourcePropType,
+  dotOnline: require("../../assets/anime/icons/dot_online.png") as ImageSourcePropType,
+  dotOffline: require("../../assets/anime/icons/dot_offline.png") as ImageSourcePropType,
+  accept: require("../../assets/anime/icons/accept.png") as ImageSourcePropType,
+  heart: require("../../assets/anime/icons/heart.png") as ImageSourcePropType,
 };

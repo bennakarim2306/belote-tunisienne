@@ -46,6 +46,14 @@
   "lesson_states": {
    "cols": 4,
    "rows": 2
+  },
+  "social_marks": {
+   "cols": 4,
+   "rows": 2
+  },
+  "social_empty": {
+   "cols": 2,
+   "rows": 1
   }
  },
  "elements": [
@@ -1219,6 +1227,106 @@
    "how": "transparent, empty, 16:1, 3 slices",
    "role": "empty progress bar",
    "used": "Create ONE single image: an empty horizontal progress bar frame, very wide 16:1, on a 1536 x 1024 canvas with real transparent background (PNG with alpha), centered, 1400 pixels wide.\nStyle: the same dark-green-and-gold Tunisian anime style: thin polished gold rim, very dark green empty inside, one small engraved gold leaf ornament at each rounded end.\nNo gemstones, jewels or crystals anywhere, also not as small decoration. Green appears only as smooth paint, enamel, fabric, wood or wall color. Where earlier images in this conversation had green stones, leave them out and use plain engraved gold instead.\nThe long middle part must be completely plain and uniform, because the app stretches it. Nothing inside, no fill, no ticks. No text, no letters, no numbers, no shadow, no background panel. Original work, not resembling any existing game, film, anime or brand."
+  },
+  {
+   "id": "icon_medal_gold",
+   "sheet": "social_marks",
+   "files": [
+    "icons/medal_gold.png"
+   ],
+   "how": "transparent, one connected object, gap of 60 px",
+   "role": "rank 1 (number written by the app)",
+   "used": "Row 1, left to right, four round medals of exactly the same size and shape, each with a thin ornate rim and a PLAIN EMPTY flat center, because the app writes the number there: gold medal"
+  },
+  {
+   "id": "icon_medal_silver",
+   "sheet": "social_marks",
+   "files": [
+    "icons/medal_silver.png"
+   ],
+   "how": "transparent, one connected object, gap of 60 px",
+   "role": "rank 2",
+   "used": "Row 1, left to right, four round medals of exactly the same size and shape, each with a thin ornate rim and a PLAIN EMPTY flat center, because the app writes the number there: silver medal"
+  },
+  {
+   "id": "icon_medal_bronze",
+   "sheet": "social_marks",
+   "files": [
+    "icons/medal_bronze.png"
+   ],
+   "how": "transparent, one connected object, gap of 60 px",
+   "role": "rank 3",
+   "used": "Row 1, left to right, four round medals of exactly the same size and shape, each with a thin ornate rim and a PLAIN EMPTY flat center, because the app writes the number there: bronze medal"
+  },
+  {
+   "id": "icon_medal_plain",
+   "sheet": "social_marks",
+   "files": [
+    "icons/medal_plain.png"
+   ],
+   "how": "transparent, one connected object, gap of 60 px",
+   "role": "other ranks",
+   "used": "Row 1, left to right, four round medals of exactly the same size and shape, each with a thin ornate rim and a PLAIN EMPTY flat center, because the app writes the number there: dark green enamel medal with a thin gold rim"
+  },
+  {
+   "id": "icon_dot_online",
+   "sheet": "social_marks",
+   "files": [
+    "icons/dot_online.png"
+   ],
+   "how": "transparent, one connected object, gap of 60 px",
+   "role": "online",
+   "used": "a small flat round bright green enamel dot in a thin gold ring (online)"
+  },
+  {
+   "id": "icon_dot_offline",
+   "sheet": "social_marks",
+   "files": [
+    "icons/dot_offline.png"
+   ],
+   "how": "transparent, one connected object, gap of 60 px",
+   "role": "offline",
+   "used": "the same flat dot in dull grey enamel in the same gold ring (offline)"
+  },
+  {
+   "id": "icon_accept",
+   "sheet": "social_marks",
+   "files": [
+    "icons/accept.png"
+   ],
+   "how": "transparent, one connected object, gap of 60 px",
+   "role": "accept",
+   "used": "a thick plain golden check mark with an engraved edge (accept)"
+  },
+  {
+   "id": "icon_heart",
+   "sheet": "social_marks",
+   "files": [
+    "icons/heart.png"
+   ],
+   "how": "transparent, one connected object, gap of 60 px",
+   "role": "friend",
+   "used": "a golden heart with a smooth red enamel center (friend)"
+  },
+  {
+   "id": "empty_friends",
+   "sheet": "social_empty",
+   "files": [
+    "emblems/empty_friends.png"
+   ],
+   "how": "transparent, one connected object, gap of 100 px",
+   "role": "no friends yet",
+   "used": "Left: NO FRIENDS YET: a small round low Tunisian table with two tea glasses and two empty dark green cushions, all joined together, warm and inviting."
+  },
+  {
+   "id": "empty_ranking",
+   "sheet": "social_empty",
+   "files": [
+    "emblems/empty_ranking.png"
+   ],
+   "how": "transparent, one connected object, gap of 100 px",
+   "role": "no ranking yet",
+   "used": "Right: NO RANKING YET: an empty golden podium with three steps and a dark green curtain behind it, all joined together."
   }
  ]
 }

@@ -299,6 +299,14 @@ Inventory: 20 old-design elements. Karim approved starting ("let's go"); prompts
   Also: home 54, game 29, lobby 180, design 25 (new design); home 54, game 29, lobby 56, design 5 (original).
 - Not verified: phone, real speech output, iOS.
 
+### Group 3: ranking and friends (2026-11-26)
+
+- Ranking, friends and the invite-to-game window in the new design (own render branch in each screen; data, refresh, search,
+  requests and invites unchanged). The friends message box is readable in the new design (original unchanged: cream on cream).
+- `smoke-social.js`: 130/130 new design (844, 640, 915; French, Arabic, English), 44/44 original, 44/44 old design by toggle.
+  Also: home 54, windows 46, design 25, tutorial 81 (new design); home 54, design 5 (original).
+- The online dot came out glossy, not flat as asked; easy to swap if Karim wants.
+
 ## Safety log
 
 No `git push`, no remote branch, no pull request, no GitHub write, no Emergent/Expo/EAS deployment,

@@ -1,8 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
-import { useCallback, useRef, useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import {
   FlatList,
+  Image,
   Modal,
   Pressable,
   RefreshControl,
@@ -14,6 +15,19 @@ import {
 import Animated from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { BG_HALL, BTN_ICON_GREEN, BTN_ICON_RED, CHAT_CHIP, EMPTY_FRIENDS, HUD_PANEL, ICONS } from "@/src/anime/assets";
+import HSlice from "@/src/anime/components/HSlice";
+import NineSlice from "@/src/anime/components/NineSlice";
+import {
+  FramedPortrait,
+  IconTextButton,
+  PaintedMenuButton,
+  ScreenBackground,
+  Segments,
+} from "@/src/anime/components/ScreenParts";
+import { useAnime } from "@/src/anime/design";
+import { AnimeTitle, AnimeWindowFrame } from "@/src/anime/game/AnimeUI";
+import { A } from "@/src/anime/tokens";
 import { api } from "@/src/api";
 import Avatar from "@/src/components/Avatar";
 import MenuButton from "@/src/components/MenuButton";
@@ -37,6 +51,7 @@ interface FriendRow {
 export default function FriendsScreen() {
   const insets = useSafeAreaInsets();
   const { t } = useI18n();
+  const ANIME = useAnime();
   const { token } = useAuth();
   const [friends, setFriends] = useState<FriendRow[]>([]);
   const [received, setReceived] = useState<FriendRow[]>([]);
@@ -134,6 +149,243 @@ export default function FriendsScreen() {
     await load();
     setRefreshing(false);
   };
+
+  if (ANIME) {
+    // visual layer only — same data, search, requests, invites, texts and testIDs
+    const row = (item: FriendRow, testID: string, right: React.ReactNode, presence?: boolean) => (
+      <View style={an.row} testID={testID}>
+        <NineSlice slices={HUD_PANEL} corner={12} />
+        <View>
+          <FramedPortrait avatarId={item.avatar_id} size={48} />
+          {presence !== undefined && (
+            <Image
+              source={presence ? ICONS.dotOnline : ICONS.dotOffline}
+              style={an.dot}
+              resizeMode="contain"
+              fadeDuration={0}
+              testID={`presence-${item.username}-${presence ? "on" : "off"}`}
+            />
+          )}
+        </View>
+        <View style={{ flex: 1, marginLeft: SP.sm, minWidth: 0 }}>
+          <Text style={an.name} numberOfLines={1}>{item.username}</Text>
+          <Text style={an.sub}>{item.elo} {t("elo")}</Text>
+        </View>
+        {right}
+      </View>
+    );
+    const roundBtn = (testID: string, red: boolean, icon: typeof ICONS.accept, onPress: () => void) => (
+      <Pressable testID={testID} onPress={onPress} style={({ pressed }) => [an.round, pressed && { opacity: 0.85 }]}>
+        <Image source={red ? BTN_ICON_RED : BTN_ICON_GREEN} style={an.roundBg} resizeMode="stretch" fadeDuration={0} />
+        <Image source={icon} style={an.roundIcon} resizeMode="contain" fadeDuration={0} />
+      </Pressable>
+    );
+    return (
+      <View style={styles.container} testID="friends-screen">
+        <ScreenBackground source={BG_HALL} shade={0.15} />
+        <Animated.View
+          style={[styles.header, an.header, { paddingTop: insets.top + SP.sm }, headerStyle]}
+          onLayout={onHeaderLayout}
+        >
+          <View style={an.width}>
+            <View style={an.titleRow}>
+              <PaintedMenuButton />
+              <AnimeTitle text={t("friends")} />
+              <Pressable
+                testID="friends-online-filter"
+                onPress={() => setOnlyOnline((v) => !v)}
+                style={({ pressed }) => [an.filter, pressed && { opacity: 0.85 }]}
+                hitSlop={6}
+              >
+                <HSlice slices={CHAT_CHIP} opacity={onlyOnline ? 1 : 0.75} />
+                <Image source={onlyOnline ? ICONS.dotOnline : ICONS.dotOffline} style={an.filterDot} resizeMode="contain" fadeDuration={0} />
+                <Text style={[an.filterText, onlyOnline && { color: A.goldLight }]} numberOfLines={1}>
+                  {t("onlineFilter")}
+                </Text>
+              </Pressable>
+              <View style={{ flex: 1 }} />
+              <IconTextButton
+                testID="invite-friends-button"
+                icon={ICONS.share}
+                label={t("inviteFriends")}
+                onPress={() => setShareOpen(true)}
+                style={an.inviteBtn}
+              />
+            </View>
+            <View style={an.search}>
+              <HSlice slices={CHAT_CHIP} />
+              <Image source={ICONS.search} style={an.searchIcon} resizeMode="contain" fadeDuration={0} />
+              <TextInput
+                testID="friend-search-input"
+                style={[styles.searchInput, an.searchInput]}
+                placeholder={t("searchPlaceholder")}
+                placeholderTextColor={A.ivoryDim}
+                value={query}
+                onChangeText={onSearch}
+                autoCapitalize="none"
+                disableFullscreenUI
+              />
+              {query.length > 0 && (
+                <Pressable onPress={() => onSearch("")} hitSlop={8} testID="friend-search-clear" style={an.clear}>
+                  <Image source={ICONS.close} style={an.searchIcon} resizeMode="contain" fadeDuration={0} />
+                </Pressable>
+              )}
+            </View>
+          </View>
+        </Animated.View>
+
+        {results !== null ? (
+          <FlatList
+            data={results}
+            keyExtractor={(item) => item.user_id}
+            contentContainerStyle={[an.list, { paddingTop: headerH + SP.sm }]}
+            onScroll={onScrollDirection}
+            scrollEventThrottle={16}
+            ListEmptyComponent={<Text style={an.emptyText}>{t("noResults")}</Text>}
+            renderItem={({ item }) =>
+              row(
+                item,
+                `search-result-${item.username}`,
+                <>
+                  {item.friend_status === "none" && (
+                    <IconTextButton
+                      testID={`add-friend-${item.username}`}
+                      icon={ICONS.addFriend}
+                      label={t("add")}
+                      onPress={() => sendRequest(item.user_id)}
+                      variant="green"
+                      style={an.rowBtn}
+                    />
+                  )}
+                  {item.friend_status === "pending_sent" && <Text style={an.sent}>{t("sentShort")}</Text>}
+                  {item.friend_status === "friends" && (
+                    <Image source={ICONS.done} style={an.mark} resizeMode="contain" fadeDuration={0} />
+                  )}
+                </>,
+              )
+            }
+          />
+        ) : (
+          <FlatList
+            data={onlyOnline ? friends.filter((f) => f.online) : friends}
+            keyExtractor={(item) => item.user_id}
+            contentContainerStyle={[an.list, { paddingTop: headerH + SP.sm }]}
+            onScroll={onScrollDirection}
+            scrollEventThrottle={16}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={A.gold} progressViewOffset={headerH} />
+            }
+            ListHeaderComponent={
+              received.length > 0 ? (
+                <View style={{ gap: 6, marginBottom: SP.sm }}>
+                  <Text style={an.section}>{t("requests")}</Text>
+                  {received.map((r) => (
+                    <React.Fragment key={r.friendship_id}>
+                      {row(
+                        r,
+                        `request-row-${r.username}`,
+                        <View style={an.pair}>
+                          {roundBtn(`accept-request-${r.username}`, false, ICONS.accept, () => respond(r.friendship_id!, true))}
+                          {roundBtn(`decline-request-${r.username}`, true, ICONS.close, () => respond(r.friendship_id!, false))}
+                        </View>,
+                      )}
+                    </React.Fragment>
+                  ))}
+                  <Text style={an.section}>{t("friends")}</Text>
+                </View>
+              ) : null
+            }
+            ListEmptyComponent={
+              <View style={an.empty} testID="friends-empty-state">
+                <Image source={EMPTY_FRIENDS} style={an.emptyImg} resizeMode="contain" fadeDuration={0} />
+                <Text style={an.emptyTitle}>{t("noFriends")}</Text>
+                <Text style={an.emptyText}>{t("noFriendsDesc")}</Text>
+              </View>
+            }
+            renderItem={({ item }) =>
+              row(
+                item,
+                `friend-row-${item.username}`,
+                item.online ? (
+                  <IconTextButton
+                    testID={`invite-game-${item.username}`}
+                    icon={ICONS.invite}
+                    label={t("inviteToGame")}
+                    onPress={() => {
+                      setInviteMatchType("short");
+                      setInviteFor(item);
+                    }}
+                    variant="green"
+                    style={an.rowBtn}
+                  />
+                ) : (
+                  <Image source={ICONS.heart} style={an.mark} resizeMode="contain" fadeDuration={0} />
+                ),
+                !!item.online,
+              )
+            }
+          />
+        )}
+
+        {toast && (
+          <View style={an.toast} testID="friends-toast">
+            <NineSlice slices={HUD_PANEL} corner={12} />
+            <Text style={an.toastText}>{toast}</Text>
+          </View>
+        )}
+
+        <Modal visible={inviteFor !== null} transparent animationType="fade" supportedOrientations={["landscape", "portrait"]}>
+          <Pressable style={styles.inviteScrim} onPress={() => setInviteFor(null)}>
+            <Pressable style={[styles.inviteCard, an.window]} onPress={() => {}} testID="invite-game-modal">
+              <AnimeWindowFrame />
+              <AnimeTitle text={t("inviteToGame")} />
+              <Text style={an.inviteName}>{inviteFor?.username}</Text>
+              <View style={an.mt}>
+                <Segments
+                  value={inviteMatchType}
+                  onChange={setInviteMatchType}
+                  height={38}
+                  items={[
+                    { key: "short", label: t("shortMatch"), icon: ICONS.quick, testID: "invite-mt-short" },
+                    { key: "long", label: t("longMatch"), icon: ICONS.normal, testID: "invite-mt-long" },
+                  ]}
+                />
+              </View>
+              {(
+                [
+                  ["invite-mode-online", "online", ICONS.online, t("playOnline"), t("playOnlineDesc")],
+                  ["invite-mode-ai", "vs_ai", ICONS.solo, t("playVsAI"), t("playVsAIDesc")],
+                ] as const
+              ).map(([id, m, icon, title, desc]) => (
+                <Pressable
+                  key={id}
+                  testID={id}
+                  onPress={() => sendGameInvite(m)}
+                  style={({ pressed }) => [an.mode, pressed && { opacity: 0.85 }]}
+                >
+                  <NineSlice slices={HUD_PANEL} corner={12} />
+                  <Image source={icon} style={an.modeIcon} resizeMode="contain" fadeDuration={0} />
+                  <View style={{ flex: 1, marginLeft: SP.md }}>
+                    <Text style={an.modeTitle}>{title}</Text>
+                    <Text style={an.modeDesc}>{desc}</Text>
+                  </View>
+                  <Image source={ICONS.arrow} style={an.go} resizeMode="contain" fadeDuration={0} />
+                </Pressable>
+              ))}
+            </Pressable>
+          </Pressable>
+        </Modal>
+
+        <ShareSheet
+          visible={shareOpen}
+          onClose={() => setShareOpen(false)}
+          title={t("inviteFriends")}
+          message={t("inviteAppMsg", { link: APP_INSTALL_URL })}
+          url={APP_INSTALL_URL}
+        />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container} testID="friends-screen">
@@ -379,6 +631,49 @@ export default function FriendsScreen() {
     </View>
   );
 }
+
+// ---- new design ----
+const an = StyleSheet.create({
+  header: { backgroundColor: "rgba(3,25,19,0.62)", borderBottomColor: A.goldFaint, paddingBottom: SP.sm },
+  width: { maxWidth: 680, width: "100%", alignSelf: "center" },
+  titleRow: { flexDirection: "row", alignItems: "center", gap: SP.sm, marginBottom: SP.sm },
+  filter: { height: 34, flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 16 },
+  filterDot: { width: 14, height: 14 },
+  filterText: { fontFamily: F.bold, fontSize: 12, color: A.ivory },
+  inviteBtn: { height: 38, paddingHorizontal: 22 },
+  search: { height: 44, flexDirection: "row", alignItems: "center", gap: SP.sm, paddingHorizontal: 22 },
+  searchIcon: { width: 22, height: 22 },
+  // positioned so the text paints above the painted field (web)
+  searchInput: { position: "relative", zIndex: 1, color: A.ivory },
+  clear: { position: "relative", zIndex: 1 },
+  list: { padding: SP.lg, paddingBottom: SP.xl, maxWidth: 680, width: "100%", alignSelf: "center", gap: 6 },
+  section: { fontFamily: F.serif, fontSize: 16, color: A.goldLight, marginTop: SP.xs },
+  row: { flexDirection: "row", alignItems: "center", gap: SP.sm, paddingHorizontal: 14, paddingVertical: 6, minHeight: 64 },
+  dot: { position: "absolute", right: -2, bottom: 0, width: 16, height: 16 },
+  name: { fontFamily: F.bold, fontSize: 15, color: A.ivory },
+  sub: { fontFamily: F.text, fontSize: 12, color: A.ivoryDim },
+  rowBtn: { height: 38, paddingHorizontal: 22, maxWidth: 230 },
+  sent: { fontFamily: F.bold, fontSize: 12.5, color: A.goldLight },
+  mark: { width: 30, height: 30 },
+  pair: { flexDirection: "row", gap: SP.sm },
+  round: { width: 42, height: 42, alignItems: "center", justifyContent: "center" },
+  roundBg: { position: "absolute", width: 42, height: 42 },
+  roundIcon: { width: 24, height: 24 },
+  empty: { alignItems: "center", marginTop: SP.md, paddingHorizontal: SP.xl },
+  emptyImg: { width: 150, height: 150 },
+  emptyTitle: { fontFamily: F.serif, fontSize: 19, color: A.goldLight, marginTop: SP.sm },
+  emptyText: { fontFamily: F.text, fontSize: 13, color: A.ivoryDim, textAlign: "center", marginTop: 4 },
+  toast: { position: "absolute", bottom: 24, alignSelf: "center", paddingHorizontal: SP.xl + 6, paddingVertical: SP.md },
+  toastText: { fontFamily: F.bold, fontSize: 13, color: A.goldLight },
+  window: { backgroundColor: "transparent", borderWidth: 0, borderRadius: 0, paddingHorizontal: 34, paddingTop: 22, paddingBottom: 26, maxWidth: 470 },
+  inviteName: { fontFamily: F.bold, fontSize: 13, color: A.goldLight, textAlign: "center", marginTop: 4, marginBottom: SP.sm },
+  mt: { alignItems: "center", marginBottom: SP.sm },
+  mode: { flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 8, marginBottom: 6, minHeight: 60 },
+  modeIcon: { width: 36, height: 36 },
+  modeTitle: { fontFamily: F.serif, fontSize: 15, color: A.goldLight },
+  modeDesc: { fontFamily: F.text, fontSize: 11.5, color: A.ivoryDim },
+  go: { width: 22, height: 22 },
+});
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.bg },
