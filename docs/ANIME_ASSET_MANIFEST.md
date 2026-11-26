@@ -140,3 +140,9 @@ Step 2 added 16 icons, 192 px, from two 4x2 sheets: alone, duo, quick, normal, t
 `bg/bg_duel.jpg`, `bg/bg_salon.jpg` (1870x841, JPEG 88), 8 icons (192 px: back, share, link, more, star, sit_here, hourglass,
 info) and 4 emblems (320 px: match_found, room_closed, declined, empty_player), from 4 images Karim generated with ChatGPT.
 First images without gemstones.
+
+## Group 2: learn to play (2026-11-26)
+
+`bg/bg_hall.jpg` (1870x841), `ui/progress_l|c|r.png` (cap 130 of 126 px height, fill drawn by the app between the ornaments),
+16 icons (192 px): 10 lesson pictures, tip, lock, done, speaker, stop, chevron_down. Lessons 1, 6, 7, 11 reuse learn, contre, capot,
+belote; the final game reuses the victory emblem.

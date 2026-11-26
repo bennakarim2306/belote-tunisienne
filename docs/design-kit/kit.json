@@ -38,6 +38,14 @@
   "lobby_emblems": {
    "cols": 2,
    "rows": 2
+  },
+  "lesson_icons": {
+   "cols": 4,
+   "rows": 2
+  },
+  "lesson_states": {
+   "cols": 4,
+   "rows": 2
   }
  },
  "elements": [
@@ -1031,6 +1039,186 @@
    "how": "opaque, 20:9, calm dark middle 70 %",
    "role": "background of the private room",
    "used": "Create ONE background image for a mobile card game screen. Very wide landscape, 20:9 (for example 2000 x 900). Opaque, no transparency.\nStyle: exactly the same dark-green-and-gold Tunisian anime style as the previous background, painted, high detail. Same palette.\nScene: a private Tunisian salon in the evening, seen from the front, symmetric and cozy. Far left and far right: carved wooden mashrabiya windows with warm lantern light, dark green cushions on a low bench, a small brass tray with tea glasses. Back wall: dark green with a very faint arabesque pattern. Floor: dark carpet with a thin gold border.\nVery important: the middle 70 percent of the width is calm, dark and even, because the app puts panels there. All decoration stays in the outer 15 percent on the left and on the right. Nothing important in the top 12 percent or the bottom 12 percent.\nNo gemstones, jewels or crystals anywhere, also not as small decoration. Green appears only as smooth paint, enamel, fabric, wood or wall color. Where earlier images in this conversation had green stones, leave them out and use plain engraved gold instead.\nNo people, no animals, no cards, no card table, no smoking, no alcohol, no text, no letters, no numbers, no logo, no flags, no religious symbols, no frame, no buttons. Original work, not resembling any existing game, film, anime or brand."
+  },
+  {
+   "id": "icon_lesson_trump",
+   "sheet": "lesson_icons",
+   "files": [
+    "icons/lesson_trump.png"
+   ],
+   "how": "transparent, one connected object, gap of 60 px",
+   "role": "lesson: trump",
+   "used": "a blank golden playing card wearing a crown (trump)"
+  },
+  {
+   "id": "icon_lesson_values",
+   "sheet": "lesson_icons",
+   "files": [
+    "icons/lesson_values.png"
+   ],
+   "how": "transparent, one connected object, gap of 60 px",
+   "role": "lesson: card values",
+   "used": "a stack of three blank golden cards rising like stairs (values)"
+  },
+  {
+   "id": "icon_lesson_deal",
+   "sheet": "lesson_icons",
+   "files": [
+    "icons/lesson_deal.png"
+   ],
+   "how": "transparent, one connected object, gap of 60 px",
+   "role": "lesson: the deal",
+   "used": "two golden hands holding one fan of card backs (the deal)"
+  },
+  {
+   "id": "icon_lesson_bidding",
+   "sheet": "lesson_icons",
+   "files": [
+    "icons/lesson_bidding.png"
+   ],
+   "how": "transparent, one connected object, gap of 60 px",
+   "role": "lesson: bidding",
+   "used": "a golden megaphone with a dark green enamel band (the bidding)"
+  },
+  {
+   "id": "icon_lesson_follow",
+   "sheet": "lesson_icons",
+   "files": [
+    "icons/lesson_follow.png"
+   ],
+   "how": "transparent, one connected object, gap of 60 px",
+   "role": "lesson: follow and go higher",
+   "used": "a blank card with a thick golden arrow pointing up growing out of it (follow and go higher)"
+  },
+  {
+   "id": "icon_lesson_cut",
+   "sheet": "lesson_icons",
+   "files": [
+    "icons/lesson_cut.png"
+   ],
+   "how": "transparent, one connected object, gap of 60 px",
+   "role": "lesson: cut",
+   "used": "golden scissors cutting into a blank card (cut)"
+  },
+  {
+   "id": "icon_lesson_tfaskira",
+   "sheet": "lesson_icons",
+   "files": [
+    "icons/lesson_tfaskira.png"
+   ],
+   "how": "transparent, one connected object, gap of 60 px",
+   "role": "lesson: wrong card",
+   "used": "two blank cards joined by two curved golden arrows pointing in opposite directions (wrong card, swap)"
+  },
+  {
+   "id": "icon_lesson_scoring",
+   "sheet": "lesson_icons",
+   "files": [
+    "icons/lesson_scoring.png"
+   ],
+   "how": "transparent, one connected object, gap of 60 px",
+   "role": "lesson: scoring",
+   "used": "a golden abacus with plain dark green wooden beads (scoring)"
+  },
+  {
+   "id": "icon_lesson_read_bids",
+   "sheet": "lesson_states",
+   "files": [
+    "icons/lesson_read_bids.png"
+   ],
+   "how": "transparent, one connected object, gap of 60 px",
+   "role": "lesson: reading the bids",
+   "used": "a golden magnifying eye: one stylized eye with a dark green iris in a golden frame (reading the bids)"
+  },
+  {
+   "id": "icon_lesson_play_well",
+   "sheet": "lesson_states",
+   "files": [
+    "icons/lesson_play_well.png"
+   ],
+   "how": "transparent, one connected object, gap of 60 px",
+   "role": "lesson: playing well",
+   "used": "a dark green fez with a golden gear attached to its front (playing cleverly)"
+  },
+  {
+   "id": "icon_tip",
+   "sheet": "lesson_states",
+   "files": [
+    "icons/tip.png"
+   ],
+   "how": "transparent, one connected object, gap of 60 px",
+   "role": "tip",
+   "used": "a golden lantern with a bright light inside, shaped like a light bulb (tip)"
+  },
+  {
+   "id": "icon_lock",
+   "sheet": "lesson_states",
+   "files": [
+    "icons/lock.png"
+   ],
+   "how": "transparent, one connected object, gap of 60 px",
+   "role": "locked",
+   "used": "a closed golden padlock with a dark green enamel body (locked)"
+  },
+  {
+   "id": "icon_done",
+   "sheet": "lesson_states",
+   "files": [
+    "icons/done.png"
+   ],
+   "how": "transparent, one connected object, gap of 60 px",
+   "role": "done",
+   "used": "a round dark green enamel seal with a golden rim and a large golden check mark (done)"
+  },
+  {
+   "id": "icon_speaker",
+   "sheet": "lesson_states",
+   "files": [
+    "icons/speaker.png"
+   ],
+   "how": "transparent, one connected object, gap of 60 px",
+   "role": "listen / sound on",
+   "used": "a golden speaker with two sound waves joined to it by a thin bar (listen)"
+  },
+  {
+   "id": "icon_stop",
+   "sheet": "lesson_states",
+   "files": [
+    "icons/stop.png"
+   ],
+   "how": "transparent, one connected object, gap of 60 px",
+   "role": "stop",
+   "used": "a plain golden square with rounded corners inside a golden ring (stop)"
+  },
+  {
+   "id": "icon_chevron_down",
+   "sheet": "lesson_states",
+   "files": [
+    "icons/chevron_down.png"
+   ],
+   "how": "transparent, one connected object, gap of 60 px",
+   "role": "open section",
+   "used": "a thick golden chevron pointing DOWN with one simple engraved line (open section)"
+  },
+  {
+   "id": "bg_hall",
+   "sheet": "single",
+   "files": [
+    "bg/bg_hall.jpg"
+   ],
+   "how": "opaque, 20:9, calm dark middle 80 %",
+   "role": "background of lists (tutorial, ranking, friends, profile)",
+   "used": "Create ONE background image for a mobile card game screen. Very wide landscape, 20:9 (for example 2000 x 900). Opaque, no transparency.\nStyle: exactly the same dark-green-and-gold Tunisian anime style as my previous backgrounds, painted, high detail. Palette: deep green #063F32, green #095442, antique gold #D6AC56, near-black brown #17130E.\nScene: a quiet palace hall at night, seen from the front, symmetric. Far left and far right: one slim carved column with a hanging lantern. Back wall: very dark green with an extremely faint, even geometric zellige pattern.\nVery important: this is a background for long lists. The middle 80 percent of the width is dark, even and calm from top to bottom. All decoration stays in the outer 10 percent on the left and on the right.\nNo gemstones, jewels or crystals anywhere, also not as small decoration. Green appears only as smooth paint, enamel, fabric, wood or wall color. Where earlier images in this conversation had green stones, leave them out and use plain engraved gold instead.\nNo people, no animals, no cards, no table, no text, no letters, no numbers, no logo, no flags, no religious symbols, no frame, no buttons. Original work, not resembling any existing game, film, anime or brand."
+  },
+  {
+   "id": "progress_track",
+   "sheet": "single",
+   "files": [
+    "ui/progress_*"
+   ],
+   "how": "transparent, empty, 16:1, 3 slices",
+   "role": "empty progress bar",
+   "used": "Create ONE single image: an empty horizontal progress bar frame, very wide 16:1, on a 1536 x 1024 canvas with real transparent background (PNG with alpha), centered, 1400 pixels wide.\nStyle: the same dark-green-and-gold Tunisian anime style: thin polished gold rim, very dark green empty inside, one small engraved gold leaf ornament at each rounded end.\nNo gemstones, jewels or crystals anywhere, also not as small decoration. Green appears only as smooth paint, enamel, fabric, wood or wall color. Where earlier images in this conversation had green stones, leave them out and use plain engraved gold instead.\nThe long middle part must be completely plain and uniform, because the app stretches it. Nothing inside, no fill, no ticks. No text, no letters, no numbers, no shadow, no background panel. Original work, not resembling any existing game, film, anime or brand."
   }
  ]
 }

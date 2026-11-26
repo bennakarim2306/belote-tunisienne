@@ -291,6 +291,14 @@ Inventory: 20 old-design elements. Karim approved starting ("let's go"); prompts
   windows 45/46 (known), game 29, online 22, design 5 (original).
 - Not verified: phone, real server, iOS.
 
+### Group 2: learn to play (2026-11-26)
+
+- Karim approved group 1 on the phone (2026-11-26).
+- Lesson list and lesson page in the new design: `src/anime/screens/AnimeTutorial.tsx`. Progress, speech, navigation, texts, testIDs unchanged.
+- `smoke-tutorial.js`: 81/81 new design (844, 640, 915; French, Arabic, English), 26/26 original, 26/26 old design by toggle.
+  Also: home 54, game 29, lobby 180, design 25 (new design); home 54, game 29, lobby 56, design 5 (original).
+- Not verified: phone, real speech output, iOS.
+
 ## Safety log
 
 No `git push`, no remote branch, no pull request, no GitHub write, no Emergent/Expo/EAS deployment,

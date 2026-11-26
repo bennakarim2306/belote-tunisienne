@@ -11,6 +11,8 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { useAnime } from "@/src/anime/design";
+import { AnimeLessonList } from "@/src/anime/screens/AnimeTutorial";
 import { api } from "@/src/api";
 import { useI18n } from "@/src/i18n";
 import { C, F, R, SP, shadow } from "@/src/theme";
@@ -21,6 +23,7 @@ export default function TutorialIndexScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { t, lang } = useI18n();
+  const ANIME = useAnime();
   const [progress, setProgress] = useState(0);
   const [starting, setStarting] = useState(false);
 
@@ -43,6 +46,34 @@ export default function TutorialIndexScreen() {
     } catch {}
     setStarting(false);
   };
+
+  if (ANIME) {
+    // visual layer only — same progress, navigation, texts and testIDs
+    return (
+      <View style={styles.container} testID="tutorial-screen">
+        <AnimeLessonList
+          title={t("tutorialTitle")}
+          progressText={t("tutorialProgress", { done: String(done), total: String(total) })}
+          progress={done / total}
+          rows={LESSONS.map((lesson, i) => ({
+            id: lesson.id,
+            number: t("lessonN", { n: String(i + 1) }),
+            title: lesson.title[lang],
+            state: i < progress ? "done" : i === progress ? "current" : "locked",
+          }))}
+          final={{
+            title: t("finalGameTitle"),
+            desc: allDone ? t("finalGameDesc") : t("finalGameLocked"),
+            open: allDone,
+            starting,
+          }}
+          onBack={() => router.back()}
+          onOpen={(i) => router.push({ pathname: "/tutorial/[step]", params: { step: String(i) } })}
+          onFinal={startFinalGame}
+        />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container} testID="tutorial-screen">

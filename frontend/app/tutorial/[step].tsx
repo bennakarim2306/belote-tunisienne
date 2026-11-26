@@ -6,6 +6,8 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import ChunkyButton from "@/src/components/ChunkyButton";
+import { useAnime } from "@/src/anime/design";
+import { AnimeLesson } from "@/src/anime/screens/AnimeTutorial";
 import { Lang, useI18n } from "@/src/i18n";
 import { C, F, R, SP } from "@/src/theme";
 import { LESSONS } from "@/src/tutorial/lessons";
@@ -18,6 +20,7 @@ export default function LessonScreen() {
   const router = useRouter();
   const { step } = useLocalSearchParams<{ step: string }>();
   const { t, lang } = useI18n();
+  const ANIME = useAnime();
   const idx = parseInt(step ?? "0", 10) || 0;
   const lesson = LESSONS[idx];
   const [progress, setProgress] = useState<number | null>(null);
@@ -75,6 +78,32 @@ export default function LessonScreen() {
       router.back();
     }
   };
+
+  if (ANIME) {
+    // visual layer only — same speech, progress, navigation, texts and testIDs
+    return (
+      <View style={styles.container} testID="lesson-screen">
+        <AnimeLesson
+          lessonId={lesson.id}
+          stepLabel={`${t("lessonN", { n: String(idx + 1) })} / ${LESSONS.length}`}
+          title={lesson.title[lang]}
+          paragraphs={lesson.paragraphs.map((p) => p[lang])}
+          tip={lesson.tip ? { label: t("tipLabel"), text: lesson.tip[lang] } : undefined}
+          textAlign={textAlignStyle}
+          speaking={speaking}
+          listenLabel={t("listen")}
+          stopLabel={t("stopAudio")}
+          okLabel={t("gotIt")}
+          onBack={() => {
+            Speech.stop();
+            router.back();
+          }}
+          onListen={toggleSpeech}
+          onOk={validate}
+        />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container} testID="lesson-screen">

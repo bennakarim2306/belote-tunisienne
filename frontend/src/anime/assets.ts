@@ -315,6 +315,14 @@ export const EMPTY_PLAYER: ImageSourcePropType = require("../../assets/anime/emb
 /** backgrounds of the screens outside home and the table */
 export const BG_DUEL: ImageSourcePropType = require("../../assets/anime/bg/bg_duel.jpg");
 export const BG_SALON: ImageSourcePropType = require("../../assets/anime/bg/bg_salon.jpg");
+export const BG_HALL: ImageSourcePropType = require("../../assets/anime/bg/bg_hall.jpg");
+/** empty progress bar (3-slice); the fill is drawn by the app */
+export const PROGRESS_TRACK: HSliceSource = {
+  l: require("../../assets/anime/ui/progress_l.png"),
+  c: require("../../assets/anime/ui/progress_c.png"),
+  r: require("../../assets/anime/ui/progress_r.png"),
+  capRatio: 130 / 126,
+};
 /** bidding tiles (suits and values) */
 export const TILE_BID: ImageSourcePropType = require("../../assets/anime/emblems/tile.png");
 export const TILE_BID_ON: ImageSourcePropType = require("../../assets/anime/emblems/tile_on.png");
@@ -358,4 +366,20 @@ export const ICONS = {
   sitHere: require("../../assets/anime/icons/sit_here.png") as ImageSourcePropType,
   hourglass: require("../../assets/anime/icons/hourglass.png") as ImageSourcePropType,
   info: require("../../assets/anime/icons/info.png") as ImageSourcePropType,
+  lessonTrump: require("../../assets/anime/icons/lesson_trump.png") as ImageSourcePropType,
+  lessonValues: require("../../assets/anime/icons/lesson_values.png") as ImageSourcePropType,
+  lessonDeal: require("../../assets/anime/icons/lesson_deal.png") as ImageSourcePropType,
+  lessonBidding: require("../../assets/anime/icons/lesson_bidding.png") as ImageSourcePropType,
+  lessonFollow: require("../../assets/anime/icons/lesson_follow.png") as ImageSourcePropType,
+  lessonCut: require("../../assets/anime/icons/lesson_cut.png") as ImageSourcePropType,
+  lessonTfaskira: require("../../assets/anime/icons/lesson_tfaskira.png") as ImageSourcePropType,
+  lessonScoring: require("../../assets/anime/icons/lesson_scoring.png") as ImageSourcePropType,
+  lessonReadBids: require("../../assets/anime/icons/lesson_read_bids.png") as ImageSourcePropType,
+  lessonPlayWell: require("../../assets/anime/icons/lesson_play_well.png") as ImageSourcePropType,
+  tip: require("../../assets/anime/icons/tip.png") as ImageSourcePropType,
+  lock: require("../../assets/anime/icons/lock.png") as ImageSourcePropType,
+  done: require("../../assets/anime/icons/done.png") as ImageSourcePropType,
+  speaker: require("../../assets/anime/icons/speaker.png") as ImageSourcePropType,
+  stop: require("../../assets/anime/icons/stop.png") as ImageSourcePropType,
+  chevronDown: require("../../assets/anime/icons/chevron_down.png") as ImageSourcePropType,
 };

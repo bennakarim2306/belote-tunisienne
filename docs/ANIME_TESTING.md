@@ -110,3 +110,5 @@ hanging network, storage failure). It answers the external portrait requests its
 
 `smoke-lobby.js <url> <anime|original> <outDir>`: matchmaking, private room, join, share and their windows (`DESIGN=classic` tests
 the old design chosen by the toggle). `shoot-views.js <url> <outDir>` photographs all views outside home and table.
+
+`smoke-tutorial.js <url> <anime|original> <outDir>`: lesson list and pages, progress stored, listen / stop, locked lessons, final game.
