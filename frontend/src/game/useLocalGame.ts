@@ -4,6 +4,8 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useEffect, useRef, useState } from "react";
 
+import { isAnime } from "@/src/anime/design";
+import { AVATARS } from "@/src/avatars";
 import { useAuth } from "@/src/context/AuthContext";
 import { api } from "@/src/api";
 import { botBiddingAction, botPlay, shouldSurcontre } from "./ai";
@@ -49,12 +51,28 @@ export async function getSavedLocalGame(userId: string): Promise<LocalGameSummar
   }
 }
 
-function makeBots(takenName: string): EnginePlayerInfo[] {
-  const pool = BOT_NAMES.filter((n) => n !== takenName);
+function shuffle<T>(pool: T[]): T[] {
   for (let i = pool.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [pool[i], pool[j]] = [pool[j], pool[i]];
   }
+  return pool;
+}
+
+function makeBots(takenName: string, takenAvatar?: string): EnginePlayerInfo[] {
+  if (isAnime()) {
+    // one bot = one character: portrait, stickers and (short) name belong
+    // together, three different ones, never the player's own character
+    const characters = AVATARS.filter((a) => a.id !== takenAvatar && a.seed !== takenName);
+    return shuffle(characters).slice(0, 3).map((a, i) => ({
+      user_id: `bot_local_${i}`,
+      username: a.seed,
+      avatar_id: a.id,
+      is_bot: true,
+      elo: 1000,
+    }));
+  }
+  const pool = shuffle(BOT_NAMES.filter((n) => n !== takenName));
   return pool.slice(0, 3).map((name, i) => ({
     user_id: `bot_local_${i}`,
     username: name,
@@ -245,7 +263,7 @@ export function useLocalGame(gameId: string | undefined) {
           is_bot: false,
           elo: user.elo,
         };
-        engine = new BeloteEngine(gameId, [me, ...makeBots(user.username)], matchType, null);
+        engine = new BeloteEngine(gameId, [me, ...makeBots(user.username, user.avatar_id)], matchType, null);
         engine.host_user_id = user.user_id;
         engine.origin = "solo";
       }

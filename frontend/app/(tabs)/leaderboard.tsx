@@ -3,6 +3,7 @@ import { useFocusEffect } from "expo-router";
 import { useCallback, useRef, useState } from "react";
 import {
   FlatList,
+  Image,
   NativeScrollEvent,
   NativeSyntheticEvent,
   Pressable,
@@ -18,6 +19,12 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { BG_HALL, EMPTY_RANKING, HUD_PANEL, ICONS, TILE_HERO } from "@/src/anime/assets";
+import NineSlice from "@/src/anime/components/NineSlice";
+import { FramedPortrait, PaintedMenuButton, ScreenBackground, Segments } from "@/src/anime/components/ScreenParts";
+import { useAnime } from "@/src/anime/design";
+import { AnimeTitle } from "@/src/anime/game/AnimeUI";
+import { A } from "@/src/anime/tokens";
 import { api } from "@/src/api";
 import Avatar from "@/src/components/Avatar";
 import MenuButton from "@/src/components/MenuButton";
@@ -39,11 +46,13 @@ interface LeaderRow {
 type LbMode = "solo" | "duo";
 
 const MEDAL_COLORS = [C.gold, "#C9C2B6", "#C86A2E"];
+const MEDALS = [ICONS.medalGold, ICONS.medalSilver, ICONS.medalBronze];
 
 export default function LeaderboardScreen() {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const { t } = useI18n();
+  const ANIME = useAnime();
   const [players, setPlayers] = useState<LeaderRow[]>([]);
   const [myRank, setMyRank] = useState<number | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -102,6 +111,102 @@ export default function LeaderboardScreen() {
     await load();
     setRefreshing(false);
   };
+
+  if (ANIME) {
+    // visual layer only — same data, refresh, scrolling, texts and testIDs
+    return (
+      <View style={styles.container} testID="leaderboard-screen">
+        <ScreenBackground source={BG_HALL} shade={0.15} />
+        <Animated.View
+          style={[styles.header, an.header, { paddingTop: insets.top + SP.sm }, headerStyle]}
+          onLayout={onHeaderLayout}
+        >
+          <View style={an.width}>
+            <View style={styles.titleRow}>
+              <PaintedMenuButton />
+              <AnimeTitle text={t("ranking")} />
+              <View testID="leaderboard-mode-toggle">
+                <Segments
+                  value={mode}
+                  onChange={setMode}
+                  height={34}
+                  items={[
+                    { key: "solo", label: t("lbSolo"), icon: ICONS.alone, testID: "lb-mode-solo" },
+                    { key: "duo", label: t("lbDuo"), icon: ICONS.duo, testID: "lb-mode-duo" },
+                  ]}
+                />
+              </View>
+            </View>
+            <View style={an.myRank} testID="my-rank-card">
+              <NineSlice slices={TILE_HERO} corner={18} />
+              <FramedPortrait avatarId={user?.avatar_id} size={54} />
+              <View style={{ flex: 1, marginHorizontal: SP.md }}>
+                <Text style={an.myRankLabel}>{t("yourRank")}</Text>
+                <Text style={an.myRankValue}>
+                  #{myRank ?? "—"} · {(mode === "duo" ? user?.elo_duo : user?.elo) ?? 1000}{" "}
+                  {mode === "duo" ? t("eloDuo") : t("eloSolo")}
+                </Text>
+              </View>
+              <Image source={ICONS.ranking} style={an.cup} resizeMode="contain" fadeDuration={0} />
+            </View>
+          </View>
+        </Animated.View>
+
+        <View style={styles.listWrap}>
+          <FlatList
+            data={players}
+            keyExtractor={(item) => item.user_id}
+            contentContainerStyle={[an.list, { paddingTop: headerH + SP.sm }]}
+            showsVerticalScrollIndicator={false}
+            onScroll={onScroll}
+            scrollEventThrottle={16}
+            onContentSizeChange={(_w, h) => {
+              contentH.value = h;
+            }}
+            onLayout={(e) => {
+              viewH.value = e.nativeEvent.layout.height;
+            }}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={A.gold} progressViewOffset={headerH} />
+            }
+            ListEmptyComponent={
+              <View style={an.empty}>
+                <Image source={EMPTY_RANKING} style={an.emptyImg} resizeMode="contain" fadeDuration={0} />
+                <Text style={an.emptyText}>{t("noPlayers")}</Text>
+              </View>
+            }
+            renderItem={({ item, index }) => {
+              const isMe = item.user_id === user?.user_id;
+              return (
+                <View testID={`leaderboard-row-${index + 1}`} style={an.row}>
+                  <NineSlice slices={isMe ? TILE_HERO : HUD_PANEL} corner={isMe ? 16 : 12} />
+                  <View style={an.medal}>
+                    <Image source={MEDALS[index] ?? ICONS.medalPlain} style={an.medalImg} resizeMode="contain" fadeDuration={0} />
+                    <Text style={[an.rank, index < 3 && { color: A.ink }]}>{index + 1}</Text>
+                  </View>
+                  <FramedPortrait avatarId={item.avatar_id} size={46} />
+                  <View style={{ flex: 1, marginLeft: SP.sm }}>
+                    <Text style={an.name} numberOfLines={1}>
+                      {item.username}
+                      {isMe ? ` · ${t("you")}` : ""}
+                    </Text>
+                    <Text style={an.games}>{t("gamesShort", { n: item.games_played })}</Text>
+                  </View>
+                  <Image source={ICONS.elo} style={an.eloIcon} resizeMode="contain" fadeDuration={0} />
+                  <Text style={an.elo}>{mode === "duo" ? (item.elo_duo ?? 1000) : item.elo}</Text>
+                </View>
+              );
+            }}
+          />
+          <Animated.View
+            pointerEvents="none"
+            style={[styles.scrollIndicator, { backgroundColor: A.gold, shadowColor: A.gold }, indicatorStyle]}
+            testID="custom-scroll-indicator"
+          />
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container} testID="leaderboard-screen">
@@ -222,6 +327,28 @@ export default function LeaderboardScreen() {
     </View>
   );
 }
+
+// ---- new design ----
+const an = StyleSheet.create({
+  header: { backgroundColor: "rgba(3,25,19,0.62)", borderBottomColor: A.goldFaint, paddingBottom: SP.sm },
+  width: { maxWidth: 660, width: "100%", alignSelf: "center" },
+  myRank: { flexDirection: "row", alignItems: "center", paddingHorizontal: SP.lg, paddingVertical: 8 },
+  myRankLabel: { fontFamily: F.text, fontSize: 12, color: A.ivoryDim },
+  myRankValue: { fontFamily: F.serif, fontSize: 18, color: A.goldLight },
+  cup: { width: 40, height: 40 },
+  list: { padding: SP.lg, paddingBottom: SP.xl, maxWidth: 660, width: "100%", alignSelf: "center", gap: 6 },
+  row: { flexDirection: "row", alignItems: "center", gap: SP.sm, paddingHorizontal: 14, paddingVertical: 6, minHeight: 62 },
+  medal: { width: 40, height: 40, alignItems: "center", justifyContent: "center" },
+  medalImg: { position: "absolute", width: 40, height: 40 },
+  rank: { fontFamily: F.extra, fontSize: 14, color: A.ivory },
+  name: { fontFamily: F.bold, fontSize: 15, color: A.ivory },
+  games: { fontFamily: F.text, fontSize: 12, color: A.ivoryDim },
+  eloIcon: { width: 22, height: 22 },
+  elo: { fontFamily: F.serif, fontSize: 18, color: A.goldLight, minWidth: 44, textAlign: "right" },
+  empty: { alignItems: "center", marginTop: SP.lg, gap: SP.sm },
+  emptyImg: { width: 150, height: 150 },
+  emptyText: { fontFamily: F.bold, fontSize: 14, color: A.goldLight, textAlign: "center" },
+});
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.bg },

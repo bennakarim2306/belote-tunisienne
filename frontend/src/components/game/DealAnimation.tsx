@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef } from "react";
-import { StyleSheet, View } from "react-native";
+import { Image, StyleSheet, View } from "react-native";
 import Animated, {
   Easing,
   Extrapolation,
@@ -9,6 +9,9 @@ import Animated, {
   withDelay,
   withTiming,
 } from "react-native-reanimated";
+
+import { CARD_BACK } from "@/src/anime/assets";
+import { useAnime } from "@/src/anime/design";
 
 const CARD_DELAY = 55;
 const CARD_DUR = 360;
@@ -22,6 +25,7 @@ const TARGETS = [
 ];
 
 function FlyingCard({ rel, index }: { rel: number; index: number }) {
+  const ANIME = useAnime();
   const p = useSharedValue(0);
 
   useEffect(() => {
@@ -43,7 +47,16 @@ function FlyingCard({ rel, index }: { rel: number; index: number }) {
     ],
   }));
 
-  return <Animated.View style={[styles.card, style]} />;
+  return (
+    <Animated.View style={[styles.card, ANIME && styles.cardAnime, style]}>
+      {ANIME && <CardBackFace />}
+    </Animated.View>
+  );
+}
+
+// anime theme: painted card back instead of the plain dark rectangle
+function CardBackFace() {
+  return <Image source={CARD_BACK} resizeMode="stretch" style={styles.cardImg} fadeDuration={0} />;
 }
 
 interface Props {
@@ -53,6 +66,7 @@ interface Props {
 }
 
 export default function DealAnimation({ mySeat, dealer, onDone }: Props) {
+  const ANIME = useAnime();
   // deal order: one card at a time, starting left of dealer, round robin, 8 rounds
   const order = useMemo(() => {
     const arr: number[] = [];
@@ -84,8 +98,15 @@ export default function DealAnimation({ mySeat, dealer, onDone }: Props) {
         {[2, 1, 0].map((i) => (
           <View
             key={i}
-            style={[styles.card, styles.deckCard, { top: -i * 2, left: -i * 2 }]}
-          />
+            style={[
+              styles.card,
+              styles.deckCard,
+              ANIME && styles.cardAnime,
+              { top: -i * 2, left: -i * 2 },
+            ]}
+          >
+            {ANIME && <CardBackFace />}
+          </View>
         ))}
       </View>
       {order.map((rel, i) => (
@@ -123,4 +144,6 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 4,
   },
+  cardAnime: { backgroundColor: "transparent", borderWidth: 0, borderRadius: 4 },
+  cardImg: { width: "100%", height: "100%" },
 });

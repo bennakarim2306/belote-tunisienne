@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import Animated, {
   cancelAnimation,
   Easing,
@@ -12,6 +12,17 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 
+import {
+  BTN_DARK,
+  BTN_GREEN,
+  BTN_RED,
+  HUD_PANEL,
+  TILE_BID,
+  TILE_BID_ON,
+} from "@/src/anime/assets";
+import HSlice from "@/src/anime/components/HSlice";
+import NineSlice from "@/src/anime/components/NineSlice";
+import { isAnime, useAnime } from "@/src/anime/design";
 import { SUIT_COLOR, SUIT_SYMBOL } from "@/src/components/PlayingCard";
 import { GameState } from "@/src/game/useGameSocket";
 import { TKey } from "@/src/i18n";
@@ -19,6 +30,20 @@ import { C, F, R, SP } from "@/src/theme";
 
 const BID_VALUES = [90, 100, 110, 120, 130, 140, 150, 160];
 const SUITS = ["S", "H", "C", "D"];
+
+// ---- anime theme helpers (visual only; no-ops when the flag is off) ----
+/** painted button background; the Pressable around it stays the control */
+const paint = (slices: typeof BTN_GREEN) => (isAnime() ? <HSlice slices={slices} /> : null);
+/** painted bidding tile; a chosen suit keeps an ivory plate so its colour stays true */
+const paintTile = (on: boolean, plate = false) =>
+  isAnime() ? (
+    <>
+      <Image source={on ? TILE_BID_ON : TILE_BID} resizeMode="stretch" fadeDuration={0} style={styles.tileImg} />
+      {on && plate && <View style={styles.tilePlate} />}
+    </>
+  ) : null;
+/** painted panel background */
+const paintPanel = () => (isAnime() ? <NineSlice slices={HUD_PANEL} corner={20} /> : null);
 
 interface Props {
   state: GameState;
@@ -45,6 +70,7 @@ function SurcontreCountdown({ deadline }: { deadline: number }) {
 }
 
 export default function BiddingPanel({ state, t, onAction }: Props) {
+  const ANIME = useAnime();
   const [suit, setSuit] = useState<string | null>(null);
   const [value, setValue] = useState<number | null>(null);
 
@@ -91,30 +117,34 @@ export default function BiddingPanel({ state, t, onAction }: Props) {
   if (state.phase === "surcontre") {
     if (state.can_surcontre) {
       return (
-        <Animated.View entering={FadeInUp} style={styles.panel} testID="surcontre-panel">
+        <Animated.View entering={FadeInUp} style={[styles.panel, ANIME && styles.panelAnime]} testID="surcontre-panel">
+          {paintPanel()}
           <Text style={styles.panelTitle}>{t("opponentContred")}</Text>
           <SurcontreCountdown deadline={state.turn_deadline} />
           <View style={styles.actionRow}>
             <Pressable
               testID="surcontre-button"
               onPress={() => onAction({ action: "surcontre" })}
-              style={[styles.bigAction, { backgroundColor: C.error }]}
+              style={[styles.bigAction, { backgroundColor: C.error }, ANIME && styles.btnAnime]}
             >
-              <Text style={styles.bigActionText}>{t("surcontre")}</Text>
+              {paint(BTN_RED)}
+              <Text style={[styles.bigActionText, ANIME && styles.btnTextAnime]}>{t("surcontre")}</Text>
             </Pressable>
             <Pressable
               testID="decline-surcontre-button"
               onPress={() => onAction({ action: "decline_surcontre" })}
-              style={[styles.bigAction, { backgroundColor: C.green }]}
+              style={[styles.bigAction, { backgroundColor: C.green }, ANIME && styles.btnAnime]}
             >
-              <Text style={styles.bigActionText}>{t("playContract")}</Text>
+              {paint(BTN_GREEN)}
+              <Text style={[styles.bigActionText, ANIME && styles.btnTextAnime]}>{t("playContract")}</Text>
             </Pressable>
           </View>
         </Animated.View>
       );
     }
     return (
-      <Animated.View entering={FadeInUp} style={styles.panel}>
+      <Animated.View entering={FadeInUp} style={[styles.panel, ANIME && styles.panelAnime]}>
+        {paintPanel()}
         <Text style={styles.panelTitle}>{t("waitingDecision")}</Text>
         <SurcontreCountdown deadline={state.turn_deadline} />
       </Animated.View>
@@ -131,9 +161,10 @@ export default function BiddingPanel({ state, t, onAction }: Props) {
   return (
     <Animated.View
       entering={FadeInUp}
-      style={[styles.panel, styles.panelTurn, glowStyle]}
+      style={[styles.panel, styles.panelTurn, glowStyle, ANIME && styles.panelAnimeTurn]}
       testID="bidding-panel"
     >
+      {paintPanel()}
       <View style={styles.mainRow}>
         <View style={styles.suitGrid}>
           {SUITS.map((s) => (
@@ -141,8 +172,10 @@ export default function BiddingPanel({ state, t, onAction }: Props) {
               key={s}
               testID={`bid-suit-${s}`}
               onPress={() => setSuit(s)}
-              style={[styles.suitBtn, suit === s && styles.suitBtnActive]}
+              accessibilityState={{ selected: suit === s }}
+              style={[styles.suitBtn, suit === s && styles.suitBtnActive, ANIME && styles.tileAnime]}
             >
+              {paintTile(suit === s, true)}
               <Text style={[styles.suitText, { color: SUIT_COLOR[s] }]}>
                 {SUIT_SYMBOL[s]}
               </Text>
@@ -161,11 +194,19 @@ export default function BiddingPanel({ state, t, onAction }: Props) {
                 style={[
                   styles.valueChip,
                   value === v && styles.valueChipActive,
+                  ANIME && styles.tileAnime,
                   disabled && { opacity: 0.3 },
                 ]}
                 disabled={disabled}
               >
-                <Text style={[styles.valueText, value === v && { color: C.onBrand }]}>
+                {paintTile(value === v)}
+                <Text
+                  style={[
+                    styles.valueText,
+                    value === v && { color: C.onBrand },
+                    ANIME && (value === v ? styles.tileTextOn : styles.tileText),
+                  ]}
+                >
                   {v}
                 </Text>
               </Pressable>
@@ -178,25 +219,28 @@ export default function BiddingPanel({ state, t, onAction }: Props) {
         <Pressable
           testID="pass-button"
           onPress={() => onAction({ action: "pass" })}
-          style={[styles.bigAction, { backgroundColor: C.bg3 }]}
+          style={[styles.bigAction, { backgroundColor: C.bg3 }, ANIME && styles.btnAnime]}
         >
-          <Text style={[styles.bigActionText, { color: C.ink }]}>{t("passBid")}</Text>
+          {paint(BTN_DARK)}
+          <Text style={[styles.bigActionText, { color: C.ink }, ANIME && styles.btnTextAnime]}>{t("passBid")}</Text>
         </Pressable>
         <Pressable
           testID="capot-button"
           onPress={() => suit && onAction({ action: "capot", suit })}
           disabled={!suit}
-          style={[styles.bigAction, { backgroundColor: C.gold, opacity: suit ? 1 : 0.4 }]}
+          style={[styles.bigAction, { backgroundColor: C.gold, opacity: suit ? 1 : 0.4 }, ANIME && styles.btnAnime]}
         >
-          <Text style={[styles.bigActionText, { color: "#1A1200" }]}>{t("capot")}</Text>
+          {paint(BTN_GREEN)}
+          <Text style={[styles.bigActionText, { color: "#1A1200" }, ANIME && styles.btnTextAnime]}>{t("capot")}</Text>
         </Pressable>
         {state.can_contre && (
           <Pressable
             testID="contre-button"
             onPress={() => onAction({ action: "contre" })}
-            style={[styles.bigAction, { backgroundColor: C.error }]}
+            style={[styles.bigAction, { backgroundColor: C.error }, ANIME && styles.btnAnime]}
           >
-            <Text style={styles.bigActionText}>{t("contre")}</Text>
+            {paint(BTN_RED)}
+            <Text style={[styles.bigActionText, ANIME && styles.btnTextAnime]}>{t("contre")}</Text>
           </Pressable>
         )}
         <Pressable
@@ -208,9 +252,12 @@ export default function BiddingPanel({ state, t, onAction }: Props) {
           style={[
             styles.bigAction,
             { backgroundColor: C.brand, opacity: canAnnounce ? 1 : 0.4 },
+            ANIME && styles.btnAnime,
+            ANIME && styles.btnAnnounceAnime,
           ]}
         >
-          <Text style={styles.bigActionText}>
+          {paint(BTN_GREEN)}
+          <Text style={[styles.bigActionText, ANIME && styles.btnTextAnime]}>
             {t("announce")}
             {canAnnounce ? ` ${value}${SUIT_SYMBOL[suit!]}` : ""}
           </Text>
@@ -223,6 +270,7 @@ export default function BiddingPanel({ state, t, onAction }: Props) {
 // Out-of-turn auction actions (contre + capot), docked bottom-right above the
 // "last trick"/chat buttons in a bordered block so they never cover a player.
 export function DeclareDock({ state, t, onAction }: Props) {
+  const ANIME = useAnime();
   const [capotOpen, setCapotOpen] = useState(false);
 
   // close the capot suit picker only when the auction context truly changes —
@@ -235,9 +283,10 @@ export function DeclareDock({ state, t, onAction }: Props) {
   if (state.phase !== "bidding" || myTurn) return null;
 
   return (
-    <Animated.View entering={FadeInDown} style={styles.dock} testID="declare-dock">
+    <Animated.View entering={FadeInDown} style={[styles.dock, ANIME && styles.dockAnime]} testID="declare-dock">
+      {paintPanel()}
       {capotOpen && (
-        <Animated.View entering={FadeInDown} style={styles.dockSuitRow}>
+        <Animated.View entering={FadeInDown} style={[styles.dockSuitRow, ANIME && { backgroundColor: "transparent" }]}>
           {SUITS.map((s) => (
             <Pressable
               key={s}
@@ -246,9 +295,16 @@ export function DeclareDock({ state, t, onAction }: Props) {
                 setCapotOpen(false);
                 onAction({ action: "capot", suit: s });
               }}
-              style={styles.dockSuitBtn}
+              style={[styles.dockSuitBtn, ANIME && styles.tileAnime]}
             >
-              <Text style={[styles.dockSuitText, { color: s === "H" || s === "D" ? "#FF7A66" : "#FFFFFF" }]}>
+              {paintTile(false)}
+              <Text
+                style={[
+                  styles.dockSuitText,
+                  { color: s === "H" || s === "D" ? "#FF7A66" : "#FFFFFF" },
+                  ANIME && { color: SUIT_COLOR[s] },
+                ]}
+              >
                 {SUIT_SYMBOL[s]}
               </Text>
             </Pressable>
@@ -258,13 +314,14 @@ export function DeclareDock({ state, t, onAction }: Props) {
       <Pressable
         testID="capot-float-button"
         onPress={() => setCapotOpen((v) => !v)}
-        style={[styles.dockBtn, { backgroundColor: C.gold }]}
+        style={[styles.dockBtn, { backgroundColor: C.gold }, ANIME && styles.btnAnime]}
       >
+        {paint(BTN_GREEN)}
         <Text
           numberOfLines={1}
           adjustsFontSizeToFit
           minimumFontScale={0.7}
-          style={[styles.dockBtnText, { color: "#1A1200" }]}
+          style={[styles.dockBtnText, { color: "#1A1200" }, ANIME && styles.btnTextAnime]}
         >
           {t("capot")}
         </Text>
@@ -273,13 +330,14 @@ export function DeclareDock({ state, t, onAction }: Props) {
         <Pressable
           testID="contre-button"
           onPress={() => onAction({ action: "contre" })}
-          style={[styles.dockBtn, { backgroundColor: C.error }]}
+          style={[styles.dockBtn, { backgroundColor: C.error }, ANIME && styles.btnAnime]}
         >
+          {paint(BTN_RED)}
           <Text
             numberOfLines={1}
             adjustsFontSizeToFit
             minimumFontScale={0.7}
-            style={styles.dockBtnText}
+            style={[styles.dockBtnText, ANIME && styles.btnTextAnime]}
           >
             {t("contre")}
           </Text>
@@ -418,4 +476,36 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   dockSuitText: { fontSize: 16 },
+  // ---- anime theme ----
+  tileAnime: { backgroundColor: "transparent", borderWidth: 0, borderColor: "transparent", borderRadius: 0 },
+  tileImg: { position: "absolute", top: 0, left: 0, width: "100%", height: "100%" },
+  tilePlate: {
+    position: "absolute",
+    top: 6,
+    bottom: 6,
+    left: 8,
+    right: 8,
+    borderRadius: 6,
+    backgroundColor: "#FFF5DF",
+  },
+  tileText: { color: "#17130E" },
+  tileTextOn: { color: "#FFF5DF" },
+  panelAnime: {
+    backgroundColor: "transparent",
+    borderWidth: 0,
+    borderColor: "transparent",
+    padding: SP.md,
+  },
+  // my-turn panel keeps its pulsing gold border (the "your turn" signal)
+  panelAnimeTurn: { backgroundColor: "transparent", padding: SP.md, borderRadius: 14 },
+  dockAnime: { backgroundColor: "transparent", borderWidth: 0, padding: 9 },
+  btnAnime: { backgroundColor: "transparent", paddingHorizontal: 6 },
+  // "Annoncer 110♥" needs more room than the one-word buttons
+  btnAnnounceAnime: { flex: 1.45 },
+  btnTextAnime: {
+    color: "#FFF5DF",
+    textShadowColor: "rgba(0,0,0,0.6)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
 });

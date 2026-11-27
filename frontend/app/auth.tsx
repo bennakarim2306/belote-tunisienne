@@ -5,6 +5,7 @@ import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Image,
   ImageBackground,
   Platform,
   Pressable,
@@ -12,10 +13,18 @@ import {
   Text,
   TextInput,
   View,
+  useWindowDimensions,
 } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { BG_ENTRY, BTN_DARK, CHAT_CHIP, LOGO, MODAL_FRAME } from "@/src/anime/assets";
+import HSlice from "@/src/anime/components/HSlice";
+import NineSlice from "@/src/anime/components/NineSlice";
+import { ScreenBackground, Segments } from "@/src/anime/components/ScreenParts";
+import { useAnime } from "@/src/anime/design";
+import { GameButton } from "@/src/anime/game/AnimeUI";
+import { A } from "@/src/anime/tokens";
 import { ApiError } from "@/src/api";
 import ChunkyButton from "@/src/components/ChunkyButton";
 import { useAuth } from "@/src/context/AuthContext";
@@ -27,6 +36,8 @@ export default function AuthScreen() {
   const router = useRouter();
   const { login, register, loginWithGoogle, loginWithApple, user } = useAuth();
   const { t, lang, setLang } = useI18n();
+  const ANIME = useAnime();
+  const narrow = useWindowDimensions().width < 720;
 
   const [mode, setMode] = useState<"login" | "register">("login");
   const [email, setEmail] = useState("");
@@ -109,6 +120,122 @@ export default function AuthScreen() {
       setGoogleBusy(false);
     }
   };
+
+  if (ANIME) {
+    // visual layer only — same sign-in, register, Google / Apple, texts and testIDs
+    const field = (testID: string, value: string, onChange: (v: string) => void, placeholder: string, extra: object) => (
+      <View style={an.field}>
+        <HSlice slices={CHAT_CHIP} />
+        <TextInput
+          testID={testID}
+          style={an.input}
+          placeholder={placeholder}
+          placeholderTextColor={A.ivoryDim}
+          value={value}
+          onChangeText={onChange}
+          disableFullscreenUI
+          {...extra}
+        />
+      </View>
+    );
+    return (
+      <View style={styles.bg}>
+        <ScreenBackground source={BG_ENTRY} shade={0.18} />
+        <KeyboardAwareScrollView
+          contentContainerStyle={[styles.scroll, { paddingTop: insets.top + SP.md, paddingBottom: insets.bottom + SP.md }]}
+          bottomOffset={24}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={an.columns}>
+            <View style={[an.door, narrow && { flex: 0.12 }]} />
+            <View style={an.left}>
+              <Image source={LOGO.source} style={an.logo} resizeMode="contain" fadeDuration={0} />
+              <Text style={an.titleAr}>{t("appNameAr")}</Text>
+              <Text style={an.tagline}>{t("tagline")}</Text>
+              <View style={an.langs}>
+                <Segments
+                  value={lang}
+                  onChange={(l) => setLang(l as "fr" | "ar" | "en")}
+                  height={32}
+                  compact
+                  items={(["fr", "ar", "en"] as const).map((l) => ({
+                    key: l,
+                    label: l === "fr" ? "FR" : l === "ar" ? "عربي" : "EN",
+                    testID: `lang-${l}-chip`,
+                  }))}
+                />
+              </View>
+            </View>
+            <View style={an.right}>
+              <View style={an.card}>
+                <NineSlice slices={MODAL_FRAME} corner={24} />
+                <View style={an.tabs}>
+                  <Segments
+                    value={mode}
+                    onChange={setMode}
+                    height={36}
+                    items={[
+                      { key: "login", label: t("login"), testID: "auth-login-tab" },
+                      { key: "register", label: t("register"), testID: "auth-register-tab" },
+                    ]}
+                  />
+                </View>
+                {mode === "register" &&
+                  field("auth-username-input", username, setUsername, t("username"), { autoCapitalize: "none", maxLength: 20 })}
+                {field("auth-email-input", email, setEmail, t("email"), { autoCapitalize: "none", keyboardType: "email-address", autoComplete: "email" })}
+                {field("auth-password-input", password, setPassword, t("password"), { secureTextEntry: true })}
+                {error && (
+                  <Text testID="auth-error-text" style={an.error}>
+                    {error}
+                  </Text>
+                )}
+                <GameButton
+                  testID="auth-submit-button"
+                  label={mode === "login" ? t("loginBtn") : t("registerBtn")}
+                  onPress={submit}
+                  loading={busy}
+                  style={an.submit}
+                />
+                <View style={styles.orRow}>
+                  <View style={[styles.orLine, { backgroundColor: A.goldFaint }]} />
+                  <Text style={[styles.orText, { color: A.ivoryDim }]}>{t("or")}</Text>
+                  <View style={[styles.orLine, { backgroundColor: A.goldFaint }]} />
+                </View>
+                {appleAvailable && (
+                  <AppleAuthentication.AppleAuthenticationButton
+                    testID="auth-apple-button"
+                    buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+                    buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE}
+                    cornerRadius={21}
+                    style={styles.appleBtn}
+                    onPress={apple}
+                  />
+                )}
+                <Pressable
+                  testID="auth-google-button"
+                  onPress={google}
+                  disabled={googleBusy}
+                  style={({ pressed }) => [an.google, pressed && { opacity: 0.85 }]}
+                >
+                  <HSlice slices={BTN_DARK} />
+                  {googleBusy ? (
+                    <ActivityIndicator color={A.goldLight} />
+                  ) : (
+                    <>
+                      <View style={an.gBadge}>
+                        <Ionicons name="logo-google" size={16} color="#4285F4" />
+                      </View>
+                      <Text style={an.googleText}>{t("googleBtn")}</Text>
+                    </>
+                  )}
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </KeyboardAwareScrollView>
+      </View>
+    );
+  }
 
   return (
     <ImageBackground source={{ uri: PATTERN_BG }} style={styles.bg} imageStyle={{ opacity: 0.35 }}>
@@ -262,6 +389,28 @@ export default function AuthScreen() {
     </ImageBackground>
   );
 }
+
+// ---- new design ----
+const an = StyleSheet.create({
+  columns: { flexDirection: "row", alignItems: "center", gap: SP.lg, width: "100%", maxWidth: 980, alignSelf: "center" },
+  door: { flex: 0.42 },
+  left: { flex: 1, alignItems: "center" },
+  logo: { width: "100%", maxWidth: 260, height: 260 / LOGO.aspect },
+  titleAr: { fontFamily: F.bold, fontSize: 20, color: A.goldLight, marginTop: 2 },
+  tagline: { fontFamily: F.text, fontSize: 13.5, color: A.ivory, textAlign: "center", marginTop: SP.xs, textShadowColor: "rgba(0,0,0,0.7)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 },
+  langs: { marginTop: SP.md },
+  right: { flex: 1.15, maxWidth: 400 },
+  card: { paddingHorizontal: 30, paddingVertical: 22 },
+  tabs: { alignItems: "center", marginBottom: SP.sm },
+  field: { height: 42, justifyContent: "center", paddingHorizontal: 22, marginBottom: 7 },
+  // positioned so the text paints above the painted field (web)
+  input: { position: "relative", zIndex: 1, fontFamily: F.text, fontSize: 14.5, color: A.ivory, paddingVertical: 0, height: 42 },
+  error: { fontFamily: F.bold, fontSize: 12.5, color: "#FF8A80", textAlign: "center", marginBottom: 4 },
+  submit: { alignSelf: "stretch", marginTop: 2 },
+  google: { height: 42, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: SP.sm, paddingHorizontal: 30 },
+  gBadge: { width: 24, height: 24, borderRadius: 12, backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center" },
+  googleText: { fontFamily: F.display, fontSize: 13.5, color: A.ivory },
+});
 
 const styles = StyleSheet.create({
   bg: { flex: 1, backgroundColor: C.bg },

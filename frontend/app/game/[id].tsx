@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Dimensions,
+  Image,
   ImageBackground,
   Modal,
   Platform,
@@ -18,7 +19,6 @@ import {
 import Animated, { FadeOut, ZoomIn } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import ChunkyButton from "@/src/components/ChunkyButton";
 import {
   preloadInterstitial,
   showInterstitialAfterMatch,
@@ -37,9 +37,33 @@ import { GamePlayer, useGameSocket } from "@/src/game/useGameSocket";
 import { isLocalGameId, newLocalGameId, useLocalGame } from "@/src/game/useLocalGame";
 import { TKey, useI18n } from "@/src/i18n";
 import { api } from "@/src/api";
+import ModalCard from "@/src/components/ModalCard";
 import Avatar from "@/src/components/Avatar";
 import { isSoundEnabled, playSound, setSoundEnabled } from "@/src/sound";
 import { C, F, PATTERN_BG, R, SP } from "@/src/theme";
+import {
+  BTN_DARK,
+  BTN_GREEN,
+  BTN_ICON_GREEN,
+  BTN_ICON_RED,
+  CHAT_CHIP,
+  EMOJI_TILE,
+  EmblemKind,
+  HUD_PANEL,
+  SCORE_ROW,
+  TURN_BANNER,
+  WINNER_CREST,
+} from "@/src/anime/assets";
+import { A } from "@/src/anime/tokens";
+import AnimeAlert from "@/src/anime/game/AnimeAlert";
+import Emblem from "@/src/anime/game/Emblem";
+import { AnimeButton, AnimeTitle, AnimeWindowFrame, GameButton, animeWindow } from "@/src/anime/game/AnimeUI";
+import HSlice from "@/src/anime/components/HSlice";
+import NineSlice from "@/src/anime/components/NineSlice";
+import { useAnime } from "@/src/anime/design";
+import TableBackdrop from "@/src/anime/game/TableBackdrop";
+import { STICKERS } from "@/src/anime/stickers";
+
 
 // raise the bidding panel by 5% of the screen height so it never covers the
 // top of the player's cards (dimensions frozen at app start; landscape lock)
@@ -66,6 +90,7 @@ function PausedOverlay({
   onResume: () => void;
   t: TFunc;
 }) {
+  const ANIME = useAnime();
   const [remaining, setRemaining] = useState(() =>
     Math.max(0, Math.round(until - Date.now() / 1000)),
   );
@@ -81,12 +106,18 @@ function PausedOverlay({
   const disconnect = reason === "disconnect";
   return (
     <View style={styles.pausedScrim} testID="paused-overlay">
-      <Ionicons
-        name={disconnect ? "wifi" : "pause-circle"}
-        size={44}
-        color={disconnect ? C.warning : C.gold}
-      />
-      <Text style={styles.pausedTitle}>
+      <View style={ANIME ? styles.animeOverlayBox : styles.plainOverlayBox}>
+      {ANIME && <AnimeWindowFrame />}
+      {ANIME ? (
+        <Emblem kind={disconnect ? "connection" : "pause"} size={84} />
+      ) : (
+        <Ionicons
+          name={disconnect ? "wifi" : "pause-circle"}
+          size={44}
+          color={disconnect ? C.warning : C.gold}
+        />
+      )}
+      <Text style={[styles.pausedTitle, ANIME && styles.animeHeading]}>
         {disconnect ? t("connLostTitle") : t("pausedTitle")}
       </Text>
       <Text style={styles.pausedBy} testID="paused-reason">
@@ -94,23 +125,25 @@ function PausedOverlay({
           ? t("connLostBy", { name: requesterName })
           : t("pausedBy", { name: requesterName })}
       </Text>
-      <Text style={styles.pausedTimer} testID="paused-countdown">
+      <Text style={[styles.pausedTimer, ANIME && styles.animeAccentText]} testID="paused-countdown">
         {t("autoResumeIn", { t: `${mm}:${ss}` })}
       </Text>
       {disconnect && <Text style={styles.pausedHint}>{t("connLostHint")}</Text>}
       {canResume && (
-        <ChunkyButton
+        <GameButton
           testID="pause-resume-button"
           label={t("resume")}
           onPress={onResume}
           style={{ marginTop: SP.md, minWidth: 180 }}
         />
       )}
+      </View>
     </View>
   );
 }
 
 export default function GameScreen() {
+  const ANIME = useAnime();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -124,7 +157,11 @@ export default function GameScreen() {
     ? localGame
     : socketGame;
 
-  const [banner, setBanner] = useState<{ text: string; key: number } | null>(null);
+  const [banner, setBanner] = useState<{
+    text: string;
+    key: number;
+    emblem?: EmblemKind;
+  } | null>(null);
   const [showLast, setShowLast] = useState(false);
   const [quitOpen, setQuitOpen] = useState(false);
   const [lastTrickOpen, setLastTrickOpen] = useState(false);
@@ -138,7 +175,9 @@ export default function GameScreen() {
     "loading" | "none" | "friends" | "pending_sent" | "pending_received"
   >("loading");
   const friendshipIdRef = useRef<string | null>(null);
-  const [chatBubbles, setChatBubbles] = useState<Record<number, { text: string; key: number }>>({});
+  const [chatBubbles, setChatBubbles] = useState<
+    Record<number, { text: string; key: number; msgId?: string }>
+  >({});
   const chatTimers = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
   const [coachMsg, setCoachMsg] = useState<{ text: string; key: number } | null>(null);
   const coachMsgTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -246,7 +285,8 @@ export default function GameScreen() {
       } else if (ev.e === "chat" && ev.seat !== undefined) {
         const seat = ev.seat;
         const text = ev.kind === "msg" ? t(`chat_${ev.msg}` as TKey) : (ev.msg ?? "");
-        setChatBubbles((b) => ({ ...b, [seat]: { text, key: Date.now() } }));
+        const msgId = ev.kind === "msg" ? ev.msg : undefined;
+        setChatBubbles((b) => ({ ...b, [seat]: { text, key: Date.now(), msgId } }));
         if (chatTimers.current[seat]) clearTimeout(chatTimers.current[seat]);
         chatTimers.current[seat] = setTimeout(() => {
           setChatBubbles((b) => {
@@ -254,10 +294,14 @@ export default function GameScreen() {
             delete next[seat];
             return next;
           });
-        }, 2800);
+        }, ANIME && ev.kind === "msg" ? 3600 : 2800);
       } else if (ev.e === "belote") {
         playSound("belote");
-        setBanner({ text: t(ev.word === "belote" ? "belote" : "rebelote"), key: Date.now() });
+        setBanner({
+          text: t(ev.word === "belote" ? "belote" : "rebelote"),
+          key: Date.now(),
+          emblem: "belote",
+        });
       } else if (ev.e === "bid") {
         playSound("bid", 0.45);
         if (state?.coach_mode && ev.seat !== undefined && ev.seat !== state.my_seat) {
@@ -271,7 +315,7 @@ export default function GameScreen() {
         }
       } else if (ev.e === "contre") {
         playSound("contre", 0.55);
-        setBanner({ text: t("contreBang"), key: Date.now() });
+        setBanner({ text: t("contreBang"), key: Date.now(), emblem: "contre" });
         if (state?.coach_mode && ev.seat !== undefined && ev.seat !== state.my_seat) {
           const name = state.players.find((p) => p.seat === ev.seat)?.username ?? "";
           showCoachMsg(t(
@@ -281,7 +325,7 @@ export default function GameScreen() {
         }
       } else if (ev.e === "surcontre") {
         playSound("surcontre", 0.6);
-        setBanner({ text: t("surcontreBang"), key: Date.now() });
+        setBanner({ text: t("surcontreBang"), key: Date.now(), emblem: "surcontre" });
         if (state?.coach_mode && ev.seat !== undefined && ev.seat !== state.my_seat) {
           const name = state.players.find((p) => p.seat === ev.seat)?.username ?? "";
           showCoachMsg(t(
@@ -291,7 +335,7 @@ export default function GameScreen() {
         }
       } else if (ev.e === "capot") {
         playSound("capot", 0.6);
-        setBanner({ text: t("capotBang"), key: Date.now() });
+        setBanner({ text: t("capotBang"), key: Date.now(), emblem: "capot" });
         if (state?.coach_mode && ev.seat !== undefined && ev.seat !== state.my_seat) {
           const name = state.players.find((p) => p.seat === ev.seat)?.username ?? "";
           const suitSym = SUIT_SYMBOL[ev.suit ?? ""] ?? "";
@@ -301,7 +345,7 @@ export default function GameScreen() {
           ));
         }
       } else if (ev.e === "redeal") {
-        setBanner({ text: t("allPassed"), key: Date.now() });
+        setBanner({ text: t("allPassed"), key: Date.now(), emblem: "redeal" });
       } else if (ev.e === "pause_declined") {
         setBanner({ text: t("pauseDeclined"), key: Date.now() });
       } else if (ev.e === "afk_bot") {
@@ -437,8 +481,9 @@ export default function GameScreen() {
   if (fatalError) {
     return (
       <View style={[styles.loadingWrap, { paddingTop: insets.top }]}>
-        <Text style={styles.loadingText}>{t("gameNotFound")}</Text>
-        <ChunkyButton
+        {ANIME && <TableBackdrop />}
+        <Text style={[styles.loadingText, ANIME && styles.animeHeading]}>{t("gameNotFound")}</Text>
+        <GameButton
           testID="game-error-home-button"
           label={t("backHome")}
           onPress={() => router.replace("/(tabs)/home")}
@@ -450,8 +495,9 @@ export default function GameScreen() {
   if (!state) {
     return (
       <View style={[styles.loadingWrap, { paddingTop: insets.top }]} testID="game-loading">
+        {ANIME && <TableBackdrop />}
         <ActivityIndicator size="large" color={C.gold} />
-        <Text style={styles.loadingText}>
+        <Text style={[styles.loadingText, ANIME && styles.animeHeading]}>
           {connected ? t("waitingPlayers") : t("connecting")}
         </Text>
       </View>
@@ -513,6 +559,17 @@ export default function GameScreen() {
       ? { text: contract.capot ? t("capot") : String(contract.value), suit: contract.suit }
       : null;
 
+  // anime theme: the sender's own sticker for a quick-chat phrase (null = text bubble)
+  const myStickers = ANIME
+    ? STICKERS[state.players.find((p) => p.seat === mySeat)?.avatar_id ?? ""]
+    : undefined;
+  const stickerFor = (seat: number) => {
+    if (!ANIME) return null;
+    const msgId = chatBubbles[seat]?.msgId;
+    const avatar = state.players.find((p) => p.seat === seat)?.avatar_id;
+    return (msgId && avatar && STICKERS[avatar]?.[msgId]) || null;
+  };
+
   // countdown visible on the active player's seat for everyone (timed games)
   const seatTimerOn =
     !!state.turn_timeout &&
@@ -531,19 +588,26 @@ export default function GameScreen() {
 
   return (
     <View style={styles.container} testID="game-screen">
-      <LinearGradient colors={[C.feltDark, C.felt, C.feltDark]} style={StyleSheet.absoluteFill} />
-      <ImageBackground
-        source={{ uri: PATTERN_BG }}
-        style={StyleSheet.absoluteFill}
-        imageStyle={{ opacity: 0.09 }}
-      />
-      {/* ornamental gilded frame + central medallion */}
-      <View pointerEvents="none" style={styles.ornateFrame} />
-      <View pointerEvents="none" style={styles.medallionWrap}>
-        <View style={styles.medallionOuter} />
-        <View style={styles.medallionInner} />
-        <View style={styles.medallionDiamond} />
-      </View>
+      {ANIME ? (
+        // anime redesign (local flag): painted courtyard + table top, visual only
+        <TableBackdrop />
+      ) : (
+        <>
+          <LinearGradient colors={[C.feltDark, C.felt, C.feltDark]} style={StyleSheet.absoluteFill} />
+          <ImageBackground
+            source={{ uri: PATTERN_BG }}
+            style={StyleSheet.absoluteFill}
+            imageStyle={{ opacity: 0.09 }}
+          />
+          {/* ornamental gilded frame + central medallion */}
+          <View pointerEvents="none" style={styles.ornateFrame} />
+          <View pointerEvents="none" style={styles.medallionWrap}>
+            <View style={styles.medallionOuter} />
+            <View style={styles.medallionInner} />
+            <View style={styles.medallionDiamond} />
+          </View>
+        </>
+      )}
 
       {/* header */}
       <View style={[styles.header, { paddingTop: insets.top + SP.sm }]}>
@@ -554,8 +618,9 @@ export default function GameScreen() {
             testID="quit-game-button"
             onPress={() => (isLocal ? quit() : setQuitOpen(true))}
             hitSlop={10}
-            style={styles.quitBtn}
+            style={[styles.quitBtn, ANIME && styles.animeIconBtn]}
           >
+            {ANIME && <Image source={BTN_ICON_RED} style={styles.animeIconBg} fadeDuration={0} />}
             <Ionicons name="close" size={22} color={C.cream} />
           </Pressable>
           {canPause && (
@@ -563,8 +628,9 @@ export default function GameScreen() {
               testID="pause-request-button"
               onPress={() => send({ action: "pause_request" })}
               hitSlop={10}
-              style={styles.quitBtn}
+              style={[styles.quitBtn, ANIME && styles.animeIconBtn]}
             >
+              {ANIME && <Image source={BTN_ICON_GREEN} style={styles.animeIconBg} fadeDuration={0} />}
               <Ionicons name="pause" size={20} color={C.cream} />
             </Pressable>
           )}
@@ -576,8 +642,9 @@ export default function GameScreen() {
               setSoundEnabled(next);
             }}
             hitSlop={10}
-            style={styles.quitBtn}
+            style={[styles.quitBtn, ANIME && styles.animeIconBtn]}
           >
+            {ANIME && <Image source={BTN_ICON_GREEN} style={styles.animeIconBg} fadeDuration={0} />}
             <Ionicons
               name={soundOn ? "volume-high" : "volume-mute"}
               size={20}
@@ -589,10 +656,11 @@ export default function GameScreen() {
         <View style={{ flex: 1 }} />
 
         <Pressable
-          style={styles.scoreBox}
+          style={[styles.scoreBox, ANIME && styles.animeHudBox]}
           testID="match-score-header"
           onPress={() => setScoresOpen(true)}
         >
+          {ANIME && <NineSlice slices={HUD_PANEL} corner={11} />}
           <Text style={styles.scoreText}>
             {t("us")} <Text style={styles.scoreNum}>{state.match_scores[myTeam]}</Text>
             {"  ·  "}
@@ -609,9 +677,13 @@ export default function GameScreen() {
             style={[
               styles.contractChip,
               { borderColor: contract!.team === myTeam ? C.goldLine : "rgba(194,59,34,0.75)" },
+              ANIME && styles.animeHudBox,
             ]}
             testID="contract-chip"
           >
+            {ANIME && <NineSlice slices={HUD_PANEL} corner={11} />}
+            {/* same meaning as the original border colour: red mark = their contract */}
+            {ANIME && contract!.team !== myTeam && <View style={styles.animeThemMark} />}
             <Text style={styles.contractText}>
               {contract!.capot ? t("capot") : contract!.value}
               <Text style={{ color: SUIT_COLOR_ON_DARK[contract!.suit] }}>
@@ -639,12 +711,14 @@ export default function GameScreen() {
       {isLocal && onlineWaiting > 0 && !seekDismissed && !dealing &&
         (state.phase === "bidding" || state.phase === "playing") && (
         <View style={styles.seekBanner} pointerEvents="box-none">
-          <View style={styles.seekPill} testID="online-seek-banner">
+          <View style={[styles.seekPill, ANIME && styles.animePill]} testID="online-seek-banner">
+            {ANIME && <NineSlice slices={HUD_PANEL} corner={10} />}
             <Text style={styles.seekText} numberOfLines={1}>
               🎮 {t("queueSeekBanner", { n: onlineWaiting })}
             </Text>
-            <Pressable testID="join-online-button" onPress={goOnline} style={styles.seekJoinBtn}>
-              <Text style={styles.seekJoinText}>{t("joinOnline")}</Text>
+            <Pressable testID="join-online-button" onPress={goOnline} style={[styles.seekJoinBtn, ANIME && styles.animeSeekBtn]}>
+              {ANIME && <HSlice slices={BTN_GREEN} />}
+              <Text style={[styles.seekJoinText, ANIME && { color: A.ivory }]}>{t("joinOnline")}</Text>
             </Pressable>
             <Pressable
               testID="dismiss-seek-banner"
@@ -672,6 +746,7 @@ export default function GameScreen() {
           bidSuit={bidLabels[partner.seat]?.suit}
           contractLabel={contractLabelFor(partner.seat)}
           chatText={chatBubbles[partner.seat]?.text}
+          chatSticker={stickerFor(partner.seat)}
           deadline={state.turn_deadline}
           showTimer={seatTimerOn}
           size={38}
@@ -691,6 +766,7 @@ export default function GameScreen() {
             bidSuit={bidLabels[leftP.seat]?.suit}
             contractLabel={contractLabelFor(leftP.seat)}
             chatText={chatBubbles[leftP.seat]?.text}
+            chatSticker={stickerFor(leftP.seat)}
             deadline={state.turn_deadline}
             showTimer={seatTimerOn}
             onPress={seatPress(leftP)}
@@ -710,6 +786,8 @@ export default function GameScreen() {
             bidSuit={bidLabels[rightP.seat]?.suit}
             contractLabel={contractLabelFor(rightP.seat)}
             chatText={chatBubbles[rightP.seat]?.text}
+            chatSticker={stickerFor(rightP.seat)}
+            stickerSide="left"
             deadline={state.turn_deadline}
             showTimer={seatTimerOn}
             timerSide="left"
@@ -729,7 +807,8 @@ export default function GameScreen() {
 
       {/* bottom row: me + chat (left) · hand fan (center) · status (right) */}
       <View style={[styles.bottomRow, { paddingBottom: Math.max(insets.bottom, SP.sm) }]}>
-        <View style={styles.bottomSide}>
+        {/* anime: my seat above the hand fan, so my chat sticker is never hidden by cards */}
+        <View style={[styles.bottomSide, ANIME && { zIndex: 30, elevation: 30 }]}>
           <PlayerSeat
             player={me}
             isTurn={myTurn}
@@ -738,6 +817,7 @@ export default function GameScreen() {
             bidSuit={bidLabels[mySeat]?.suit}
             contractLabel={contractLabelFor(mySeat)}
             chatText={chatBubbles[mySeat]?.text}
+            chatSticker={stickerFor(mySeat)}
             deadline={state.turn_deadline}
             showTimer={seatTimerOn}
             isMe
@@ -757,15 +837,16 @@ export default function GameScreen() {
         </View>
         <View style={styles.bottomRight}>
           {myTurn && state.phase === "playing" && (
-            <View style={styles.turnPill} testID="your-turn-pill">
-              <Text style={styles.turnPillText}>{t("yourTurn")}</Text>
+            <View style={[styles.turnPill, ANIME && styles.animeTurnPill]} testID="your-turn-pill">
+              {ANIME && TURN_BANNER && <HSlice slices={TURN_BANNER} />}
+              <Text style={[styles.turnPillText, ANIME && styles.animeTurnText]}>{t("yourTurn")}</Text>
               {remaining !== null && remaining <= 15 && (
                 <Text style={styles.turnTimer}>{remaining}s</Text>
               )}
             </View>
           )}
           {!connected && (
-            <View style={[styles.turnPill, { backgroundColor: C.warning }]}>
+            <View style={[styles.turnPill, { backgroundColor: C.warning }, ANIME && styles.animeReconnect]}>
               <Text style={[styles.turnPillText, { color: "#1A1200" }]}>{t("reconnecting")}</Text>
             </View>
           )}
@@ -775,8 +856,9 @@ export default function GameScreen() {
               <Pressable
                 testID="last-trick-button"
                 onPress={() => setLastTrickOpen(true)}
-                style={styles.sideTextBtn}
+                style={[styles.sideTextBtn, ANIME && styles.animeTextBtn]}
               >
+                {ANIME && <HSlice slices={BTN_DARK} />}
                 <Text style={styles.sideTextBtnLabel}>{t("lastTrick")}</Text>
               </Pressable>
             )}
@@ -784,8 +866,9 @@ export default function GameScreen() {
               <Pressable
                 testID="chat-button"
                 onPress={() => setChatOpen(true)}
-                style={styles.sideBtn}
+                style={[styles.sideBtn, ANIME && styles.animeIconBtn]}
               >
+                {ANIME && <Image source={BTN_ICON_GREEN} style={styles.animeIconBg} fadeDuration={0} />}
                 <Ionicons name="chatbubble-ellipses" size={20} color={C.cream} />
               </Pressable>
             )}
@@ -809,7 +892,15 @@ export default function GameScreen() {
       )}
 
       {/* banner */}
-      {banner && (
+      {banner && ANIME && (
+        <AnimeAlert
+          key={banner.key}
+          text={banner.text}
+          emblem={banner.emblem}
+          compact={state.phase === "surcontre"}
+        />
+      )}
+      {banner && !ANIME && (
         <Animated.View
           key={banner.key}
           entering={ZoomIn.springify().damping(12)}
@@ -839,14 +930,17 @@ export default function GameScreen() {
       {/* match end */}
       {state.phase === "finished" && state.cancelled && (
         <View style={styles.pausedScrim} testID="cancelled-overlay">
-          <Ionicons name="close-circle" size={64} color={C.brand3} />
-          <Text style={styles.pausedTitle}>{t("hostEnded")}</Text>
-          <ChunkyButton
+          <View style={ANIME ? styles.animeOverlayBox : styles.plainOverlayBox}>
+          {ANIME && <AnimeWindowFrame />}
+          {ANIME ? <Emblem kind="host" size={96} /> : <Ionicons name="close-circle" size={64} color={C.brand3} />}
+          <Text style={[styles.pausedTitle, ANIME && styles.animeHeading]}>{t("hostEnded")}</Text>
+          <GameButton
             testID="cancelled-home-button"
             label={t("backHome")}
             onPress={quit}
             style={{ marginTop: SP.lg, minWidth: 200 }}
           />
+          </View>
         </View>
       )}
       {state.phase === "finished" && !state.cancelled && (
@@ -864,17 +958,25 @@ export default function GameScreen() {
       {/* quick chat modal */}
       <Modal visible={chatOpen} transparent animationType="slide" supportedOrientations={["landscape", "portrait"]}>
         <Pressable style={styles.chatScrim} onPress={() => setChatOpen(false)}>
-          <Pressable style={styles.chatSheet} onPress={() => {}} testID="chat-panel">
-            <View style={styles.sheetHandle} />
-            <Text style={styles.quitTitle}>{t("quickChat")}</Text>
+          <Pressable style={[styles.chatSheet, ANIME && styles.animeChatSheet]} onPress={() => {}} testID="chat-panel">
+            {ANIME && <AnimeWindowFrame />}
+            {ANIME ? (
+              <AnimeTitle text={t("quickChat")} />
+            ) : (
+              <>
+                <View style={styles.sheetHandle} />
+                <Text style={styles.quitTitle}>{t("quickChat")}</Text>
+              </>
+            )}
             <View style={styles.emojiRow}>
               {CHAT_EMOJIS.map((em) => (
                 <Pressable
                   key={em}
                   testID={`chat-emoji-${em}`}
                   onPress={() => sendChat("emoji", em)}
-                  style={({ pressed }) => [styles.emojiBtn, pressed && { opacity: 0.7 }]}
+                  style={({ pressed }) => [styles.emojiBtn, ANIME && styles.animeEmojiBtn, pressed && { opacity: 0.7 }]}
                 >
+                  {ANIME && <Image source={EMOJI_TILE} style={styles.animeIconBg} fadeDuration={0} />}
                   <Text style={styles.emojiText}>{em}</Text>
                 </Pressable>
               ))}
@@ -885,9 +987,13 @@ export default function GameScreen() {
                   key={id2}
                   testID={`chat-msg-${id2}`}
                   onPress={() => sendChat("msg", id2)}
-                  style={({ pressed }) => [styles.chatMsgChip, pressed && { opacity: 0.7 }]}
+                  style={({ pressed }) => [styles.chatMsgChip, ANIME && styles.animeChatChip, pressed && { opacity: 0.7 }]}
                 >
-                  <Text style={styles.chatMsgText}>{t(`chat_${id2}` as TKey)}</Text>
+                  {ANIME && <HSlice slices={CHAT_CHIP} />}
+                  {ANIME && myStickers?.[id2] && (
+                    <Image source={myStickers[id2]} style={styles.animeChipSticker} fadeDuration={0} />
+                  )}
+                  <Text style={[styles.chatMsgText, ANIME && styles.animeChatText]}>{t(`chat_${id2}` as TKey)}</Text>
                 </Pressable>
               ))}
             </View>
@@ -897,8 +1003,13 @@ export default function GameScreen() {
 
       <Modal visible={lastTrickOpen} transparent animationType="fade" supportedOrientations={["landscape", "portrait"]}>
         <Pressable style={styles.quitScrim} onPress={() => setLastTrickOpen(false)}>
-          <Pressable style={styles.quitCard} onPress={() => {}} testID="last-trick-modal">
-            <Text style={styles.quitTitle}>{t("lastTrick")}</Text>
+          <Pressable style={[styles.quitCard, ANIME && animeWindow]} onPress={() => {}} testID="last-trick-modal">
+            {ANIME && <AnimeWindowFrame />}
+            {ANIME ? (
+              <AnimeTitle text={t("lastTrick")} />
+            ) : (
+              <Text style={styles.quitTitle}>{t("lastTrick")}</Text>
+            )}
             <View style={styles.lastTrickRow}>
               {state.last_trick?.cards.map((tc) => {
                 const p = state.players.find((pl) => pl.seat === tc.seat)!;
@@ -906,19 +1017,40 @@ export default function GameScreen() {
                 return (
                   <View key={tc.seat} style={styles.lastTrickCol}>
                     <Text
-                      style={[styles.lastTrickName, isWinner && { color: C.brand }]}
+                      style={[
+                        styles.lastTrickName,
+                        isWinner && { color: C.brand },
+                        ANIME && (isWinner ? styles.animeWinnerName : styles.animeMutedName),
+                      ]}
                       numberOfLines={1}
                     >
                       {p.username}
                     </Text>
-                    <View style={isWinner ? styles.lastTrickWinner : styles.lastTrickNeutral}>
-                      <PlayingCard card={tc.card} width={54} trumpSuit={state.trump} />
+                    <View
+                      style={[
+                        isWinner ? styles.lastTrickWinner : styles.lastTrickNeutral,
+                        ANIME && isWinner && styles.animeTrickWinner,
+                      ]}
+                      testID={isWinner ? "last-trick-winner-card" : undefined}
+                    >
+                      <PlayingCard card={tc.card} width={ANIME ? 62 : 54} trumpSuit={state.trump} />
+                      {ANIME && isWinner && (
+                        <View style={styles.animeCrestWrap} pointerEvents="none">
+                          {WINNER_CREST ? (
+                            <Image source={WINNER_CREST} style={styles.animeCrestImg} fadeDuration={0} />
+                          ) : (
+                            <View style={styles.animeCrestFallback}>
+                              <Ionicons name="trophy" size={13} color={A.ink} />
+                            </View>
+                          )}
+                        </View>
+                      )}
                     </View>
                   </View>
                 );
               })}
             </View>
-            <Text style={styles.lastTrickWonBy} testID="last-trick-won-by">
+            <Text style={[styles.lastTrickWonBy, ANIME && styles.animeAccentText, ANIME && { marginTop: SP.lg + 4 }]} testID="last-trick-won-by">
               {t("wonBy", {
                 name:
                   state.players.find((pl) => pl.seat === state.last_trick?.winner_seat)
@@ -927,21 +1059,31 @@ export default function GameScreen() {
               {" · +"}
               {state.last_trick?.points} {t("points")}
             </Text>
-            <ChunkyButton
-              testID="last-trick-close-button"
-              label={t("close")}
-              variant="secondary"
-              small
-              onPress={() => setLastTrickOpen(false)}
-              style={{ marginTop: SP.md }}
-            />
+            {ANIME ? (
+              <AnimeButton
+                testID="last-trick-close-button"
+                label={t("close")}
+                onPress={() => setLastTrickOpen(false)}
+                style={{ marginTop: SP.md }}
+              />
+            ) : (
+              <GameButton
+                testID="last-trick-close-button"
+                label={t("close")}
+                variant="secondary"
+                small
+                onPress={() => setLastTrickOpen(false)}
+                style={{ marginTop: SP.md }}
+              />
+            )}
           </Pressable>
         </Pressable>
       </Modal>
 
       {/* pause: requester waiting pill */}
       {state.pause_req?.seat === mySeat && (
-        <View style={styles.pauseSentPill} pointerEvents="none" testID="pause-sent-pill">
+        <View style={[styles.pauseSentPill, ANIME && styles.animePill]} pointerEvents="none" testID="pause-sent-pill">
+          {ANIME && <NineSlice slices={HUD_PANEL} corner={10} />}
           <Text style={styles.pauseSentText}>{t("pauseSent")}</Text>
         </View>
       )}
@@ -949,14 +1091,21 @@ export default function GameScreen() {
       {/* pause: accept/decline for the other players */}
       <Modal visible={pauseAskMe} transparent animationType="fade" supportedOrientations={["landscape", "portrait"]}>
         <View style={styles.quitScrim}>
-          <View style={styles.quitCard} testID="pause-request-modal">
-            <Ionicons
-              name="pause-circle"
-              size={40}
-              color={C.brand}
-              style={{ alignSelf: "center" }}
-            />
-            <Text style={[styles.quitTitle, { marginTop: SP.sm }]}>
+          <View style={[styles.quitCard, ANIME && animeWindow]} testID="pause-request-modal">
+            {ANIME && <AnimeWindowFrame />}
+            {ANIME ? (
+              <View style={{ alignSelf: "center" }}>
+                <Emblem kind="pause" size={72} />
+              </View>
+            ) : (
+              <Ionicons
+                name="pause-circle"
+                size={40}
+                color={C.brand}
+                style={{ alignSelf: "center" }}
+              />
+            )}
+            <Text style={[styles.quitTitle, { marginTop: SP.sm }, ANIME && styles.animeHeading]}>
               {t("pauseAsks", {
                 name:
                   state.players.find((p) => p.seat === state.pause_req?.seat)?.username ??
@@ -964,7 +1113,7 @@ export default function GameScreen() {
               })}
             </Text>
             <View style={styles.quitRow}>
-              <ChunkyButton
+              <GameButton
                 testID="pause-decline-button"
                 label={t("decline")}
                 variant="secondary"
@@ -972,7 +1121,7 @@ export default function GameScreen() {
                 onPress={() => send({ action: "pause_decline" })}
                 style={{ flex: 1 }}
               />
-              <ChunkyButton
+              <GameButton
                 testID="pause-accept-button"
                 label={t("accept")}
                 small
@@ -991,12 +1140,13 @@ export default function GameScreen() {
           return null;
         }
         return (
-          <View style={styles.afkStrip} testID="afk-resume-strip">
+          <View style={[styles.afkStrip, ANIME && styles.animePill]} testID="afk-resume-strip">
+            {ANIME && <NineSlice slices={HUD_PANEL} corner={12} />}
             <View style={{ flex: 1 }}>
               <Text style={styles.afkStripTitle}>🤖 {t("afkYouReplaced")}</Text>
               <Text style={styles.afkStripNote}>{t("afkWarnNote")}</Text>
             </View>
-            <ChunkyButton
+            <GameButton
               small
               testID="afk-resume-button"
               label={t("resumeSeat")}
@@ -1025,13 +1175,16 @@ export default function GameScreen() {
       {/* score history (tap on the header score) */}
       <Modal visible={scoresOpen} transparent animationType="fade" supportedOrientations={["landscape", "portrait"]}>
         <Pressable style={styles.quitScrim} onPress={() => setScoresOpen(false)}>
-          <Pressable
-            style={[styles.quitCard, { maxHeight: "75%" }]}
-            onPress={() => {}}
-            testID="score-history-modal"
-          >
-            <Text style={styles.quitTitle}>{t("scoreHistory")}</Text>
-            <Text style={styles.historyTotal} testID="score-history-total">
+          <ModalCard
+            style={[styles.quitCard, { maxHeight: "75%" }, ANIME && animeWindow, ANIME && { maxHeight: "88%" }]}
+            testID="score-history-modal">
+            {ANIME && <AnimeWindowFrame />}
+            {ANIME ? (
+              <AnimeTitle text={t("scoreHistory")} />
+            ) : (
+              <Text style={styles.quitTitle}>{t("scoreHistory")}</Text>
+            )}
+            <Text style={[styles.historyTotal, ANIME && styles.animeAccentText]} testID="score-history-total">
               {t("us")} {state.match_scores[myTeam]} — {state.match_scores[1 - myTeam]}{" "}
               {t("them")} · {state.target} pts
             </Text>
@@ -1043,9 +1196,10 @@ export default function GameScreen() {
             >
               {state.hand_history?.length ? (
                 state.hand_history.map((h) => (
-                  <View key={h.hand_number} style={styles.historyRow}>
+                  <View key={h.hand_number} style={[styles.historyRow, ANIME && styles.animeHistoryRow]}>
+                    {ANIME && SCORE_ROW && <HSlice slices={SCORE_ROW} />}
                     <View style={{ flex: 1, minWidth: 0 }}>
-                      <Text style={styles.historyHand}>
+                      <Text style={[styles.historyHand, ANIME && styles.animeHistoryHand]}>
                         {t("hand", { n: h.hand_number })} ·{" "}
                         {h.contract.capot ? t("capot") : h.contract.value}
                         <Text style={{ color: SUIT_COLOR_ON_DARK[h.contract.suit] }}>
@@ -1058,7 +1212,7 @@ export default function GameScreen() {
                             ? ` · ${t("contred")}`
                             : ""}
                       </Text>
-                      <Text style={styles.historyTaker} numberOfLines={1}>
+                      <Text style={[styles.historyTaker, ANIME && styles.animeHistoryTaker]} numberOfLines={1}>
                         {state.players.find((p) => p.seat === h.contract.seat)?.username}
                         {" · "}
                         {h.contract.team === myTeam ? t("us") : t("them")}
@@ -1069,24 +1223,33 @@ export default function GameScreen() {
                       size={18}
                       color={h.success ? C.green : C.error}
                     />
-                    <Text style={styles.historyScores}>
+                    <Text style={[styles.historyScores, ANIME && styles.animeHistoryScores]}>
                       {h.hand_scores[myTeam]} / {h.hand_scores[1 - myTeam]}
                     </Text>
                   </View>
                 ))
               ) : (
-                <Text style={styles.historyEmpty}>{t("noHandsYet")}</Text>
+                <Text style={[styles.historyEmpty, ANIME && styles.animeHistoryEmpty]}>{t("noHandsYet")}</Text>
               )}
             </ScrollView>
-            <ChunkyButton
-              testID="score-history-close"
-              label={t("close")}
-              variant="secondary"
-              small
-              onPress={() => setScoresOpen(false)}
-              style={{ marginTop: SP.md }}
-            />
-          </Pressable>
+            {ANIME ? (
+              <AnimeButton
+                testID="score-history-close"
+                label={t("close")}
+                onPress={() => setScoresOpen(false)}
+                style={{ marginTop: SP.md }}
+              />
+            ) : (
+              <GameButton
+                testID="score-history-close"
+                label={t("close")}
+                variant="secondary"
+                small
+                onPress={() => setScoresOpen(false)}
+                style={{ marginTop: SP.md }}
+              />
+            )}
+          </ModalCard>
         </Pressable>
       </Modal>
 
@@ -1094,10 +1257,11 @@ export default function GameScreen() {
       <Modal visible={!!playerCard} transparent animationType="fade" supportedOrientations={["landscape", "portrait"]}>
         <Pressable style={styles.quitScrim} onPress={() => setPlayerCard(null)}>
           <Pressable
-            style={[styles.quitCard, styles.playerCard]}
+            style={[styles.quitCard, styles.playerCard, ANIME && animeWindow, ANIME && { maxWidth: 340 }]}
             testID="player-card-modal"
             onPress={() => {}}
           >
+            {ANIME && <AnimeWindowFrame />}
             {playerCard && (
               <>
                 <Avatar
@@ -1106,12 +1270,12 @@ export default function GameScreen() {
                   ringColor={C.gold}
                   ringWidth={2}
                 />
-                <Text style={[styles.quitTitle, { marginTop: SP.sm }]}>
+                <Text style={[styles.quitTitle, { marginTop: SP.sm }, ANIME && styles.animeHeading]}>
                   {playerCard.username}
                 </Text>
-                <Text style={styles.quitDesc}>ELO {playerCard.elo}</Text>
+                <Text style={[styles.quitDesc, ANIME && styles.animeBody]}>ELO {playerCard.elo}</Text>
                 {friendStatus === "none" && (
-                  <ChunkyButton
+                  <GameButton
                     testID="add-friend-button"
                     label={t("add")}
                     small
@@ -1120,7 +1284,7 @@ export default function GameScreen() {
                   />
                 )}
                 {friendStatus === "pending_received" && (
-                  <ChunkyButton
+                  <GameButton
                     testID="accept-friend-button"
                     label={t("accept")}
                     small
@@ -1130,13 +1294,13 @@ export default function GameScreen() {
                 )}
                 {friendStatus === "pending_sent" && (
                   <View style={styles.friendStatePill} testID="friend-request-sent">
-                    <Ionicons name="checkmark-circle" size={15} color={C.brand} />
+                    <Ionicons name="checkmark-circle" size={15} color={ANIME ? A.goldLight : C.brand} />
                     <Text style={styles.friendStateText}>{t("requestSent")}</Text>
                   </View>
                 )}
                 {friendStatus === "friends" && (
                   <View style={styles.friendStatePill} testID="already-friends">
-                    <Ionicons name="people" size={15} color={C.brand} />
+                    <Ionicons name="people" size={15} color={ANIME ? A.goldLight : C.brand} />
                     <Text style={styles.friendStateText}>{t("alreadyFriends")}</Text>
                   </View>
                 )}
@@ -1157,15 +1321,20 @@ export default function GameScreen() {
       {/* quit confirm */}
       <Modal visible={quitOpen} transparent animationType="fade" supportedOrientations={["landscape", "portrait"]}>
         <View style={styles.quitScrim}>
-          <View style={styles.quitCard}>
-            <Text style={styles.quitTitle}>{t("quitGame")}</Text>
-            <Text style={styles.quitDesc}>
+          <View style={[styles.quitCard, ANIME && animeWindow]} testID="quit-modal">
+            {ANIME && <AnimeWindowFrame />}
+            {ANIME ? (
+              <AnimeTitle text={t("quitGame")} />
+            ) : (
+              <Text style={styles.quitTitle}>{t("quitGame")}</Text>
+            )}
+            <Text style={[styles.quitDesc, ANIME && styles.animeBody]}>
               {state.host_user_id === user?.user_id
                 ? t("quitGameHostDesc")
                 : t("quitGameDesc")}
             </Text>
             <View style={styles.quitRow}>
-              <ChunkyButton
+              <GameButton
                 testID="quit-cancel-button"
                 label={t("stay")}
                 variant="secondary"
@@ -1173,7 +1342,7 @@ export default function GameScreen() {
                 onPress={() => setQuitOpen(false)}
                 style={{ flex: 1 }}
               />
-              <ChunkyButton
+              <GameButton
                 testID="quit-confirm-button"
                 label={t("quitConfirm")}
                 variant="danger"
@@ -1191,6 +1360,118 @@ export default function GameScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.feltDark },
+  // ---- anime theme (only applied with the new design) ----
+  animeIconBtn: { backgroundColor: "transparent", borderWidth: 0, borderRadius: 10 },
+  animeIconBg: { position: "absolute", top: 0, left: 0, width: "100%", height: "100%", resizeMode: "stretch" },
+  animeHudBox: {
+    backgroundColor: "transparent",
+    borderWidth: 0,
+    paddingHorizontal: 20,
+    paddingVertical: 6,
+  },
+  animeThemMark: {
+    position: "absolute",
+    top: 5,
+    right: 7,
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: "#D92932",
+  },
+  // "À toi de jouer !" scroll banner
+  animeTurnPill: {
+    backgroundColor: TURN_BANNER ? "transparent" : A.gold,
+    borderWidth: TURN_BANNER ? 0 : 1.5,
+    borderColor: A.goldLight,
+    borderRadius: TURN_BANNER ? 0 : 8,
+    paddingHorizontal: SP.xl,
+    height: 36,
+    shadowColor: A.goldLight,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: TURN_BANNER ? 0 : 0.8,
+    shadowRadius: 10,
+    elevation: TURN_BANNER ? 0 : 8,
+  },
+  animeTurnText: { fontFamily: F.serif, fontSize: 14, color: A.ink },
+  // alerts, overlays and strips
+  plainOverlayBox: { alignItems: "center" },
+  animeOverlayBox: {
+    alignItems: "center",
+    minWidth: 340,
+    maxWidth: 460,
+    paddingHorizontal: 44,
+    paddingVertical: 34,
+  },
+  animeHeading: { fontFamily: F.serif, color: A.goldLight, textAlign: "center" },
+  animeBody: { color: A.ivory },
+  animePill: { backgroundColor: "transparent", borderWidth: 0, borderRadius: 0, paddingHorizontal: 24, paddingVertical: 11 },
+  animeSeekBtn: { backgroundColor: "transparent", borderRadius: 0, paddingHorizontal: 22, paddingVertical: 6 },
+  animeReconnect: { backgroundColor: A.amber, borderWidth: 1.5, borderColor: A.goldLight },
+  // in-game windows (score history, quick chat, last trick)
+  animeAccentText: { fontFamily: F.serif, color: A.goldLight, fontSize: 16 },
+  animeHistoryRow: {
+    borderTopWidth: 0,
+    marginTop: 6,
+    paddingHorizontal: SCORE_ROW ? 52 : SP.md,
+    paddingVertical: SCORE_ROW ? 10 : 8,
+    borderRadius: 8,
+    backgroundColor: SCORE_ROW ? "transparent" : "rgba(3,35,28,0.7)",
+    borderWidth: SCORE_ROW ? 0 : 1,
+    borderColor: "rgba(214,172,86,0.35)",
+  },
+  animeHistoryHand: { color: A.ivory },
+  animeHistoryTaker: { color: A.ivoryDim },
+  animeHistoryScores: { fontFamily: F.serif, color: A.goldLight },
+  animeHistoryEmpty: { color: A.ivoryDim, paddingVertical: SP.xl },
+  animeChatSheet: {
+    backgroundColor: "transparent",
+    paddingTop: SP.lg,
+    paddingHorizontal: SP.xl + 6,
+    paddingBottom: SP.xl + 4,
+  },
+  animeEmojiBtn: { backgroundColor: "transparent", borderWidth: 0, borderRadius: 10 },
+  animeChatChip: {
+    backgroundColor: "transparent",
+    borderWidth: 0,
+    borderRadius: 0,
+    paddingHorizontal: SP.xl,
+    flexDirection: "row",
+  },
+  animeChipSticker: { width: 40, height: 40, marginLeft: -8, marginRight: 4, marginVertical: -8 },
+  animeChatText: {
+    color: A.ivory,
+    textShadowColor: "rgba(0,0,0,0.6)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+  animeWinnerName: { color: A.goldLight, fontFamily: F.serif, fontSize: 12.5 },
+  animeMutedName: { color: A.ivoryDim },
+  animeTrickWinner: {
+    borderColor: A.goldLight,
+    shadowColor: A.gold,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.9,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+  // crest sits on the bottom edge of the winning card, clear of the name above
+  animeCrestWrap: { position: "absolute", bottom: -20, left: 0, right: 0, alignItems: "center" },
+  animeCrestImg: { width: 42, height: 42, resizeMode: "contain" },
+  animeCrestFallback: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: A.goldLight,
+    borderWidth: 1.5,
+    borderColor: A.goldDark,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  animeTextBtn: {
+    backgroundColor: "transparent",
+    borderWidth: 0,
+    paddingHorizontal: SP.xl,
+  },
   ornateFrame: {
     position: "absolute",
     top: 6,

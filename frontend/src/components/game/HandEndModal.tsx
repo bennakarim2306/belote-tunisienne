@@ -12,8 +12,11 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 
+import { useAnime } from "@/src/anime/design";
+import { AnimeWindowFrame, GameButton } from "@/src/anime/game/AnimeUI";
+import Emblem from "@/src/anime/game/Emblem";
+import { A } from "@/src/anime/tokens";
 import { SUIT_COLOR_ON_DARK, SUIT_SYMBOL } from "@/src/components/PlayingCard";
-import ChunkyButton from "@/src/components/ChunkyButton";
 import VictoryCelebration from "@/src/components/game/VictoryCelebration";
 import { useAuth } from "@/src/context/AuthContext";
 import { GameState, HandResult } from "@/src/game/useGameSocket";
@@ -21,6 +24,7 @@ import { TKey } from "@/src/i18n";
 import { maybeAskStoreReview } from "@/src/review";
 import { playSound } from "@/src/sound";
 import { C, F, R, SP } from "@/src/theme";
+
 
 type TFunc = (key: TKey, vars?: Record<string, string | number>) => string;
 
@@ -54,6 +58,7 @@ export function HandEndModal({
   onReady: () => void;
   t: TFunc;
 }) {
+  const ANIME = useAnime();
   const remaining = useCountdown(deadline);
   const myTeam = mySeat % 2;
   const otherTeam = 1 - myTeam;
@@ -68,9 +73,15 @@ export function HandEndModal({
     <View style={styles.scrim} testID="hand-end-modal">
       <Animated.View
         entering={FadeInDown.duration(320).easing(Easing.out(Easing.cubic))}
-        style={styles.card}
+        style={[styles.card, ANIME && styles.animeCard]}
       >
-        <Text style={styles.contractLine}>
+        {ANIME && <AnimeWindowFrame />}
+        {ANIME && (
+          <View style={styles.animeHandEmblem} pointerEvents="none">
+            <Emblem kind={result.success ? "made" : "failed"} size={62} />
+          </View>
+        )}
+        <Text style={[styles.contractLine, ANIME && styles.animeTitle]}>
           {t("contract")} : {c.capot ? t("capot") : c.value}
           <Text style={{ color: SUIT_COLOR_ON_DARK[c.suit] }}> {SUIT_SYMBOL[c.suit]}</Text>
           {c.surcontre ? ` · ${t("surcontred")}` : c.contre ? ` · ${t("contred")}` : ""}
@@ -81,16 +92,22 @@ export function HandEndModal({
           style={[
             styles.resultBadge,
             { backgroundColor: result.success ? C.green : C.error },
+            ANIME && styles.animeBadge,
+            ANIME && { backgroundColor: result.success ? A.emeraldBright : "#8E1820" },
           ]}
           testID="hand-result-badge"
         >
           <Ionicons
             name={result.success ? "checkmark-circle" : "close-circle"}
             size={18}
-            color={result.success ? "#051A10" : C.cream}
+            color={ANIME ? A.ivory : result.success ? "#051A10" : C.cream}
           />
           <Text
-            style={[styles.resultBadgeText, result.success && { color: "#051A10" }]}
+            style={[
+              styles.resultBadgeText,
+              result.success && { color: "#051A10" },
+              ANIME && { color: A.ivory },
+            ]}
           >
             {result.capot_team !== null
               ? t("capotLine")
@@ -103,49 +120,49 @@ export function HandEndModal({
         <View style={styles.scoreTable}>
           <View style={styles.scoreHeaderRow}>
             <Text style={styles.scoreHeaderCell}></Text>
-            <Text style={[styles.scoreHeaderCell, styles.teamName]}>{teamLabel(myTeam)}</Text>
-            <Text style={[styles.scoreHeaderCell, styles.teamName]}>{teamLabel(otherTeam)}</Text>
+            <Text style={[styles.scoreHeaderCell, styles.teamName, ANIME && styles.animeTeam]}>{teamLabel(myTeam)}</Text>
+            <Text style={[styles.scoreHeaderCell, styles.teamName, ANIME && styles.animeTeam]}>{teamLabel(otherTeam)}</Text>
           </View>
-          <View style={styles.scoreRow}>
-            <Text style={styles.scoreLabel}>{t("points")}</Text>
-            <Text style={styles.scoreCell}>{result.raw_points[myTeam]}</Text>
-            <Text style={styles.scoreCell}>{result.raw_points[otherTeam]}</Text>
+          <View style={[styles.scoreRow, ANIME && styles.animeRow]}>
+            <Text style={[styles.scoreLabel, ANIME && styles.animeLabel]}>{t("points")}</Text>
+            <Text style={[styles.scoreCell, ANIME && styles.animeCell]}>{result.raw_points[myTeam]}</Text>
+            <Text style={[styles.scoreCell, ANIME && styles.animeCell]}>{result.raw_points[otherTeam]}</Text>
           </View>
           {result.belote_team !== null && (
-            <View style={styles.scoreRow}>
-              <Text style={styles.scoreLabel}>{t("beloteBonus")}</Text>
-              <Text style={styles.scoreCell}>
+            <View style={[styles.scoreRow, ANIME && styles.animeRow]}>
+              <Text style={[styles.scoreLabel, ANIME && styles.animeLabel]}>{t("beloteBonus")}</Text>
+              <Text style={[styles.scoreCell, ANIME && styles.animeCell]}>
                 {result.belote_team === myTeam ? "+20" : "—"}
               </Text>
-              <Text style={styles.scoreCell}>
+              <Text style={[styles.scoreCell, ANIME && styles.animeCell]}>
                 {result.belote_team === otherTeam ? "+20" : "—"}
               </Text>
             </View>
           )}
-          <View style={[styles.scoreRow, styles.scoreRowFinal]}>
-            <Text style={[styles.scoreLabel, { fontFamily: F.extra }]}>
+          <View style={[styles.scoreRow, styles.scoreRowFinal, ANIME && styles.animeRow, ANIME && styles.animeRowFinal]}>
+            <Text style={[styles.scoreLabel, { fontFamily: F.extra }, ANIME && styles.animeLabel]}>
               {t("handScores")}
             </Text>
-            <Text style={[styles.scoreCell, styles.scoreCellFinal]}>
+            <Text style={[styles.scoreCell, styles.scoreCellFinal, ANIME && styles.animeCellFinal]}>
               {result.hand_scores[myTeam]}
             </Text>
-            <Text style={[styles.scoreCell, styles.scoreCellFinal]}>
+            <Text style={[styles.scoreCell, styles.scoreCellFinal, ANIME && styles.animeCellFinal]}>
               {result.hand_scores[otherTeam]}
             </Text>
           </View>
-          <View style={styles.scoreRow}>
-            <Text style={styles.scoreLabel}>{t("matchScore")}</Text>
-            <Text style={[styles.scoreCell, { color: C.brand }]}>
+          <View style={[styles.scoreRow, ANIME && styles.animeRow]}>
+            <Text style={[styles.scoreLabel, ANIME && styles.animeLabel]}>{t("matchScore")}</Text>
+            <Text style={[styles.scoreCell, { color: C.brand }, ANIME && styles.animeCellFinal]}>
               {result.match_scores[myTeam]}
             </Text>
-            <Text style={[styles.scoreCell, { color: C.brand }]}>
+            <Text style={[styles.scoreCell, { color: C.brand }, ANIME && styles.animeCellFinal]}>
               {result.match_scores[otherTeam]}
             </Text>
           </View>
         </View>
 
         {!iAmReady ? (
-          <ChunkyButton
+          <GameButton
             testID="hand-continue-button"
             label={total > 1 ? `${t("continueBtn")} (${readyCount}/${total})` : t("continueBtn")}
             onPress={onReady}
@@ -153,13 +170,13 @@ export function HandEndModal({
             style={{ marginTop: SP.md }}
           />
         ) : total > 1 ? (
-          <Text style={styles.waitingReady} testID="hand-waiting-others">
+          <Text style={[styles.waitingReady, ANIME && { color: A.goldLight }]} testID="hand-waiting-others">
             {t("waitingOthers")} ({readyCount}/{total})
           </Text>
         ) : null}
 
         {!result.match_over && (
-          <Text style={styles.countdown}>{t("nextHandIn", { n: remaining })}</Text>
+          <Text style={[styles.countdown, ANIME && { color: A.ivoryDim }]}>{t("nextHandIn", { n: remaining })}</Text>
         )}
       </Animated.View>
     </View>
@@ -184,6 +201,7 @@ export function MatchEndOverlay({
   onlineWaiting?: number;
   onPlayOnline?: () => void;
 }) {
+  const ANIME = useAnime();
   const myTeam = state.my_seat % 2;
   const won = state.winner_team === myTeam;
   const eloDelta = state.elo_changes?.[myUserId] ?? 0;
@@ -215,8 +233,16 @@ export function MatchEndOverlay({
 
   return (
     <View style={styles.scrim} testID="match-end-overlay">
-      <Animated.View entering={ZoomIn.springify().damping(14)} style={styles.card}>
-        {won ? (
+      <Animated.View
+        entering={ANIME ? ZoomIn.duration(260) : ZoomIn.springify().damping(14)}
+        style={[styles.card, ANIME && styles.animeCard]}
+      >
+        {ANIME && <AnimeWindowFrame />}
+        {ANIME ? (
+          <View style={styles.animeMatchEmblem} testID={won ? "victory-trophy" : "defeat-emblem"}>
+            <Emblem kind={won ? "victory" : "defeat"} size={96} />
+          </View>
+        ) : won ? (
           <Animated.View
             entering={ZoomIn.springify().damping(10).delay(150)}
             style={{ alignSelf: "center" }}
@@ -235,11 +261,11 @@ export function MatchEndOverlay({
             />
           </Animated.View>
         )}
-        <Text style={[styles.victoryText, { color: won ? C.green : C.error }]} testID="match-result-text">
+        <Text style={[styles.victoryText, { color: won ? C.green : C.error }, ANIME && styles.animeVictory, ANIME && !won && { color: "#FF8A80" }]} testID="match-result-text">
           {won ? t("victory") : t("defeat")}
         </Text>
-        <Text style={styles.finalLabel}>{t("finalScore")}</Text>
-        <Text style={styles.finalScore}>
+        <Text style={[styles.finalLabel, ANIME && { color: A.ivoryDim }]}>{t("finalScore")}</Text>
+        <Text style={[styles.finalScore, ANIME && { fontFamily: F.serif, color: A.ivory }]}>
           {t("us")} {state.match_scores[myTeam]} — {state.match_scores[1 - myTeam]}{" "}
           {t("them")}
         </Text>
@@ -267,8 +293,10 @@ export function MatchEndOverlay({
             </Text>
           </View>
         )}
+        {/* anime: buttons share a wrapping row so the window always fits */}
+        <View style={ANIME ? styles.animeButtons : undefined}>
         {onPlayOnline && onlineWaiting > 0 && (
-          <ChunkyButton
+          <GameButton
             testID="match-end-online-button"
             label={t("matchEndOnline", { n: onlineWaiting })}
             onPress={onPlayOnline}
@@ -277,23 +305,24 @@ export function MatchEndOverlay({
           />
         )}
         {onReplay && (
-          <ChunkyButton
+          <GameButton
             testID="replay-button"
             label={t("replay")}
             onPress={onReplay}
             small
             variant={onPlayOnline && onlineWaiting > 0 ? "secondary" : undefined}
-            style={{ marginTop: onPlayOnline && onlineWaiting > 0 ? SP.sm : SP.md }}
+            style={{ marginTop: !ANIME && onPlayOnline && onlineWaiting > 0 ? SP.sm : SP.md }}
           />
         )}
-        <ChunkyButton
+        <GameButton
           testID="back-home-button"
           label={t("backHome")}
           onPress={onHome}
           small
           variant={onReplay || (onPlayOnline && onlineWaiting > 0) ? "secondary" : undefined}
-          style={{ marginTop: onReplay ? SP.sm : SP.md }}
+          style={{ marginTop: ANIME || !onReplay ? SP.md : SP.sm }}
         />
+        </View>
       </Animated.View>
       {won && <VictoryCelebration />}
     </View>
@@ -301,6 +330,20 @@ export function MatchEndOverlay({
 }
 
 const styles = StyleSheet.create({
+  // ---- anime theme ----
+  animeCard: { backgroundColor: "transparent", borderRadius: 0, paddingHorizontal: 40, paddingVertical: 24 },
+  animeHandEmblem: { position: "absolute", top: 14, left: 26 },
+  animeButtons: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center", columnGap: 8 },
+  animeMatchEmblem: { alignSelf: "center", marginBottom: -4 },
+  animeTitle: { fontFamily: F.serif, color: A.goldLight },
+  animeBadge: { borderWidth: 1.5, borderColor: A.gold },
+  animeRow: { borderTopColor: "rgba(214,172,86,0.3)" },
+  animeRowFinal: { backgroundColor: "rgba(214,172,86,0.14)" },
+  animeLabel: { color: A.ivoryDim },
+  animeCell: { color: A.ivory },
+  animeCellFinal: { fontFamily: F.serif, color: A.goldLight },
+  animeTeam: { fontFamily: F.serif, color: A.gold },
+  animeVictory: { fontFamily: F.serif, color: A.goldLight },
   scrim: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: "rgba(12,24,18,0.75)",

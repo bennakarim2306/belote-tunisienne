@@ -12,7 +12,15 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { HUD_PANEL } from "@/src/anime/assets";
+import NineSlice from "@/src/anime/components/NineSlice";
+import { FramedPortrait } from "@/src/anime/components/ScreenParts";
+import { useAnime } from "@/src/anime/design";
+import { AnimeTitle, AnimeWindowFrame, GameButton } from "@/src/anime/game/AnimeUI";
+import AnimeRoom from "@/src/anime/screens/AnimeRoom";
+import { A } from "@/src/anime/tokens";
 import { api } from "@/src/api";
+import ModalCard from "@/src/components/ModalCard";
 import Avatar from "@/src/components/Avatar";
 import ChunkyButton from "@/src/components/ChunkyButton";
 import ShareSheet from "@/src/components/ShareSheet";
@@ -50,6 +58,7 @@ export default function RoomScreen() {
   const { code } = useLocalSearchParams<{ code: string }>();
   const { user } = useAuth();
   const { t } = useI18n();
+  const ANIME = useAnime();
   const [room, setRoom] = useState<Room | null>(null);
   const [gone, setGone] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
@@ -147,6 +156,46 @@ export default function RoomScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top + SP.md }]} testID="room-screen">
+      {ANIME ? (
+        // visual layer only — same state, handlers, texts and testIDs
+        <AnimeRoom
+          gone={gone}
+          code={code}
+          seats={seats}
+          hostId={room?.host_id}
+          myId={user?.user_id}
+          isHost={isHost}
+          starting={starting}
+          longMatch={room?.match_type === "long"}
+          matchText={`${room?.match_type === "long" ? t("longMatch") : t("shortMatch")} · ${t(
+            "pointsTarget",
+            { n: room?.match_type === "long" ? 1000 : 500 },
+          )} · ${room?.turn_timer ? t("timerOn") : `${t("timerSetting")}: ${t("timerOff")}`}`}
+          labels={{
+            title: t("partyLobby"),
+            roomCode: t("roomCode"),
+            share: t("shareCode"),
+            invite: t("inviteFriends"),
+            start: t("startGame"),
+            waitingHost: t("waitingHost"),
+            players: t("players"),
+            you: t("you"),
+            host: t("host"),
+            sitHere: t("sitHere"),
+            team: t("team"),
+            botHint: t("botSeatHint"),
+            gone: t("roomGone"),
+            backHome: t("backHome"),
+          }}
+          onLeave={leave}
+          onShare={() => setShareOpen(true)}
+          onInvite={() => openInvite(null)}
+          onStart={start}
+          onSeat={onSeatPress}
+          onBackHome={() => router.back()}
+        />
+      ) : (
+      <>
       <View style={styles.topBar}>
         <Pressable onPress={leave} hitSlop={12} testID="room-leave-button">
           <Ionicons name="arrow-back" size={26} color={C.ink} />
@@ -266,6 +315,8 @@ export default function RoomScreen() {
           </View>
         </ScrollView>
       )}
+      </>
+      )}
 
       <ShareSheet
         visible={shareOpen}
@@ -277,11 +328,19 @@ export default function RoomScreen() {
 
       <Modal visible={seatAction !== null} transparent animationType="fade" supportedOrientations={["landscape", "portrait"]}>
         <Pressable style={styles.actionScrim} onPress={() => setSeatAction(null)}>
-          <Pressable style={styles.actionCard} onPress={() => {}} testID="seat-action-modal">
+          <Pressable style={[styles.actionCard, ANIME && styles.animeCard]} onPress={() => {}} testID="seat-action-modal">
+            {ANIME ? (
+              <>
+                <AnimeWindowFrame />
+                <AnimeTitle text={`${t("team")} ${(seatAction ?? 0) % 2 === 0 ? "1" : "2"}`} />
+                <View style={{ height: SP.md }} />
+              </>
+            ) : (
             <Text style={styles.actionTitle}>
               {t("team")} {(seatAction ?? 0) % 2 === 0 ? "1" : "2"}
             </Text>
-            <ChunkyButton
+            )}
+            <GameButton
               testID="seat-sit-button"
               label={t("sitHere")}
               small
@@ -291,7 +350,7 @@ export default function RoomScreen() {
                 if (s !== null) moveSeat(s);
               }}
             />
-            <ChunkyButton
+            <GameButton
               testID="seat-invite-button"
               label={t("inviteHere")}
               variant="secondary"
@@ -308,24 +367,47 @@ export default function RoomScreen() {
       </Modal>
 
       <Modal visible={inviteOpen} transparent animationType="slide" supportedOrientations={["landscape", "portrait"]}>
-        <Pressable style={styles.modalScrim} onPress={() => setInviteOpen(false)}>
-          <Pressable style={styles.modalSheet} onPress={() => {}}>
+        <Pressable style={[styles.modalScrim, ANIME && styles.animeScrim]} onPress={() => setInviteOpen(false)}>
+          <ModalCard style={[styles.modalSheet, ANIME && styles.animeCard, ANIME && { maxWidth: 520 }]}>
+            {ANIME ? (
+              <>
+                <AnimeWindowFrame />
+                <AnimeTitle
+                  text={inviteSeat !== null ? t("inviteToSeat", { n: inviteSeat + 1 }) : t("inviteFriends")}
+                />
+              </>
+            ) : (
+            <>
             <View style={styles.sheetHandle} />
             <Text style={styles.modalTitle}>
               {inviteSeat !== null
                 ? t("inviteToSeat", { n: inviteSeat + 1 })
                 : t("inviteFriends")}
             </Text>
-            <ScrollView style={{ maxHeight: 220 }}>
+            </>
+            )}
+            <ScrollView style={{ maxHeight: ANIME ? 168 : 220, marginTop: ANIME ? SP.sm : 0 }}>
               {friends.length === 0 && (
-                <Text style={styles.noFriends}>{t("noFriendsYet")}</Text>
+                <Text style={[styles.noFriends, ANIME && { color: A.ivoryDim }]}>{t("noFriendsYet")}</Text>
               )}
               {friends.map((f) => (
-                <View key={f.user_id} style={styles.friendRow} testID={`invite-friend-${f.username}`}>
-                  <Avatar avatarId={f.avatar_id} size={38} />
-                  <Text style={styles.friendName}>{f.username}</Text>
+                <View key={f.user_id} style={[styles.friendRow, ANIME && styles.animeRow]} testID={`invite-friend-${f.username}`}>
+                  {ANIME && <NineSlice slices={HUD_PANEL} corner={11} />}
+                  {ANIME ? (
+                    <FramedPortrait avatarId={f.avatar_id} size={42} />
+                  ) : (
+                    <Avatar avatarId={f.avatar_id} size={38} />
+                  )}
+                  <Text style={[styles.friendName, ANIME && { color: A.ivory }]}>{f.username}</Text>
                   {invited.has(f.user_id) ? (
-                    <Text style={styles.invitedText}>{t("invited")}</Text>
+                    <Text style={[styles.invitedText, ANIME && { color: A.goldLight }]}>{t("invited")}</Text>
+                  ) : ANIME ? (
+                    <GameButton
+                      testID={`invite-send-${f.username}`}
+                      label={t("invite")}
+                      onPress={() => inviteFriend(f.user_id)}
+                      style={styles.animeInvite}
+                    />
                   ) : (
                     <Pressable
                       testID={`invite-send-${f.username}`}
@@ -338,13 +420,13 @@ export default function RoomScreen() {
                 </View>
               ))}
             </ScrollView>
-            <ChunkyButton
+            <GameButton
               label={t("close")}
               variant="secondary"
               onPress={() => setInviteOpen(false)}
               style={{ marginTop: SP.md }}
             />
-          </Pressable>
+          </ModalCard>
         </Pressable>
       </Modal>
     </View>
@@ -352,6 +434,19 @@ export default function RoomScreen() {
 }
 
 const styles = StyleSheet.create({
+  // ---- new design: windows of the private room ----
+  animeScrim: { justifyContent: "center", alignItems: "center" },
+  animeCard: {
+    backgroundColor: "transparent",
+    borderRadius: 0,
+    borderTopLeftRadius: 0,
+    borderTopRightRadius: 0,
+    paddingHorizontal: 34,
+    paddingTop: 22,
+    paddingBottom: 26,
+  },
+  animeRow: { paddingHorizontal: SP.md, paddingVertical: 5, marginBottom: 5 },
+  animeInvite: { height: 36, minWidth: 110, paddingHorizontal: SP.lg },
   container: { flex: 1, backgroundColor: C.bg },
   topBar: {
     flexDirection: "row",

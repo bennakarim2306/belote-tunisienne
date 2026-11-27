@@ -10,6 +10,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 
+import { useAnime } from "@/src/anime/design";
 import PlayingCard from "@/src/components/PlayingCard";
 import { TrickCard } from "@/src/game/useGameSocket";
 import { C, F } from "@/src/theme";
@@ -112,6 +113,7 @@ function PointsFly({
   points: number;
   progress: Animated.SharedValue<number>;
 }) {
+  const ANIME = useAnime();
   const style = useAnimatedStyle(() => {
     const p = progress.value;
     const fly = interpolate(p, [0.45, 1], [0, 0.55], Extrapolation.CLAMP);
@@ -125,8 +127,8 @@ function PointsFly({
     };
   });
   return (
-    <Animated.View style={[styles.pointsFly, style]} testID="trick-points-fly">
-      <Text style={styles.pointsText}>+{points}</Text>
+    <Animated.View style={[styles.pointsFly, ANIME && styles.pointsFlyAnime, style]} testID="trick-points-fly">
+      <Text style={[styles.pointsText, ANIME && styles.pointsTextAnime]}>+{points}</Text>
     </Animated.View>
   );
 }
@@ -229,6 +231,8 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     elevation: 8,
   },
+  pointsFlyAnime: { backgroundColor: "#063F32", borderWidth: 2, borderColor: "#F4D68C" },
+  pointsTextAnime: { color: "#F4D68C" },
   pointsText: {
     fontFamily: F.display,
     fontSize: 18,

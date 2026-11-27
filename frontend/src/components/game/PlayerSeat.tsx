@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Image, ImageSourcePropType, Pressable, StyleSheet, Text, View } from "react-native";
 import Animated, {
   ZoomIn,
   useAnimatedStyle,
@@ -9,12 +9,26 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 
+import {
+  BADGE_BOT,
+  BADGE_DEALER,
+  BUBBLE_BID,
+  BUBBLE_CONTRACT,
+  CARD_BACK,
+  NAMEPLATE,
+  SEAT_FRAME,
+} from "@/src/anime/assets";
+import BubbleSlice from "@/src/anime/components/BubbleSlice";
+import HSlice from "@/src/anime/components/HSlice";
+import { useAnime } from "@/src/anime/design";
+import ChatSticker from "@/src/anime/game/ChatSticker";
 import Avatar from "@/src/components/Avatar";
 import { SUIT_COLOR_ON_DARK, SUIT_SYMBOL } from "@/src/components/PlayingCard";
 import { GamePlayer } from "@/src/game/useGameSocket";
 import { C, F, R } from "@/src/theme";
 
 function SeatTimer({ deadline, side = "right" }: { deadline: number; side?: "left" | "right" }) {
+  const ANIME = useAnime();
   const [remaining, setRemaining] = useState(() =>
     Math.max(0, Math.round(deadline - Date.now() / 1000)),
   );
@@ -30,6 +44,7 @@ function SeatTimer({ deadline, side = "right" }: { deadline: number; side?: "lef
       style={[
         styles.timerPill,
         side === "left" ? styles.timerLeft : styles.timerRight,
+        ANIME && styles.timerPillAnime,
         remaining <= 10 && styles.timerPillUrgent,
       ]}
       testID="seat-timer"
@@ -47,6 +62,10 @@ interface Props {
   bidSuit?: string | null;
   contractLabel?: { text: string; suit: string } | null;
   chatText?: string | null;
+  /** anime theme: the sender's sticker for a quick-chat phrase (shown with chatText) */
+  chatSticker?: ImageSourcePropType | null;
+  /** which side of the avatar the sticker goes (toward the table centre) */
+  stickerSide?: "left" | "right";
   deadline?: number;
   showTimer?: boolean;
   isMe?: boolean;
@@ -59,6 +78,21 @@ interface Props {
   onPress?: () => void;
 }
 
+
+/** Anime theme: painted speech-bubble background (or a coded plaque until the
+ *  painted bubbles are delivered). `pointer` = small tail toward the avatar. */
+function AnimeBubbleBg({ contract, pointer }: { contract?: boolean; pointer?: boolean }) {
+  const slices = contract ? BUBBLE_CONTRACT : BUBBLE_BID;
+  // bubbles beside the avatar (pointer=false) clip their bottom tail off
+  if (slices) return <BubbleSlice slices={slices} tail={pointer} />;
+  return pointer ? (
+    <View
+      pointerEvents="none"
+      style={[styles.animeTail, { borderTopColor: contract ? "#8A6A2B" : "#D6AC56" }]}
+    />
+  ) : null;
+}
+
 export default function PlayerSeat({
   player,
   isTurn,
@@ -67,6 +101,8 @@ export default function PlayerSeat({
   bidSuit,
   contractLabel,
   chatText,
+  chatSticker,
+  stickerSide = "right",
   deadline,
   showTimer,
   isMe,
@@ -75,6 +111,7 @@ export default function PlayerSeat({
   timerSide = "right",
   onPress,
 }: Props) {
+  const ANIME = useAnime();
   const pulse = useSharedValue(0);
 
   useEffect(() => {
@@ -91,6 +128,10 @@ export default function PlayerSeat({
   }));
 
   const ringSize = size + 18;
+  // anime theme: painted medallion frame around the portrait. Its hole matches
+  // the avatar's outer diameter (size + ring), so layout sizes stay unchanged.
+  const frameW = ((size + 8) / SEAT_FRAME.hole) * 0.97;
+  const frameH = frameW / SEAT_FRAME.aspect;
   // when both a chat message and a bid/contract bubble are visible, the chat
   // bubble is stacked ABOVE the bid bubble instead of overlapping behind it
   const hasBid = !!(contractLabel || bidLabel);
@@ -114,6 +155,13 @@ export default function PlayerSeat({
           style={[
             styles.turnRing,
             { width: ringSize, height: ringSize, borderRadius: ringSize / 2 },
+            ANIME && {
+              width: frameW + 8,
+              height: frameW + 8,
+              borderRadius: (frameW + 8) / 2,
+              borderWidth: 4,
+              borderColor: "#FFE08A",
+            },
             ringStyle,
           ]}
         />
@@ -123,14 +171,30 @@ export default function PlayerSeat({
           ringColor={isMe ? C.gold : "rgba(233,196,106,0.7)"}
           ringWidth={2}
         />
+        {ANIME && (
+          <Image
+            source={SEAT_FRAME.source}
+            resizeMode="stretch"
+            fadeDuration={0}
+            style={{ position: "absolute", width: frameW, height: frameH }}
+          />
+        )}
         {isDealer && (
-          <View style={styles.dealerBadge}>
-            <Text style={styles.dealerText}>D</Text>
+          <View style={[styles.dealerBadge, ANIME && styles.dealerBadgeAnime]} testID={`seat-dealer-${player.seat}`}>
+            {ANIME ? (
+              <Image source={BADGE_DEALER} style={styles.badgeImg} fadeDuration={0} />
+            ) : (
+              <Text style={styles.dealerText}>D</Text>
+            )}
           </View>
         )}
         {player.is_bot && (
-          <View style={styles.botBadge}>
-            <Ionicons name="hardware-chip" size={9} color={C.cream} />
+          <View style={[styles.botBadge, ANIME && styles.botBadgeAnime]}>
+            {ANIME ? (
+              <Image source={BADGE_BOT} style={styles.badgeImg} fadeDuration={0} />
+            ) : (
+              <Ionicons name="hardware-chip" size={9} color={C.cream} />
+            )}
           </View>
         )}
         {!player.is_bot && (player.afk || player.left) && (
@@ -148,22 +212,50 @@ export default function PlayerSeat({
           <SeatTimer deadline={deadline} side={timerSide} />
         ) : null}
       </Pressable>
-      <View style={styles.nameRow}>
-        <Text style={styles.name} numberOfLines={1}>
+      <View style={[styles.nameRow, ANIME && styles.nameRowAnime]}>
+        {ANIME && <HSlice slices={NAMEPLATE} />}
+        <Text style={[styles.name, ANIME && styles.nameAnime]} numberOfLines={1}>
           {player.username}
         </Text>
       </View>
-      {!isMe && (
-        <View style={styles.cardCount}>
-          <Text style={styles.cardCountText}>🂠 {player.card_count}</Text>
-        </View>
-      )}
-      {chatText ? (
+      {!isMe &&
+        (ANIME ? (
+          // painted card backs + the REAL number of cards still in hand
+          <View style={styles.cardFan} testID={`seat-cards-${player.seat}`}>
+            {player.card_count > 0 && (
+              <View style={styles.cardFanBacks}>
+                {[0, 1, 2].slice(0, Math.min(3, player.card_count)).map((i) => (
+                  <Image
+                    key={i}
+                    source={CARD_BACK}
+                    resizeMode="stretch"
+                    fadeDuration={0}
+                    style={[styles.cardFanBack, { marginLeft: i === 0 ? 0 : -7 }]}
+                  />
+                ))}
+              </View>
+            )}
+            <Text style={styles.cardFanCount}>{player.card_count}</Text>
+          </View>
+        ) : (
+          <View style={styles.cardCount}>
+            <Text style={styles.cardCountText}>🂠 {player.card_count}</Text>
+          </View>
+        ))}
+      {ANIME && chatText && chatSticker ? (
+        <ChatSticker
+          source={chatSticker}
+          text={chatText}
+          side={stickerSide}
+          testID={`chat-sticker-${player.seat}`}
+        />
+      ) : chatText ? (
         <Animated.View
           entering={ZoomIn.duration(180)}
           style={[
             styles.bubble,
             styles.chatBubble,
+            ANIME && styles.chatBubbleAnime,
             hasBid && bubbleSide === "top" && { top: -60 },
             bubbleSide === "right" && [
               styles.bubbleRight,
@@ -176,7 +268,7 @@ export default function PlayerSeat({
           ]}
           testID={`chat-bubble-${player.seat}`}
         >
-          <Text style={styles.chatText} numberOfLines={1}>
+          <Text style={[styles.chatText, ANIME && styles.chatTextAnime]} numberOfLines={1}>
             {chatText}
           </Text>
         </Animated.View>
@@ -186,6 +278,7 @@ export default function PlayerSeat({
           style={[
             styles.bubble,
             styles.contractBubble,
+            ANIME && styles.animeContractBubble,
             bubbleSide === "right" && [
               styles.bubbleRight,
               { top: ringSize / 2 - 12, left: 82 + rightBubbleShift },
@@ -193,6 +286,7 @@ export default function PlayerSeat({
           ]}
           testID={`contract-holder-${player.seat}`}
         >
+          {ANIME && <AnimeBubbleBg contract pointer={bubbleSide === "top"} />}
           <Ionicons name="ribbon" size={11} color="#1A1200" />
           <Text style={[styles.bubbleText, { color: "#1A1200" }]} numberOfLines={1}>
             {" "}
@@ -207,6 +301,7 @@ export default function PlayerSeat({
         <Animated.View
           style={[
             styles.bubble,
+            ANIME && styles.animeBidBubble,
             bubbleSide === "right" && [
               styles.bubbleRight,
               { top: ringSize / 2 - 12, left: 82 + rightBubbleShift },
@@ -214,7 +309,8 @@ export default function PlayerSeat({
           ]}
           entering={undefined}
         >
-          <Text style={styles.bubbleText} numberOfLines={1}>
+          {ANIME && <AnimeBubbleBg pointer={bubbleSide === "top"} />}
+          <Text style={[styles.bubbleText, ANIME && styles.animeBidText]} numberOfLines={1}>
             {bidLabel}
             {bidSuit ? (
               <Text style={{ color: SUIT_COLOR_ON_DARK[bidSuit] }}> {SUIT_SYMBOL[bidSuit]}</Text>
@@ -301,6 +397,70 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   cardCountText: { fontFamily: F.bold, fontSize: 10, color: "rgba(255,255,255,0.85)" },
+  // ---- anime theme ----
+  dealerBadgeAnime: { width: 25, height: 25, top: -3, right: 0, borderRadius: 13, backgroundColor: "transparent" },
+  botBadgeAnime: { width: 21, height: 21, bottom: 0, right: 3, borderRadius: 11, backgroundColor: "transparent" },
+  badgeImg: { width: "100%", height: "100%" },
+  timerPillAnime: { backgroundColor: "#063F32", borderColor: "#D6AC56" },
+  chatBubbleAnime: { backgroundColor: "#FFFDF5", borderColor: "#17130E", borderWidth: 2 },
+  chatTextAnime: { color: "#17130E" },
+  animeBidBubble: {
+    backgroundColor: BUBBLE_BID ? "transparent" : "#063F32",
+    borderWidth: BUBBLE_BID ? 0 : 1.5,
+    borderColor: "#D6AC56",
+    borderRadius: BUBBLE_BID ? 0 : 9,
+    paddingHorizontal: 14,
+    paddingTop: 3,
+    paddingBottom: BUBBLE_BID ? 7 : 3,
+    minWidth: 46,
+    alignItems: "center",
+    shadowOpacity: 0.5,
+  },
+  animeContractBubble: {
+    backgroundColor: BUBBLE_CONTRACT ? "transparent" : "#F4D68C",
+    borderWidth: BUBBLE_CONTRACT ? 0 : 1.5,
+    borderColor: "#8A6A2B",
+    borderRadius: BUBBLE_CONTRACT ? 0 : 9,
+    paddingHorizontal: 14,
+    paddingTop: 3,
+    paddingBottom: BUBBLE_CONTRACT ? 7 : 3,
+    minWidth: 46,
+  },
+  animeBidText: { color: "#FFF5DF" },
+  animeTail: {
+    position: "absolute",
+    bottom: -7,
+    alignSelf: "center",
+    width: 0,
+    height: 0,
+    borderLeftWidth: 6,
+    borderRightWidth: 6,
+    borderTopWidth: 7,
+    borderLeftColor: "transparent",
+    borderRightColor: "transparent",
+  },
+  nameRowAnime: {
+    backgroundColor: "transparent",
+    borderWidth: 0,
+    borderRadius: 0,
+    paddingHorizontal: 15,
+    paddingVertical: 2.5,
+    minWidth: 66,
+    justifyContent: "center",
+    marginTop: 5,
+  },
+  nameAnime: { color: "#FFF5DF", maxWidth: 76 },
+  cardFan: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 },
+  cardFanBacks: { flexDirection: "row" },
+  cardFanBack: { width: 12, height: 17, borderRadius: 2 },
+  cardFanCount: {
+    fontFamily: F.bold,
+    fontSize: 10.5,
+    color: "#FFF5DF",
+    textShadowColor: "rgba(0,0,0,0.8)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
   bubble: {
     position: "absolute",
     top: -26,

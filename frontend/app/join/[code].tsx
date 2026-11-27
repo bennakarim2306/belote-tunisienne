@@ -3,8 +3,13 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 
+import { BG_SALON } from "@/src/anime/assets";
+import { ScreenBackground, TurningCard } from "@/src/anime/components/ScreenParts";
+import { useAnime } from "@/src/anime/design";
+import { GameButton } from "@/src/anime/game/AnimeUI";
+import Emblem from "@/src/anime/game/Emblem";
+import { A } from "@/src/anime/tokens";
 import { api } from "@/src/api";
-import ChunkyButton from "@/src/components/ChunkyButton";
 import { useAuth } from "@/src/context/AuthContext";
 import { useI18n } from "@/src/i18n";
 import { C, F, SP } from "@/src/theme";
@@ -17,6 +22,7 @@ export default function JoinRoomScreen() {
   const { code } = useLocalSearchParams<{ code: string }>();
   const { user, loading } = useAuth();
   const { t } = useI18n();
+  const ANIME = useAnime();
   const [error, setError] = useState(false);
   const roomCode = (code ?? "").toUpperCase();
 
@@ -45,23 +51,25 @@ export default function JoinRoomScreen() {
 
   return (
     <View style={styles.container} testID="join-screen">
+      {ANIME && <ScreenBackground source={BG_SALON} />}
       {error ? (
         <>
-          <Text style={styles.errorText} testID="join-error">
+          {ANIME && <Emblem kind="roomClosed" size={130} />}
+          <Text style={[styles.errorText, ANIME && styles.animeText]} testID="join-error">
             {t("roomGone")}
           </Text>
-          <ChunkyButton
+          <GameButton
             testID="join-back-home"
             label={t("backHome")}
             onPress={() => router.replace("/(tabs)/home")}
-            style={{ alignSelf: "stretch", marginHorizontal: SP.xl }}
+            style={ANIME ? undefined : { alignSelf: "stretch", marginHorizontal: SP.xl }}
           />
         </>
       ) : (
         <>
-          <Text style={styles.code}>{roomCode}</Text>
-          <ActivityIndicator color={C.brand} size="large" />
-          <Text style={styles.joining}>{t("joiningRoom")}</Text>
+          <Text style={[styles.code, ANIME && { color: A.goldLight }]}>{roomCode}</Text>
+          {ANIME ? <TurningCard height={96} /> : <ActivityIndicator color={C.brand} size="large" />}
+          <Text style={[styles.joining, ANIME && { color: A.ivory }]}>{t("joiningRoom")}</Text>
         </>
       )}
     </View>
@@ -69,6 +77,7 @@ export default function JoinRoomScreen() {
 }
 
 const styles = StyleSheet.create({
+  animeText: { fontFamily: F.serif, color: A.goldLight },
   container: {
     flex: 1,
     backgroundColor: C.bg,

@@ -6,7 +6,7 @@ import { router, Stack } from "expo-router";
 import * as ScreenOrientation from "expo-screen-orientation";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar, setStatusBarHidden } from "expo-status-bar";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Alert, AppState, LogBox, Platform } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
@@ -14,6 +14,9 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
+import DesignSwitchOverlay from "@/src/anime/DesignSwitchOverlay";
+import { loadDesign } from "@/src/anime/design";
+import { ANIME_THEME_ENABLED } from "@/src/anime/flags";
 import RotateGate from "@/src/components/RotateGate";
 import { consentSettled } from "@/src/ads/consentGate";
 import { AuthProvider } from "@/src/context/AuthContext";
@@ -94,6 +97,12 @@ export default function RootLayout() {
     PlayfairSemi: require("../assets/fonts/PlayfairDisplay-SemiBold.ttf"),
   });
 
+  // the player's design, read before the first screen (flag off: nothing to read)
+  const [designReady, setDesignReady] = useState(!ANIME_THEME_ENABLED);
+  useEffect(() => {
+    if (ANIME_THEME_ENABLED) loadDesign().finally(() => setDesignReady(true));
+  }, []);
+
   const iconsReady = iconsLoaded || !!iconsError;
   const fontsReady = fontsLoaded || !!fontsError;
 
@@ -121,10 +130,10 @@ export default function RootLayout() {
   }, []);
 
   useEffect(() => {
-    if (iconsReady && fontsReady) {
+    if (iconsReady && fontsReady && designReady) {
       SplashScreen.hideAsync();
     }
-  }, [iconsReady, fontsReady]);
+  }, [iconsReady, fontsReady, designReady]);
 
   // Push notifications: tap handlers (warm + cold start) and a weekly nudge
   // for users who permanently denied the permission.
@@ -198,7 +207,7 @@ export default function RootLayout() {
 
   // If the CDN is unreachable we fall through on error rather than wedging
   // the app — icons will tofu, but the app still boots.
-  if (!iconsReady || !fontsReady) return null;
+  if (!iconsReady || !fontsReady || !designReady) return null;
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -215,6 +224,7 @@ export default function RootLayout() {
                   }}
                 />
               </RotateGate>
+              {ANIME_THEME_ENABLED && <DesignSwitchOverlay />}
             </AuthProvider>
           </LanguageProvider>
         </SafeAreaProvider>

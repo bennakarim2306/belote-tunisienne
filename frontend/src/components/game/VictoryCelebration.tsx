@@ -9,9 +9,14 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 
+import { isAnime } from "@/src/anime/design";
+import { A } from "@/src/anime/tokens";
 import { C } from "@/src/theme";
 
-const COLORS = [C.brand, C.gold, C.brand2, C.brand3, C.cream];
+const confettiColors = () =>
+  isAnime()
+    ? [A.gold, A.goldLight, A.jade, A.red, A.ivory]
+    : [C.brand, C.gold, C.brand2, C.brand3, C.cream];
 const PIECE_COUNT = 36;
 
 interface PieceParams {
@@ -85,7 +90,7 @@ export default memo(function VictoryCelebration() {
         sway: 1.5 + Math.random() * 2.5,
         rot: (Math.random() > 0.5 ? 1 : -1) * (240 + Math.random() * 480),
         size: 7 + Math.random() * 6,
-        color: COLORS[i % COLORS.length],
+        color: confettiColors()[i % 5],
         tall: Math.random() > 0.45,
       })),
     [width],

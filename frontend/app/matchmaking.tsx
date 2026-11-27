@@ -14,6 +14,8 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { useAnime } from "@/src/anime/design";
+import AnimeMatchmaking from "@/src/anime/screens/AnimeMatchmaking";
 import { api } from "@/src/api";
 import Avatar from "@/src/components/Avatar";
 import ChunkyButton from "@/src/components/ChunkyButton";
@@ -88,6 +90,7 @@ export default function MatchmakingScreen() {
   const isVsAi = isDuo && mode === "vs_ai";
   const { user } = useAuth();
   const { t } = useI18n();
+  const ANIME = useAnime();
   const [seconds, setSeconds] = useState(0);
   const [found, setFound] = useState(false);
   const [confirm, setConfirm] = useState<{
@@ -259,6 +262,65 @@ export default function MatchmakingScreen() {
   const foundCount = (duoInfo ? 2 : 1) + players.length;
   const totalSlots = isVsAi ? 2 : 4;
   const emptySlots = Math.max(0, totalSlots - foundCount - (pendingPartner ? 1 : 0));
+
+  const title = found
+    ? t("matchFound")
+    : confirm
+      ? t("mmConfirmTitle")
+      : pendingPartner
+        ? t("duoWaitingPartner", { name: pendingPartner.username })
+        : t("searching");
+
+  if (ANIME) {
+    // visual layer only — same state, handlers, texts and testIDs
+    return (
+      <>
+        <AnimeMatchmaking
+          endMsg={endMsg}
+          title={title}
+          count={t("playersCount", { n: foundCount, total: totalSlots })}
+          found={found}
+          me={{
+            username: t("you"),
+            avatar_id: user?.avatar_id,
+            elo: isVsAi ? "" : isDuo ? (user?.elo_duo ?? 1000) : (user?.elo ?? 1000),
+          }}
+          partner={partnerSlot ? { ...partnerSlot, elo: pendingPartner ? "…" : partnerSlot.elo } : null}
+          partnerPending={!!pendingPartner}
+          players={players}
+          emptySlots={emptySlots}
+          waitingLabel={t("waitingSlot")}
+          confirm={
+            confirm && {
+              me: confirm.me,
+              waitText: t("mmAcceptWait", { n: confirm.accepted, m: confirm.total }),
+              acceptLabel: `${t("mmAccept")} (${Math.max(
+                0,
+                Math.ceil((confirm.target - Date.now()) / 1000),
+              )}s)`,
+            }
+          }
+          warnMsg={warnMsg}
+          eloRange={isVsAi ? null : t("eloRangeLabel", { n: eloRange })}
+          duoOnly={duoInfo ? t("duoVsDuoOnly") : null}
+          seconds={seconds}
+          hint={isVsAi ? t("duoVsAiHint") : t("searchingHint")}
+          inviteLabel={t("inviteFriends")}
+          cancelLabel={t("cancelSearch")}
+          onAccept={acceptMatch}
+          onInvite={() => setShareOpen(true)}
+          onCancel={cancel}
+        />
+        <ShareSheet
+          visible={shareOpen}
+          onClose={() => setShareOpen(false)}
+          title={t("inviteFriends")}
+          message={t("shareQueueMsg", { link: APP_INSTALL_URL })}
+          url={APP_INSTALL_URL}
+        />
+      </>
+    );
+  }
 
   if (endMsg) {
     return (
