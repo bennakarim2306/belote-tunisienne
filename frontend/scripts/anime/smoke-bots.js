@@ -21,7 +21,7 @@ fs.mkdirSync(outDir, { recursive: true });
   const games = [], errors = [], cut = new Set(), shownWrong = [];
   for (let i = 0; i < GAMES; i++) {
     const ctx = await browser.newContext({ viewport: { width: i % 2 ? 640 : 844, height: i % 2 ? 360 : 390 }, deviceScaleFactor: 2 });
-    await ctx.addInitScript(() => { try { localStorage.setItem("auth_token", JSON.stringify("mock-token")); } catch {} });
+    await ctx.addInitScript(() => { try { localStorage.setItem("auth_token", JSON.stringify("mock-token")); localStorage.setItem("design_notice_1_4_0", "true"); } catch {} });
     const page = await ctx.newPage();
     page.on("pageerror", (e) => errors.push(String(e)));
     await page.goto(baseUrl + "/", { waitUntil: "domcontentloaded", timeout: 180000 });

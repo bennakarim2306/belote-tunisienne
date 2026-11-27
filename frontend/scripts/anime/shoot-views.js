@@ -21,7 +21,7 @@ const ROOM = (host) => ({ code: "DEMO42", host_id: host, match_type: "short", tu
   const view = async (name, { url, api = {}, token = true, storage = {} }, act) => {
     const ctx = await browser.newContext({ viewport: { width: +W, height: +H }, deviceScaleFactor: 1 });
     await ctx.addInitScript(([tok, st]) => {
-      if (tok) localStorage.setItem("auth_token", JSON.stringify("mock-token"));
+      if (tok) localStorage.setItem("auth_token", JSON.stringify("mock-token")); localStorage.setItem("design_notice_1_4_0", "true");
       for (const [k, v] of Object.entries(st)) localStorage.setItem(k, v);
     }, [token, storage]);
     const page = await ctx.newPage();

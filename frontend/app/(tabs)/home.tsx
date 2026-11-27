@@ -33,6 +33,7 @@ import {
 } from "@/src/anime/assets";
 import HSlice from "@/src/anime/components/HSlice";
 import NineSlice from "@/src/anime/components/NineSlice";
+import DesignNotice from "@/src/anime/DesignNotice";
 import { useAnime } from "@/src/anime/design";
 import { AnimeTitle, AnimeWindowFrame, GameButton } from "@/src/anime/game/AnimeUI";
 import { A } from "@/src/anime/tokens";
@@ -40,6 +41,7 @@ import AnimeHomeMain from "@/src/anime/home/AnimeHomeMain";
 import { api, ApiError } from "@/src/api";
 import Avatar from "@/src/components/Avatar";
 import DuoSetup, { DuoCandidate } from "@/src/components/DuoSetup";
+import ModalCard from "@/src/components/ModalCard";
 import MenuButton from "@/src/components/MenuButton";
 import { useAuth } from "@/src/context/AuthContext";
 import { getSavedLocalGame, newLocalGameId } from "@/src/game/useLocalGame";
@@ -561,9 +563,11 @@ export default function HomeScreen() {
         </Pressable>
       </Modal>
 
+      {ANIME && <DesignNotice />}
+
       <Modal visible={notifOpen} transparent animationType="slide" supportedOrientations={["landscape", "portrait"]}>
         <Pressable style={[styles.modalScrim, ANIME && styles.animeScrim]} onPress={() => setNotifOpen(false)}>
-          <Pressable style={[styles.modalSheet, ANIME && styles.animeSheet]} onPress={() => {}} testID="notifications-panel">
+          <ModalCard style={[styles.modalSheet, ANIME && styles.animeSheet]} testID="notifications-panel">
             {ANIME ? (
               <>
                 <AnimeWindowFrame />
@@ -684,7 +688,7 @@ export default function HomeScreen() {
               onPress={() => setNotifOpen(false)}
               style={{ marginTop: SP.md }}
             />
-          </Pressable>
+          </ModalCard>
         </Pressable>
       </Modal>
 

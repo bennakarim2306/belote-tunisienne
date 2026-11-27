@@ -37,6 +37,7 @@ import { GamePlayer, useGameSocket } from "@/src/game/useGameSocket";
 import { isLocalGameId, newLocalGameId, useLocalGame } from "@/src/game/useLocalGame";
 import { TKey, useI18n } from "@/src/i18n";
 import { api } from "@/src/api";
+import ModalCard from "@/src/components/ModalCard";
 import Avatar from "@/src/components/Avatar";
 import { isSoundEnabled, playSound, setSoundEnabled } from "@/src/sound";
 import { C, F, PATTERN_BG, R, SP } from "@/src/theme";
@@ -1174,11 +1175,9 @@ export default function GameScreen() {
       {/* score history (tap on the header score) */}
       <Modal visible={scoresOpen} transparent animationType="fade" supportedOrientations={["landscape", "portrait"]}>
         <Pressable style={styles.quitScrim} onPress={() => setScoresOpen(false)}>
-          <Pressable
+          <ModalCard
             style={[styles.quitCard, { maxHeight: "75%" }, ANIME && animeWindow, ANIME && { maxHeight: "88%" }]}
-            onPress={() => {}}
-            testID="score-history-modal"
-          >
+            testID="score-history-modal">
             {ANIME && <AnimeWindowFrame />}
             {ANIME ? (
               <AnimeTitle text={t("scoreHistory")} />
@@ -1250,7 +1249,7 @@ export default function GameScreen() {
                 style={{ marginTop: SP.md }}
               />
             )}
-          </Pressable>
+          </ModalCard>
         </Pressable>
       </Modal>
 

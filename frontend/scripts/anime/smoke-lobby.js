@@ -22,7 +22,7 @@ const ROOM = (host) => ({ code: "DEMO42", host_id: host, match_type: "long", tur
   const open = async (vp, url, api, lang) => {
     const ctx = await browser.newContext({ viewport: vp, deviceScaleFactor: 2 });
     await ctx.addInitScript(([design, l]) => {
-      localStorage.setItem("auth_token", JSON.stringify("mock-token"));
+      localStorage.setItem("auth_token", JSON.stringify("mock-token")); localStorage.setItem("design_notice_1_4_0", "true");
       if (design) localStorage.setItem("design", JSON.stringify(design));
       if (l) localStorage.setItem("lang", JSON.stringify(l));
     }, [process.env.DESIGN, lang]);

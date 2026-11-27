@@ -15,7 +15,7 @@ fs.mkdirSync(outDir, { recursive: true });
   for (const vp of [{ width: 844, height: 390 }, { width: 640, height: 360 }]) {
     const tag = `${vp.width}`;
     const ctx = await browser.newContext({ viewport: vp, deviceScaleFactor: 2 });
-    await ctx.addInitScript(() => { try { localStorage.setItem("auth_token", JSON.stringify("mock-token")); } catch {} });
+    await ctx.addInitScript(() => { try { localStorage.setItem("auth_token", JSON.stringify("mock-token")); localStorage.setItem("design_notice_1_4_0", "true"); } catch {} });
     const page = await ctx.newPage();
     const errors = [], posts = [];
     page.on("pageerror", (e) => errors.push(String(e)));

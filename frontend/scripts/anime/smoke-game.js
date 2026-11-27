@@ -23,7 +23,7 @@ const CARD_RE = /^hand-card-(7|8|9|10|J|Q|K|A)[SHDC]$/;
 async function startSoloGame(browser, vp) {
   const ctx = await browser.newContext({ viewport: vp, deviceScaleFactor: 2 });
   await ctx.addInitScript(() => {
-    try { localStorage.setItem("auth_token", JSON.stringify("mock-token")); } catch {}
+    try { localStorage.setItem("auth_token", JSON.stringify("mock-token")); localStorage.setItem("design_notice_1_4_0", "true"); } catch {}
   });
   const page = await ctx.newPage();
   await page.goto(baseUrl + "/", { waitUntil: "domcontentloaded" });

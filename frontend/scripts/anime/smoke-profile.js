@@ -21,7 +21,7 @@ const ME = { user_id: "mock_user_1", email: "demo@example.test", username: "demo
     await ctx.addInitScript(([design, l]) => {
       if (sessionStorage.getItem("seeded")) return;
       sessionStorage.setItem("seeded", "1");
-      localStorage.setItem("auth_token", JSON.stringify("mock-token"));
+      localStorage.setItem("auth_token", JSON.stringify("mock-token")); localStorage.setItem("design_notice_1_4_0", "true");
       if (design) localStorage.setItem("design", JSON.stringify(design));
       if (l) localStorage.setItem("lang", JSON.stringify(l));
     }, [process.env.DESIGN, lang]);

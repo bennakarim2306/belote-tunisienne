@@ -325,6 +325,20 @@ Inventory: 20 old-design elements. Karim approved starting ("let's go"); prompts
   home 54, design 5, game 29 (original).
 - All screens of the app now have the new design. Left: group 6 (details without new images).
 
+### Version 1.4.0 and fixes after the first phone test (2026-11-27)
+
+- Karim tested the local APK on his Samsung S25. `app.json` version 1.4.0 (versionCode is left to the store build).
+- Score history did not scroll on Android: the window card was a Pressable around the list, which on Android takes the swipe.
+  New `src/components/ModalCard.tsx` (plain View that claims taps on phones, Pressable in the browser) used for the score
+  history, the notifications and the room invite list, in both designs (the original had the same problem).
+- One-time message about the new design with the hint to the profile switch: `src/anime/DesignNotice.tsx`, drawn in the
+  home screen (not a native dialog, so it cannot collide with the consent form or the permission prompt), stored as
+  `design_notice_1_4_0`, only while the new design is on. Texts in French, Arabic, English (new keys, old texts unchanged).
+- `smoke-v140.js`: 38/38 new design, 9/9 original. Existing tests mark the message as seen.
+- Profile closing on first start: no cause found in the code, not reproducible here (the PC emulator is too slow, even
+  Google's apps freeze). Waiting for details from Karim or a log from his phone over USB.
+- Local APK builds: see project memory (C:\bt copy, Norton trust store, CMake 3.31.6, max 2 workers).
+
 ## Safety log
 
 No `git push`, no remote branch, no pull request, no GitHub write, no Emergent/Expo/EAS deployment,

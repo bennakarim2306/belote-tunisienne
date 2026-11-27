@@ -20,6 +20,7 @@ import { AnimeTitle, AnimeWindowFrame, GameButton } from "@/src/anime/game/Anime
 import AnimeRoom from "@/src/anime/screens/AnimeRoom";
 import { A } from "@/src/anime/tokens";
 import { api } from "@/src/api";
+import ModalCard from "@/src/components/ModalCard";
 import Avatar from "@/src/components/Avatar";
 import ChunkyButton from "@/src/components/ChunkyButton";
 import ShareSheet from "@/src/components/ShareSheet";
@@ -367,7 +368,7 @@ export default function RoomScreen() {
 
       <Modal visible={inviteOpen} transparent animationType="slide" supportedOrientations={["landscape", "portrait"]}>
         <Pressable style={[styles.modalScrim, ANIME && styles.animeScrim]} onPress={() => setInviteOpen(false)}>
-          <Pressable style={[styles.modalSheet, ANIME && styles.animeCard, ANIME && { maxWidth: 520 }]} onPress={() => {}}>
+          <ModalCard style={[styles.modalSheet, ANIME && styles.animeCard, ANIME && { maxWidth: 520 }]}>
             {ANIME ? (
               <>
                 <AnimeWindowFrame />
@@ -425,7 +426,7 @@ export default function RoomScreen() {
               onPress={() => setInviteOpen(false)}
               style={{ marginTop: SP.md }}
             />
-          </Pressable>
+          </ModalCard>
         </Pressable>
       </Modal>
     </View>

@@ -18,7 +18,7 @@ const PIXEL = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQ
     const ctx = await browser.newContext({ viewport: vp, deviceScaleFactor: 2 });
     await ctx.addInitScript(([d, broken]) => {
       try {
-        localStorage.setItem("auth_token", JSON.stringify("mock-token"));
+        localStorage.setItem("auth_token", JSON.stringify("mock-token")); localStorage.setItem("design_notice_1_4_0", "true");
         if (d && !sessionStorage.getItem("seeded")) { localStorage.setItem("design", d); sessionStorage.setItem("seeded", "1"); }
       } catch {}
       if (broken) {

@@ -15,7 +15,7 @@ fs.mkdirSync(outDir, { recursive: true });
 
 async function open(browser) {
   const ctx = await browser.newContext({ viewport: { width: 844, height: 390 }, deviceScaleFactor: 2 });
-  await ctx.addInitScript(() => { try { localStorage.setItem("auth_token", JSON.stringify("mock-token")); } catch {} });
+  await ctx.addInitScript(() => { try { localStorage.setItem("auth_token", JSON.stringify("mock-token")); localStorage.setItem("design_notice_1_4_0", "true"); } catch {} });
   // every alert text is noted inside the page: polling from outside can miss one
   await ctx.addInitScript(() => {
     window.__alerts = new Set();

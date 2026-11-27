@@ -19,7 +19,7 @@ fs.mkdirSync(outDir, { recursive: true });
     await ctx.addInitScript(([design, l, pr]) => {
       if (sessionStorage.getItem("seeded")) return; // keep what the app stores across reloads
       sessionStorage.setItem("seeded", "1");
-      localStorage.setItem("auth_token", JSON.stringify("mock-token"));
+      localStorage.setItem("auth_token", JSON.stringify("mock-token")); localStorage.setItem("design_notice_1_4_0", "true");
       localStorage.setItem("tutorial_progress", String(pr));
       if (design) localStorage.setItem("design", JSON.stringify(design));
       if (l) localStorage.setItem("lang", JSON.stringify(l));

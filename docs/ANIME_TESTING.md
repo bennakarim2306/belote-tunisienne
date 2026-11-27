@@ -121,3 +121,6 @@ switch, language, feedback (mood, text, sent, thanks), delete window (cancel, co
 
 `smoke-auth.js <url> <anime|original> <outDir>`: start screen, sign in (empty, wrong, right), register (short password, taken e-mail),
 language chips. Google and Apple only checked for presence.
+
+`smoke-v140.js <url> <anime|original> <outDir>`: one-time design message (shown once, not in the original or the old design),
+notifications window (tap inside keeps it), score history with 14 hands (scrolls, closes).
