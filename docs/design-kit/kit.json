@@ -103,7 +103,7 @@
    "id": "logo",
    "sheet": "single",
    "files": [
-    "home/logo_belote_tunisienne.png"
+    "home/logo_belote_tunisienne.webp"
    ],
    "how": "transparent, 15:7; the only image with text",
    "role": "wordmark Belote Tunisienne on two lines with the four suits below",
@@ -113,7 +113,7 @@
    "id": "flag",
    "sheet": "single",
    "files": [
-    "home/flag_banner.png"
+    "home/flag_banner.webp"
    ],
    "how": "transparent, 3:5",
    "role": "hanging banner decoration for the top bar",
@@ -133,7 +133,7 @@
    "id": "table_top",
    "sheet": "single",
    "files": [
-    "game/table_top.png"
+    "game/table_top.webp"
    ],
    "how": "transparent, 2:1",
    "role": "the card table surface alone, clean empty playing area, ornate rim",
@@ -143,7 +143,7 @@
    "id": "seat_frame",
    "sheet": "single",
    "files": [
-    "game/seat_frame.png"
+    "game/seat_frame.webp"
    ],
    "how": "transparent incl. the round hole, square",
    "role": "round portrait frame, empty centre",
@@ -164,7 +164,7 @@
    "sheet": "single",
    "files": [
     "game/hud_panel_*",
-    "game/hud_crest.png"
+    "game/hud_crest.webp"
    ],
    "how": "transparent, 2:1, plain straight edges (9 slices)",
    "role": "small empty panel for score, contract and bidding",
@@ -204,7 +204,7 @@
    "id": "btn_icon_green",
    "sheet": "single",
    "files": [
-    "game/btn_icon_green.png"
+    "game/btn_icon_green.webp"
    ],
    "how": "transparent, square",
    "role": "empty rounded-square icon button, main colour",
@@ -214,7 +214,7 @@
    "id": "btn_icon_red",
    "sheet": "single",
    "files": [
-    "game/btn_icon_red.png"
+    "game/btn_icon_red.webp"
    ],
    "how": "identical shape",
    "role": "the same icon button in the warning colour",
@@ -224,7 +224,7 @@
    "id": "card_back",
    "sheet": "single",
    "files": [
-    "game/card_back.png"
+    "game/card_back.webp"
    ],
    "how": "transparent outside rounded corners, 100:145",
    "role": "back of a playing card, symmetric, no suits or letters",
@@ -234,7 +234,7 @@
    "id": "card_face",
    "sheet": "single",
    "files": [
-    "cards/card_face.png"
+    "cards/card_face.webp"
    ],
    "how": "transparent outside rounded corners, 100:145",
    "role": "blank light card face with a very thin frame",
@@ -244,8 +244,8 @@
    "id": "court_jack",
    "sheet": "single",
    "files": [
-    "cards/classic_jack.png",
-    "cards/court_jack.png"
+    "cards/classic_jack.webp",
+    "cards/court_jack.webp"
    ],
    "how": "transparent, upper half only, flat cut at the waist (the app mirrors it)",
    "role": "Valet figure",
@@ -256,8 +256,8 @@
    "id": "court_queen",
    "sheet": "single",
    "files": [
-    "cards/classic_queen.png",
-    "cards/court_queen.png"
+    "cards/classic_queen.webp",
+    "cards/court_queen.webp"
    ],
    "how": "same",
    "role": "Dame figure",
@@ -268,8 +268,8 @@
    "id": "court_king",
    "sheet": "single",
    "files": [
-    "cards/classic_king.png",
-    "cards/court_king.png"
+    "cards/classic_king.webp",
+    "cards/court_king.webp"
    ],
    "how": "same",
    "role": "Roi figure",
@@ -474,7 +474,7 @@
    "id": "emoji_tile",
    "sheet": "single",
    "files": [
-    "ui/emoji_tile.png"
+    "ui/emoji_tile.webp"
    ],
    "how": "transparent, empty, square",
    "role": "small dark tile",
@@ -484,7 +484,7 @@
    "id": "winner_crest",
    "sheet": "single",
    "files": [
-    "ui/winner_crest.png"
+    "ui/winner_crest.webp"
    ],
    "how": "transparent, empty, square",
    "role": "winner mark",
@@ -524,7 +524,7 @@
    "id": "belote",
    "sheet": "emblems_a",
    "files": [
-    "emblems/belote.png"
+    "emblems/belote.webp"
    ],
    "how": "transparent, one connected object, gap of 50 px",
    "role": "royal couple emblem",
@@ -534,7 +534,7 @@
    "id": "contre",
    "sheet": "emblems_a",
    "files": [
-    "emblems/contre.png"
+    "emblems/contre.webp"
    ],
    "how": "transparent, one connected object, gap of 50 px",
    "role": "challenge emblem",
@@ -544,7 +544,7 @@
    "id": "surcontre",
    "sheet": "emblems_a",
    "files": [
-    "emblems/surcontre.png"
+    "emblems/surcontre.webp"
    ],
    "how": "transparent, one connected object, gap of 50 px",
    "role": "stronger challenge emblem",
@@ -554,7 +554,7 @@
    "id": "capot",
    "sheet": "emblems_a",
    "files": [
-    "emblems/capot.png"
+    "emblems/capot.webp"
    ],
    "how": "transparent, one connected object, gap of 50 px",
    "role": "all-tricks emblem",
@@ -564,7 +564,7 @@
    "id": "made",
    "sheet": "emblems_a",
    "files": [
-    "emblems/made.png"
+    "emblems/made.webp"
    ],
    "how": "transparent, one connected object, gap of 50 px",
    "role": "contract made seal",
@@ -574,7 +574,7 @@
    "id": "failed",
    "sheet": "emblems_a",
    "files": [
-    "emblems/failed.png"
+    "emblems/failed.webp"
    ],
    "how": "transparent, one connected object, gap of 50 px",
    "role": "contract failed seal",
@@ -584,7 +584,7 @@
    "id": "redeal",
    "sheet": "emblems_b",
    "files": [
-    "emblems/redeal.png"
+    "emblems/redeal.webp"
    ],
    "how": "transparent, one connected object, gap of 50 px",
    "role": "new deal",
@@ -594,7 +594,7 @@
    "id": "victory",
    "sheet": "emblems_b",
    "files": [
-    "emblems/victory.png"
+    "emblems/victory.webp"
    ],
    "how": "transparent, one connected object, gap of 50 px",
    "role": "match won",
@@ -604,7 +604,7 @@
    "id": "defeat",
    "sheet": "emblems_b",
    "files": [
-    "emblems/defeat.png"
+    "emblems/defeat.webp"
    ],
    "how": "transparent, one connected object, gap of 50 px",
    "role": "match lost",
@@ -614,7 +614,7 @@
    "id": "pause",
    "sheet": "emblems_c",
    "files": [
-    "emblems/pause.png"
+    "emblems/pause.webp"
    ],
    "how": "transparent, one connected object, gap of 50 px",
    "role": "pause",
@@ -624,7 +624,7 @@
    "id": "connection",
    "sheet": "emblems_c",
    "files": [
-    "emblems/connection.png"
+    "emblems/connection.webp"
    ],
    "how": "transparent, one connected object, gap of 50 px",
    "role": "connection lost",
@@ -634,7 +634,7 @@
    "id": "host",
    "sheet": "emblems_c",
    "files": [
-    "emblems/host.png"
+    "emblems/host.webp"
    ],
    "how": "transparent, one connected object, gap of 50 px",
    "role": "host ended the game",
@@ -644,7 +644,7 @@
    "id": "tile",
    "sheet": "emblems_c",
    "files": [
-    "emblems/tile.png"
+    "emblems/tile.webp"
    ],
    "how": "transparent, one connected object, gap of 50 px",
    "role": "bidding tile",
@@ -654,7 +654,7 @@
    "id": "tile_on",
    "sheet": "emblems_c",
    "files": [
-    "emblems/tile_on.png"
+    "emblems/tile_on.webp"
    ],
    "how": "transparent, one connected object, gap of 50 px",
    "role": "bidding tile selected",
@@ -664,7 +664,7 @@
    "id": "badge_dealer",
    "sheet": "emblems_c",
    "files": [
-    "emblems/badge_dealer.png"
+    "emblems/badge_dealer.webp"
    ],
    "how": "transparent, one connected object, gap of 50 px",
    "role": "dealer badge",
@@ -674,7 +674,7 @@
    "id": "badge_bot",
    "sheet": "emblems_c",
    "files": [
-    "emblems/badge_bot.png"
+    "emblems/badge_bot.webp"
    ],
    "how": "transparent, one connected object, gap of 50 px",
    "role": "bot badge",
@@ -684,7 +684,7 @@
    "id": "online",
    "sheet": "icons_home",
    "files": [
-    "icons/online.png"
+    "icons/online.webp"
    ],
    "how": "transparent, one connected object, gap of 50 px",
    "role": "play online",
@@ -694,7 +694,7 @@
    "id": "solo",
    "sheet": "icons_home",
    "files": [
-    "icons/solo.png"
+    "icons/solo.webp"
    ],
    "how": "transparent, one connected object, gap of 50 px",
    "role": "play against the AI",
@@ -704,7 +704,7 @@
    "id": "learn",
    "sheet": "icons_home",
    "files": [
-    "icons/learn.png"
+    "icons/learn.webp"
    ],
    "how": "transparent, one connected object, gap of 50 px",
    "role": "tutorial",
@@ -714,7 +714,7 @@
    "id": "private",
    "sheet": "icons_home",
    "files": [
-    "icons/private.png"
+    "icons/private.webp"
    ],
    "how": "transparent, one connected object, gap of 50 px",
    "role": "private game",
@@ -724,7 +724,7 @@
    "id": "bell",
    "sheet": "icons_home",
    "files": [
-    "icons/bell.png"
+    "icons/bell.webp"
    ],
    "how": "transparent, one connected object, gap of 50 px",
    "role": "notifications",
@@ -734,7 +734,7 @@
    "id": "elo",
    "sheet": "icons_home",
    "files": [
-    "icons/elo.png"
+    "icons/elo.webp"
    ],
    "how": "transparent, one connected object, gap of 50 px",
    "role": "ELO points",
@@ -744,7 +744,7 @@
    "id": "resume",
    "sheet": "icons_home",
    "files": [
-    "icons/resume.png"
+    "icons/resume.webp"
    ],
    "how": "transparent, one connected object, gap of 50 px",
    "role": "continue a game",
@@ -754,7 +754,7 @@
    "id": "menu",
    "sheet": "icons_home",
    "files": [
-    "icons/menu.png"
+    "icons/menu.webp"
    ],
    "how": "transparent, one connected object, gap of 50 px",
    "role": "menu",
@@ -764,7 +764,7 @@
    "id": "icon_alone",
    "sheet": "icons_windows_a",
    "files": [
-    "icons/alone.png"
+    "icons/alone.webp"
    ],
    "how": "transparent, one connected object, gap of 50 px",
    "role": "play alone",
@@ -774,7 +774,7 @@
    "id": "icon_duo",
    "sheet": "icons_windows_a",
    "files": [
-    "icons/duo.png"
+    "icons/duo.webp"
    ],
    "how": "transparent, one connected object, gap of 50 px",
    "role": "play as a duo",
@@ -784,7 +784,7 @@
    "id": "icon_quick",
    "sheet": "icons_windows_a",
    "files": [
-    "icons/quick.png"
+    "icons/quick.webp"
    ],
    "how": "transparent, one connected object, gap of 50 px",
    "role": "quick match",
@@ -794,7 +794,7 @@
    "id": "icon_normal",
    "sheet": "icons_windows_a",
    "files": [
-    "icons/normal.png"
+    "icons/normal.webp"
    ],
    "how": "transparent, one connected object, gap of 50 px",
    "role": "normal match",
@@ -804,7 +804,7 @@
    "id": "icon_timer",
    "sheet": "icons_windows_a",
    "files": [
-    "icons/timer.png"
+    "icons/timer.webp"
    ],
    "how": "transparent, one connected object, gap of 50 px",
    "role": "time limit",
@@ -814,7 +814,7 @@
    "id": "icon_check_off",
    "sheet": "icons_windows_a",
    "files": [
-    "icons/check_off.png"
+    "icons/check_off.webp"
    ],
    "how": "transparent, one connected object, gap of 50 px",
    "role": "checkbox empty",
@@ -824,7 +824,7 @@
    "id": "icon_check_on",
    "sheet": "icons_windows_a",
    "files": [
-    "icons/check_on.png"
+    "icons/check_on.webp"
    ],
    "how": "transparent, one connected object, gap of 50 px",
    "role": "checkbox checked",
@@ -834,7 +834,7 @@
    "id": "icon_arrow",
    "sheet": "icons_windows_a",
    "files": [
-    "icons/arrow.png"
+    "icons/arrow.webp"
    ],
    "how": "transparent, one connected object, gap of 50 px",
    "role": "go / join arrow",
@@ -844,7 +844,7 @@
    "id": "icon_home",
    "sheet": "icons_windows_b",
    "files": [
-    "icons/home.png"
+    "icons/home.webp"
    ],
    "how": "transparent, one connected object, gap of 50 px",
    "role": "home",
@@ -854,7 +854,7 @@
    "id": "icon_ranking",
    "sheet": "icons_windows_b",
    "files": [
-    "icons/ranking.png"
+    "icons/ranking.webp"
    ],
    "how": "transparent, one connected object, gap of 50 px",
    "role": "ranking",
@@ -864,7 +864,7 @@
    "id": "icon_friends",
    "sheet": "icons_windows_b",
    "files": [
-    "icons/friends.png"
+    "icons/friends.webp"
    ],
    "how": "transparent, one connected object, gap of 50 px",
    "role": "friends",
@@ -874,7 +874,7 @@
    "id": "icon_profile",
    "sheet": "icons_windows_b",
    "files": [
-    "icons/profile.png"
+    "icons/profile.webp"
    ],
    "how": "transparent, one connected object, gap of 50 px",
    "role": "profile",
@@ -884,7 +884,7 @@
    "id": "icon_search",
    "sheet": "icons_windows_b",
    "files": [
-    "icons/search.png"
+    "icons/search.webp"
    ],
    "how": "transparent, one connected object, gap of 50 px",
    "role": "search",
@@ -894,7 +894,7 @@
    "id": "icon_add_friend",
    "sheet": "icons_windows_b",
    "files": [
-    "icons/add_friend.png"
+    "icons/add_friend.webp"
    ],
    "how": "transparent, one connected object, gap of 50 px",
    "role": "add a friend",
@@ -904,7 +904,7 @@
    "id": "icon_close",
    "sheet": "icons_windows_b",
    "files": [
-    "icons/close.png"
+    "icons/close.webp"
    ],
    "how": "transparent, one connected object, gap of 50 px",
    "role": "close / decline",
@@ -914,7 +914,7 @@
    "id": "icon_invite",
    "sheet": "icons_windows_b",
    "files": [
-    "icons/invite.png"
+    "icons/invite.webp"
    ],
    "how": "transparent, one connected object, gap of 50 px",
    "role": "invitation",
@@ -924,7 +924,7 @@
    "id": "icon_back",
    "sheet": "lobby_icons",
    "files": [
-    "icons/back.png"
+    "icons/back.webp"
    ],
    "how": "transparent, one connected object, gap of 60 px",
    "role": "back",
@@ -934,7 +934,7 @@
    "id": "icon_share",
    "sheet": "lobby_icons",
    "files": [
-    "icons/share.png"
+    "icons/share.webp"
    ],
    "how": "transparent, one connected object, gap of 60 px",
    "role": "share",
@@ -944,7 +944,7 @@
    "id": "icon_link",
    "sheet": "lobby_icons",
    "files": [
-    "icons/link.png"
+    "icons/link.webp"
    ],
    "how": "transparent, one connected object, gap of 60 px",
    "role": "copy link",
@@ -954,7 +954,7 @@
    "id": "icon_more",
    "sheet": "lobby_icons",
    "files": [
-    "icons/more.png"
+    "icons/more.webp"
    ],
    "how": "transparent, one connected object, gap of 60 px",
    "role": "more options",
@@ -964,7 +964,7 @@
    "id": "icon_star",
    "sheet": "lobby_icons",
    "files": [
-    "icons/star.png"
+    "icons/star.webp"
    ],
    "how": "transparent, one connected object, gap of 60 px",
    "role": "host / rate",
@@ -974,7 +974,7 @@
    "id": "icon_sit_here",
    "sheet": "lobby_icons",
    "files": [
-    "icons/sit_here.png"
+    "icons/sit_here.webp"
    ],
    "how": "transparent, one connected object, gap of 60 px",
    "role": "free seat, sit here",
@@ -984,7 +984,7 @@
    "id": "icon_hourglass",
    "sheet": "lobby_icons",
    "files": [
-    "icons/hourglass.png"
+    "icons/hourglass.webp"
    ],
    "how": "transparent, one connected object, gap of 60 px",
    "role": "waiting",
@@ -994,7 +994,7 @@
    "id": "icon_info",
    "sheet": "lobby_icons",
    "files": [
-    "icons/info.png"
+    "icons/info.webp"
    ],
    "how": "transparent, one connected object, gap of 60 px",
    "role": "information",
@@ -1004,7 +1004,7 @@
    "id": "match_found",
    "sheet": "lobby_emblems",
    "files": [
-    "emblems/match_found.png"
+    "emblems/match_found.webp"
    ],
    "how": "transparent, one connected object, gap of 80 px",
    "role": "match found",
@@ -1014,7 +1014,7 @@
    "id": "room_closed",
    "sheet": "lobby_emblems",
    "files": [
-    "emblems/room_closed.png"
+    "emblems/room_closed.webp"
    ],
    "how": "transparent, one connected object, gap of 80 px",
    "role": "room closed",
@@ -1024,7 +1024,7 @@
    "id": "declined",
    "sheet": "lobby_emblems",
    "files": [
-    "emblems/declined.png"
+    "emblems/declined.webp"
    ],
    "how": "transparent, one connected object, gap of 80 px",
    "role": "invitation declined / cancelled / expired",
@@ -1034,7 +1034,7 @@
    "id": "empty_player",
    "sheet": "lobby_emblems",
    "files": [
-    "emblems/empty_player.png"
+    "emblems/empty_player.webp"
    ],
    "how": "transparent, one connected object, gap of 80 px",
    "role": "place waiting for a player, round",
@@ -1064,7 +1064,7 @@
    "id": "icon_lesson_trump",
    "sheet": "lesson_icons",
    "files": [
-    "icons/lesson_trump.png"
+    "icons/lesson_trump.webp"
    ],
    "how": "transparent, one connected object, gap of 60 px",
    "role": "lesson: trump",
@@ -1074,7 +1074,7 @@
    "id": "icon_lesson_values",
    "sheet": "lesson_icons",
    "files": [
-    "icons/lesson_values.png"
+    "icons/lesson_values.webp"
    ],
    "how": "transparent, one connected object, gap of 60 px",
    "role": "lesson: card values",
@@ -1084,7 +1084,7 @@
    "id": "icon_lesson_deal",
    "sheet": "lesson_icons",
    "files": [
-    "icons/lesson_deal.png"
+    "icons/lesson_deal.webp"
    ],
    "how": "transparent, one connected object, gap of 60 px",
    "role": "lesson: the deal",
@@ -1094,7 +1094,7 @@
    "id": "icon_lesson_bidding",
    "sheet": "lesson_icons",
    "files": [
-    "icons/lesson_bidding.png"
+    "icons/lesson_bidding.webp"
    ],
    "how": "transparent, one connected object, gap of 60 px",
    "role": "lesson: bidding",
@@ -1104,7 +1104,7 @@
    "id": "icon_lesson_follow",
    "sheet": "lesson_icons",
    "files": [
-    "icons/lesson_follow.png"
+    "icons/lesson_follow.webp"
    ],
    "how": "transparent, one connected object, gap of 60 px",
    "role": "lesson: follow and go higher",
@@ -1114,7 +1114,7 @@
    "id": "icon_lesson_cut",
    "sheet": "lesson_icons",
    "files": [
-    "icons/lesson_cut.png"
+    "icons/lesson_cut.webp"
    ],
    "how": "transparent, one connected object, gap of 60 px",
    "role": "lesson: cut",
@@ -1124,7 +1124,7 @@
    "id": "icon_lesson_tfaskira",
    "sheet": "lesson_icons",
    "files": [
-    "icons/lesson_tfaskira.png"
+    "icons/lesson_tfaskira.webp"
    ],
    "how": "transparent, one connected object, gap of 60 px",
    "role": "lesson: wrong card",
@@ -1134,7 +1134,7 @@
    "id": "icon_lesson_scoring",
    "sheet": "lesson_icons",
    "files": [
-    "icons/lesson_scoring.png"
+    "icons/lesson_scoring.webp"
    ],
    "how": "transparent, one connected object, gap of 60 px",
    "role": "lesson: scoring",
@@ -1144,7 +1144,7 @@
    "id": "icon_lesson_read_bids",
    "sheet": "lesson_states",
    "files": [
-    "icons/lesson_read_bids.png"
+    "icons/lesson_read_bids.webp"
    ],
    "how": "transparent, one connected object, gap of 60 px",
    "role": "lesson: reading the bids",
@@ -1154,7 +1154,7 @@
    "id": "icon_lesson_play_well",
    "sheet": "lesson_states",
    "files": [
-    "icons/lesson_play_well.png"
+    "icons/lesson_play_well.webp"
    ],
    "how": "transparent, one connected object, gap of 60 px",
    "role": "lesson: playing well",
@@ -1164,7 +1164,7 @@
    "id": "icon_tip",
    "sheet": "lesson_states",
    "files": [
-    "icons/tip.png"
+    "icons/tip.webp"
    ],
    "how": "transparent, one connected object, gap of 60 px",
    "role": "tip",
@@ -1174,7 +1174,7 @@
    "id": "icon_lock",
    "sheet": "lesson_states",
    "files": [
-    "icons/lock.png"
+    "icons/lock.webp"
    ],
    "how": "transparent, one connected object, gap of 60 px",
    "role": "locked",
@@ -1184,7 +1184,7 @@
    "id": "icon_done",
    "sheet": "lesson_states",
    "files": [
-    "icons/done.png"
+    "icons/done.webp"
    ],
    "how": "transparent, one connected object, gap of 60 px",
    "role": "done",
@@ -1194,7 +1194,7 @@
    "id": "icon_speaker",
    "sheet": "lesson_states",
    "files": [
-    "icons/speaker.png"
+    "icons/speaker.webp"
    ],
    "how": "transparent, one connected object, gap of 60 px",
    "role": "listen / sound on",
@@ -1204,7 +1204,7 @@
    "id": "icon_stop",
    "sheet": "lesson_states",
    "files": [
-    "icons/stop.png"
+    "icons/stop.webp"
    ],
    "how": "transparent, one connected object, gap of 60 px",
    "role": "stop",
@@ -1214,7 +1214,7 @@
    "id": "icon_chevron_down",
    "sheet": "lesson_states",
    "files": [
-    "icons/chevron_down.png"
+    "icons/chevron_down.webp"
    ],
    "how": "transparent, one connected object, gap of 60 px",
    "role": "open section",
@@ -1244,7 +1244,7 @@
    "id": "icon_medal_gold",
    "sheet": "social_marks",
    "files": [
-    "icons/medal_gold.png"
+    "icons/medal_gold.webp"
    ],
    "how": "transparent, one connected object, gap of 60 px",
    "role": "rank 1 (number written by the app)",
@@ -1254,7 +1254,7 @@
    "id": "icon_medal_silver",
    "sheet": "social_marks",
    "files": [
-    "icons/medal_silver.png"
+    "icons/medal_silver.webp"
    ],
    "how": "transparent, one connected object, gap of 60 px",
    "role": "rank 2",
@@ -1264,7 +1264,7 @@
    "id": "icon_medal_bronze",
    "sheet": "social_marks",
    "files": [
-    "icons/medal_bronze.png"
+    "icons/medal_bronze.webp"
    ],
    "how": "transparent, one connected object, gap of 60 px",
    "role": "rank 3",
@@ -1274,7 +1274,7 @@
    "id": "icon_medal_plain",
    "sheet": "social_marks",
    "files": [
-    "icons/medal_plain.png"
+    "icons/medal_plain.webp"
    ],
    "how": "transparent, one connected object, gap of 60 px",
    "role": "other ranks",
@@ -1284,7 +1284,7 @@
    "id": "icon_dot_online",
    "sheet": "social_marks",
    "files": [
-    "icons/dot_online.png"
+    "icons/dot_online.webp"
    ],
    "how": "transparent, one connected object, gap of 60 px",
    "role": "online",
@@ -1294,7 +1294,7 @@
    "id": "icon_dot_offline",
    "sheet": "social_marks",
    "files": [
-    "icons/dot_offline.png"
+    "icons/dot_offline.webp"
    ],
    "how": "transparent, one connected object, gap of 60 px",
    "role": "offline",
@@ -1304,7 +1304,7 @@
    "id": "icon_accept",
    "sheet": "social_marks",
    "files": [
-    "icons/accept.png"
+    "icons/accept.webp"
    ],
    "how": "transparent, one connected object, gap of 60 px",
    "role": "accept",
@@ -1314,7 +1314,7 @@
    "id": "icon_heart",
    "sheet": "social_marks",
    "files": [
-    "icons/heart.png"
+    "icons/heart.webp"
    ],
    "how": "transparent, one connected object, gap of 60 px",
    "role": "friend",
@@ -1324,7 +1324,7 @@
    "id": "empty_friends",
    "sheet": "social_empty",
    "files": [
-    "emblems/empty_friends.png"
+    "emblems/empty_friends.webp"
    ],
    "how": "transparent, one connected object, gap of 100 px",
    "role": "no friends yet",
@@ -1334,7 +1334,7 @@
    "id": "empty_ranking",
    "sheet": "social_empty",
    "files": [
-    "emblems/empty_ranking.png"
+    "emblems/empty_ranking.webp"
    ],
    "how": "transparent, one connected object, gap of 100 px",
    "role": "no ranking yet",
@@ -1344,7 +1344,7 @@
    "id": "icon_avatar_mirror",
    "sheet": "profile_settings",
    "files": [
-    "icons/avatar_mirror.png"
+    "icons/avatar_mirror.webp"
    ],
    "how": "transparent, one connected object, gap of 60 px",
    "role": "choose avatar",
@@ -1354,7 +1354,7 @@
    "id": "icon_statistics",
    "sheet": "profile_settings",
    "files": [
-    "icons/statistics.png"
+    "icons/statistics.webp"
    ],
    "how": "transparent, one connected object, gap of 60 px",
    "role": "statistics",
@@ -1364,7 +1364,7 @@
    "id": "icon_sound_on",
    "sheet": "profile_settings",
    "files": [
-    "icons/sound_on.png"
+    "icons/sound_on.webp"
    ],
    "how": "transparent, one connected object, gap of 60 px",
    "role": "sound on",
@@ -1374,7 +1374,7 @@
    "id": "icon_sound_off",
    "sheet": "profile_settings",
    "files": [
-    "icons/sound_off.png"
+    "icons/sound_off.webp"
    ],
    "how": "transparent, one connected object, gap of 60 px",
    "role": "sound off",
@@ -1384,7 +1384,7 @@
    "id": "icon_design",
    "sheet": "profile_settings",
    "files": [
-    "icons/design.png"
+    "icons/design.webp"
    ],
    "how": "transparent, one connected object, gap of 60 px",
    "role": "design",
@@ -1394,7 +1394,7 @@
    "id": "icon_language",
    "sheet": "profile_settings",
    "files": [
-    "icons/language.png"
+    "icons/language.webp"
    ],
    "how": "transparent, one connected object, gap of 60 px",
    "role": "language",
@@ -1404,7 +1404,7 @@
    "id": "icon_feedback",
    "sheet": "profile_settings",
    "files": [
-    "icons/feedback.png"
+    "icons/feedback.webp"
    ],
    "how": "transparent, one connected object, gap of 60 px",
    "role": "feedback",
@@ -1414,7 +1414,7 @@
    "id": "icon_privacy",
    "sheet": "profile_settings",
    "files": [
-    "icons/privacy.png"
+    "icons/privacy.webp"
    ],
    "how": "transparent, one connected object, gap of 60 px",
    "role": "privacy",
@@ -1424,7 +1424,7 @@
    "id": "icon_logout",
    "sheet": "profile_actions",
    "files": [
-    "icons/logout.png"
+    "icons/logout.webp"
    ],
    "how": "transparent, one connected object, gap of 60 px",
    "role": "log out",
@@ -1434,7 +1434,7 @@
    "id": "icon_delete",
    "sheet": "profile_actions",
    "files": [
-    "icons/delete.png"
+    "icons/delete.webp"
    ],
    "how": "transparent, one connected object, gap of 60 px",
    "role": "delete",
@@ -1444,7 +1444,7 @@
    "id": "icon_external",
    "sheet": "profile_actions",
    "files": [
-    "icons/external.png"
+    "icons/external.webp"
    ],
    "how": "transparent, one connected object, gap of 60 px",
    "role": "open outside",
@@ -1454,7 +1454,7 @@
    "id": "icon_warning",
    "sheet": "profile_actions",
    "files": [
-    "icons/warning.png"
+    "icons/warning.webp"
    ],
    "how": "transparent, one connected object, gap of 60 px",
    "role": "warning",
@@ -1464,7 +1464,7 @@
    "id": "icon_stat_games",
    "sheet": "profile_actions",
    "files": [
-    "icons/stat_games.png"
+    "icons/stat_games.webp"
    ],
    "how": "transparent, one connected object, gap of 60 px",
    "role": "games played",
@@ -1474,7 +1474,7 @@
    "id": "icon_stat_winrate",
    "sheet": "profile_actions",
    "files": [
-    "icons/stat_winrate.png"
+    "icons/stat_winrate.webp"
    ],
    "how": "transparent, one connected object, gap of 60 px",
    "role": "win rate",
@@ -1484,7 +1484,7 @@
    "id": "icon_stat_contracts",
    "sheet": "profile_actions",
    "files": [
-    "icons/stat_contracts.png"
+    "icons/stat_contracts.webp"
    ],
    "how": "transparent, one connected object, gap of 60 px",
    "role": "contracts taken",
@@ -1494,7 +1494,7 @@
    "id": "icon_stat_streak",
    "sheet": "profile_actions",
    "files": [
-    "icons/stat_streak.png"
+    "icons/stat_streak.webp"
    ],
    "how": "transparent, one connected object, gap of 60 px",
    "role": "best streak",
@@ -1504,7 +1504,7 @@
    "id": "icon_mood_sad",
    "sheet": "profile_moods",
    "files": [
-    "icons/mood_sad.png"
+    "icons/mood_sad.webp"
    ],
    "how": "transparent, one connected object, gap of 60 px",
    "role": "mood sad",
@@ -1514,7 +1514,7 @@
    "id": "icon_mood_neutral",
    "sheet": "profile_moods",
    "files": [
-    "icons/mood_neutral.png"
+    "icons/mood_neutral.webp"
    ],
    "how": "transparent, one connected object, gap of 60 px",
    "role": "mood neutral",
@@ -1524,7 +1524,7 @@
    "id": "icon_mood_love",
    "sheet": "profile_moods",
    "files": [
-    "icons/mood_love.png"
+    "icons/mood_love.webp"
    ],
    "how": "transparent, one connected object, gap of 60 px",
    "role": "mood delighted",
@@ -1534,7 +1534,7 @@
    "id": "icon_switch_off",
    "sheet": "profile_moods",
    "files": [
-    "icons/switch_off.png"
+    "icons/switch_off.webp"
    ],
    "how": "transparent, one connected object, gap of 60 px",
    "role": "switch off (kept wide, 240 px)",
@@ -1544,7 +1544,7 @@
    "id": "icon_switch_on",
    "sheet": "profile_moods",
    "files": [
-    "icons/switch_on.png"
+    "icons/switch_on.webp"
    ],
    "how": "transparent, one connected object, gap of 60 px",
    "role": "switch on (kept wide, 240 px)",
@@ -1554,7 +1554,7 @@
    "id": "icon_podium",
    "sheet": "profile_moods",
    "files": [
-    "icons/podium.png"
+    "icons/podium.webp"
    ],
    "how": "transparent, one connected object, gap of 60 px",
    "role": "rank",

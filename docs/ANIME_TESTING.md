@@ -124,3 +124,6 @@ language chips. Google and Apple only checked for presence.
 
 `smoke-v140.js <url> <anime|original> <outDir>`: one-time design message (shown once, not in the original or the old design),
 notifications window (tap inside keeps it), score history with 14 hands (scrolls, closes).
+
+Images: new transparent images are stored as WebP. After the prepare or slice scripts (which write PNG) run
+`py -I scripts/anime/to-webp.py <folder> <report.csv>`, delete the PNGs and change the requires to `.webp`.

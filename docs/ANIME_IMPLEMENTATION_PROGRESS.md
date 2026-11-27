@@ -339,6 +339,16 @@ Inventory: 20 old-design elements. Karim approved starting ("let's go"); prompts
   Google's apps freeze). Waiting for details from Karim or a log from his phone over USB.
 - Local APK builds: see project memory (C:\bt copy, Norton trust store, CMake 3.31.6, max 2 workers).
 
+### Smaller images: WebP (2026-11-27)
+
+- The Play Store size today is 16 MB; the new design's PNGs added about 28 MB. All 286 transparent PNGs under
+  `frontend/assets/anime` are now WebP (quality 88, alpha 95, method 6): 28.4 MB -> 5.1 MB, no visible difference
+  even at 2x zoom. The backgrounds stay JPEG.
+- `frontend/scripts/anime/to-webp.py` does the conversion and writes a report with sizes and similarity (PSNR).
+- The `prepare-*.ps1` and `slice-sticker-sheet.ps1` scripts still write PNG: run `to-webp.py` on their output,
+  delete the PNGs and point `assets.ts` / `stickers.ts` and `docs/design-kit/kit.json` at the `.webp` files.
+- All smoke tests pass again in both designs.
+
 ## Safety log
 
 No `git push`, no remote branch, no pull request, no GitHub write, no Emergent/Expo/EAS deployment,
