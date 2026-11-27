@@ -319,6 +319,7 @@ export const EMPTY_RANKING: ImageSourcePropType = require("../../assets/anime/em
 export const BG_DUEL: ImageSourcePropType = require("../../assets/anime/bg/bg_duel.jpg");
 export const BG_SALON: ImageSourcePropType = require("../../assets/anime/bg/bg_salon.jpg");
 export const BG_HALL: ImageSourcePropType = require("../../assets/anime/bg/bg_hall.jpg");
+export const BG_ENTRY: ImageSourcePropType = require("../../assets/anime/bg/bg_entry.jpg");
 /** empty progress bar (3-slice); the fill is drawn by the app */
 export const PROGRESS_TRACK: HSliceSource = {
   l: require("../../assets/anime/ui/progress_l.png"),

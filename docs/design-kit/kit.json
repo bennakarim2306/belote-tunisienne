@@ -1559,6 +1559,16 @@
    "how": "transparent, one connected object, gap of 60 px",
    "role": "rank",
    "used": "a golden podium with three steps and a dark green painted front"
+  },
+  {
+   "id": "bg_entry",
+   "sheet": "single",
+   "files": [
+    "bg/bg_entry.jpg"
+   ],
+   "how": "opaque, 20:9, decoration on the far left, calm middle and right",
+   "role": "background of the start and sign-in screens",
+   "used": "Create ONE background image for the start screen of a mobile card game. Very wide landscape, 20:9 (for example 2000 x 900). Opaque, no transparency.\nStyle: exactly the same dark-green-and-gold Tunisian anime style as my previous backgrounds, painted, high detail, cinematic.\nScene: the entrance of a white-and-blue Tunisian hillside village at blue hour above the sea, lanterns lighting up, bougainvillea, one large dark green wooden door with plain iron studs in a horseshoe arch on the far left, the sea and the stars on the far right.\nVery important: the middle and right part (from 15 to 90 percent of the width) is calm and rather dark, because the app puts the logo and the sign-in window there. Nothing important in the top 12 percent or the bottom 12 percent.\nNo gemstones, jewels or crystals anywhere, also not as small decoration. Green appears only as smooth paint, enamel, fabric, wood or wall color. Where earlier images in this conversation had green stones, leave them out and use plain engraved gold instead.\nNo people, no animals, no text, no letters, no numbers, no logo, no flags, no religious buildings or symbols, no frame, no buttons. Original work, not resembling any existing place photo, game, film, anime or brand."
   }
  ]
 }

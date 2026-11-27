@@ -315,6 +315,16 @@ Inventory: 20 old-design elements. Karim approved starting ("let's go"); prompts
 - `smoke-profile.js`: 111/111 new design (844, 640, 915; French, Arabic, English), 38/38 original, 38/38 old design by toggle.
   Also: home 54, design 25, social 130, game 29 (new design); home 54, design 5 (original).
 
+### Group 5: sign in and start (2026-11-27)
+
+- Karim approved groups 2, 3 and 4 on the phone (2026-11-27).
+- Start screen and sign in / register in the new design; sign-in, register, Google, Apple and texts unchanged. Google keeps its
+  logo on a painted button, the Apple button stays Apple's own.
+- `smoke-auth.js`: 63/63 new design (844, 640, 915; French, Arabic, English), 24/24 original, 24/24 old design by toggle.
+  All tests again: home 54, design 25, game 29, windows 46, lobby 180, tutorial 81, social 130, profile 111 (new design);
+  home 54, design 5, game 29 (original).
+- All screens of the app now have the new design. Left: group 6 (details without new images).
+
 ## Safety log
 
 No `git push`, no remote branch, no pull request, no GitHub write, no Emergent/Expo/EAS deployment,

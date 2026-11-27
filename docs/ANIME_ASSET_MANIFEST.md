@@ -156,3 +156,7 @@ accept, heart; 2 emblems (384 px): empty_friends, empty_ranking.
 
 22 icons: 8 settings, 8 actions and statistics, 3 moods, podium (192 px); switch_off / switch_on kept wide (240x133).
 Statistics reuse the victory, defeat, made, belote and capot emblems.
+
+## Group 5: sign in and start (2026-11-27)
+
+`bg/bg_entry.jpg` (1870x841, JPEG 88). Logo, turning card, window frame, pills and buttons reused.

@@ -118,3 +118,6 @@ invite to a game, share, empty).
 
 `smoke-profile.js <url> <anime|original> <outDir>`: head card, avatar choice saved, statistics, chart, sound switch stored, design
 switch, language, feedback (mood, text, sent, thanks), delete window (cancel, confirm), log out.
+
+`smoke-auth.js <url> <anime|original> <outDir>`: start screen, sign in (empty, wrong, right), register (short password, taken e-mail),
+language chips. Google and Apple only checked for presence.
