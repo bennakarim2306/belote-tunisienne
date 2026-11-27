@@ -151,3 +151,8 @@ belote; the final game reuses the victory emblem.
 
 8 icons (128 px): medal_gold, medal_silver, medal_bronze, medal_plain (rank number written by the app), dot_online, dot_offline,
 accept, heart; 2 emblems (384 px): empty_friends, empty_ranking.
+
+## Group 4: profile (2026-11-27)
+
+22 icons: 8 settings, 8 actions and statistics, 3 moods, podium (192 px); switch_off / switch_on kept wide (240x133).
+Statistics reuse the victory, defeat, made, belote and capot emblems.

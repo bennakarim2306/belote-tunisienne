@@ -20,7 +20,12 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { api } from "@/src/api";
 import { startDesignSwitch } from "@/src/anime/DesignSwitchOverlay";
+import { BTN_DARK, BTN_RED, ICONS } from "@/src/anime/assets";
+import HSlice from "@/src/anime/components/HSlice";
 import { useAnime } from "@/src/anime/design";
+import { AnimeTitle, AnimeWindowFrame } from "@/src/anime/game/AnimeUI";
+import AnimeProfile from "@/src/anime/screens/AnimeProfile";
+import { A } from "@/src/anime/tokens";
 import { ANIME_THEME_ENABLED } from "@/src/anime/flags";
 import { AVATARS, avatarSource } from "@/src/avatars";
 import Avatar from "@/src/components/Avatar";
@@ -125,6 +130,105 @@ export default function ProfileScreen() {
     { key: "capots", label: t("capots"), value: stats.capots ?? 0, icon: "flame" },
     { key: "streak", label: t("bestStreak"), value: stats.best_streak ?? 0, icon: "trending-up" },
   ];
+
+  const deleteWindow = (
+    <Modal
+      visible={showDelete}
+      transparent
+      animationType="fade"
+      supportedOrientations={["landscape", "portrait"]}
+      onRequestClose={() => setShowDelete(false)}
+    >
+      <View style={styles.modalScrim}>
+        <View style={[styles.modalCard, ANIME && an.window]} testID="delete-account-modal">
+          {ANIME && <AnimeWindowFrame />}
+          {ANIME ? (
+            <Image source={ICONS.warning} style={an.warn} contentFit="contain" />
+          ) : (
+            <Ionicons name="warning" size={34} color={C.error} />
+          )}
+          {ANIME ? <AnimeTitle text={t("deleteAccount")} /> : <Text style={styles.modalTitle}>{t("deleteAccount")}</Text>}
+          <Text style={[styles.modalBody, ANIME && { color: A.ivory }]}>{t("deleteAccountWarn")}</Text>
+          <View style={styles.modalRow}>
+            <Pressable
+              testID="delete-cancel-button"
+              onPress={() => setShowDelete(false)}
+              style={[styles.modalBtn, { backgroundColor: ANIME ? "transparent" : C.bg3 }]}
+            >
+              {ANIME && <HSlice slices={BTN_DARK} />}
+              <Text style={[styles.modalBtnText, { color: ANIME ? A.ivory : C.ink }]}>{t("cancel")}</Text>
+            </Pressable>
+            <Pressable
+              testID="delete-confirm-button"
+              disabled={deleting}
+              onPress={doDelete}
+              style={[styles.modalBtn, { backgroundColor: ANIME ? "transparent" : C.error, opacity: deleting ? 0.6 : 1 }]}
+            >
+              {ANIME && <HSlice slices={BTN_RED} />}
+              <Text style={[styles.modalBtnText, ANIME && { color: A.ivory }]}>{t("deleteAccountConfirm")}</Text>
+            </Pressable>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+
+  if (ANIME) {
+    // visual layer only — same saving, sound, design switch, language, links, texts and testIDs
+    return (
+      <View style={styles.container} testID="profile-screen">
+        <AnimeProfile
+          title={t("tabProfile")}
+          user={user}
+          rank={rank}
+          labels={{
+            eloSolo: t("eloSolo"),
+            eloDuo: t("eloDuo"),
+            rank: t("rank"),
+            chooseAvatar: t("chooseAvatar"),
+            statistics: t("statistics"),
+            eloProgress: t("eloProgress"),
+            soundEffects: t("soundEffects"),
+            newDesign: t("newDesign"),
+            language: t("language"),
+            feedback: t("feedbackEntry"),
+            rateApp: t("rateApp"),
+            privacy: t("privacyPolicy"),
+            logout: t("logout"),
+            deleteAccount: t("deleteAccount"),
+            version: `${t("appVersion")} ${APP_VERSION}`,
+          }}
+          avatars={AVATARS}
+          showAvatars={showAvatars}
+          showStats={showStats}
+          stats={statBlocks}
+          chart={last.map((h) => 0.2 + 0.8 * ((h.elo - minElo) / Math.max(maxElo - minElo, 1)))}
+          soundOn={soundOn}
+          designOn={ANIME_THEME_ENABLED ? ANIME : null}
+          lang={lang}
+          languages={[
+            { code: "fr", label: t("french") },
+            { code: "ar", label: t("arabic") },
+            { code: "en", label: t("english") },
+          ]}
+          showRate={Platform.OS !== "ios"}
+          onToggleAvatars={() => setShowAvatars((v) => !v)}
+          onPickAvatar={pickAvatar}
+          onToggleStats={() => setShowStats((v) => !v)}
+          onSound={toggleSound}
+          onDesign={(v) => startDesignSwitch(v ? "emerald" : "classic")}
+          onLang={(c) => setLang(c as "fr" | "ar" | "en")}
+          onFeedback={() => setShowFeedback(true)}
+          onRate={openStoreListing}
+          onPrivacy={openPrivacy}
+          onLogout={doLogout}
+          onDelete={() => setShowDelete(true)}
+        />
+        <FeedbackModal visible={showFeedback} onClose={() => setShowFeedback(false)} />
+        {deleteWindow}
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container} testID="profile-screen">
@@ -386,41 +490,16 @@ export default function ProfileScreen() {
 
       <FeedbackModal visible={showFeedback} onClose={() => setShowFeedback(false)} />
 
-      <Modal
-        visible={showDelete}
-        transparent
-        animationType="fade"
-        supportedOrientations={["landscape", "portrait"]}
-        onRequestClose={() => setShowDelete(false)}
-      >
-        <View style={styles.modalScrim}>
-          <View style={styles.modalCard} testID="delete-account-modal">
-            <Ionicons name="warning" size={34} color={C.error} />
-            <Text style={styles.modalTitle}>{t("deleteAccount")}</Text>
-            <Text style={styles.modalBody}>{t("deleteAccountWarn")}</Text>
-            <View style={styles.modalRow}>
-              <Pressable
-                testID="delete-cancel-button"
-                onPress={() => setShowDelete(false)}
-                style={[styles.modalBtn, { backgroundColor: C.bg3 }]}
-              >
-                <Text style={[styles.modalBtnText, { color: C.ink }]}>{t("cancel")}</Text>
-              </Pressable>
-              <Pressable
-                testID="delete-confirm-button"
-                disabled={deleting}
-                onPress={doDelete}
-                style={[styles.modalBtn, { backgroundColor: C.error, opacity: deleting ? 0.6 : 1 }]}
-              >
-                <Text style={styles.modalBtnText}>{t("deleteAccountConfirm")}</Text>
-              </Pressable>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      {deleteWindow}
     </View>
   );
 }
+
+// ---- new design ----
+const an = StyleSheet.create({
+  window: { backgroundColor: "transparent", borderWidth: 0, borderRadius: 0, paddingHorizontal: 34, paddingTop: 24, paddingBottom: 26 },
+  warn: { width: 54, height: 54, marginBottom: SP.xs },
+});
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.bg },

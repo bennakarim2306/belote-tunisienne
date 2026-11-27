@@ -54,6 +54,18 @@
   "social_empty": {
    "cols": 2,
    "rows": 1
+  },
+  "profile_settings": {
+   "cols": 4,
+   "rows": 2
+  },
+  "profile_actions": {
+   "cols": 4,
+   "rows": 2
+  },
+  "profile_moods": {
+   "cols": 3,
+   "rows": 2
   }
  },
  "elements": [
@@ -1327,6 +1339,226 @@
    "how": "transparent, one connected object, gap of 100 px",
    "role": "no ranking yet",
    "used": "Right: NO RANKING YET: an empty golden podium with three steps and a dark green curtain behind it, all joined together."
+  },
+  {
+   "id": "icon_avatar_mirror",
+   "sheet": "profile_settings",
+   "files": [
+    "icons/avatar_mirror.png"
+   ],
+   "how": "transparent, one connected object, gap of 60 px",
+   "role": "choose avatar",
+   "used": "a golden hand mirror with plain silver glass (choose avatar)"
+  },
+  {
+   "id": "icon_statistics",
+   "sheet": "profile_settings",
+   "files": [
+    "icons/statistics.png"
+   ],
+   "how": "transparent, one connected object, gap of 60 px",
+   "role": "statistics",
+   "used": "three golden bars of rising height on one dark green enamel base (statistics)"
+  },
+  {
+   "id": "icon_sound_on",
+   "sheet": "profile_settings",
+   "files": [
+    "icons/sound_on.png"
+   ],
+   "how": "transparent, one connected object, gap of 60 px",
+   "role": "sound on",
+   "used": "a golden speaker with two sound waves joined to it by a thin bar (sound on)"
+  },
+  {
+   "id": "icon_sound_off",
+   "sheet": "profile_settings",
+   "files": [
+    "icons/sound_off.png"
+   ],
+   "how": "transparent, one connected object, gap of 60 px",
+   "role": "sound off",
+   "used": "the same golden speaker crossed by one thick diagonal bar (sound off)"
+  },
+  {
+   "id": "icon_design",
+   "sheet": "profile_settings",
+   "files": [
+    "icons/design.png"
+   ],
+   "how": "transparent, one connected object, gap of 60 px",
+   "role": "design",
+   "used": "a golden paint brush lying on a dark green wooden palette (design)"
+  },
+  {
+   "id": "icon_language",
+   "sheet": "profile_settings",
+   "files": [
+    "icons/language.png"
+   ],
+   "how": "transparent, one connected object, gap of 60 px",
+   "role": "language",
+   "used": "a golden globe carrying a dark green enamel speech bubble without content (language)"
+  },
+  {
+   "id": "icon_feedback",
+   "sheet": "profile_settings",
+   "files": [
+    "icons/feedback.png"
+   ],
+   "how": "transparent, one connected object, gap of 60 px",
+   "role": "feedback",
+   "used": "a dark green enamel speech bubble with a golden rim and three golden dots (feedback)"
+  },
+  {
+   "id": "icon_privacy",
+   "sheet": "profile_settings",
+   "files": [
+    "icons/privacy.png"
+   ],
+   "how": "transparent, one connected object, gap of 60 px",
+   "role": "privacy",
+   "used": "a dark green painted shield with a golden rim and a golden keyhole (privacy)"
+  },
+  {
+   "id": "icon_logout",
+   "sheet": "profile_actions",
+   "files": [
+    "icons/logout.png"
+   ],
+   "how": "transparent, one connected object, gap of 60 px",
+   "role": "log out",
+   "used": "an open golden door with a thick golden arrow going out to the right, joined to the door (log out)"
+  },
+  {
+   "id": "icon_delete",
+   "sheet": "profile_actions",
+   "files": [
+    "icons/delete.png"
+   ],
+   "how": "transparent, one connected object, gap of 60 px",
+   "role": "delete",
+   "used": "a golden bin with a red enamel lid (delete)"
+  },
+  {
+   "id": "icon_external",
+   "sheet": "profile_actions",
+   "files": [
+    "icons/external.png"
+   ],
+   "how": "transparent, one connected object, gap of 60 px",
+   "role": "open outside",
+   "used": "a golden square frame with a thick golden arrow leaving through its top right corner (open outside)"
+  },
+  {
+   "id": "icon_warning",
+   "sheet": "profile_actions",
+   "files": [
+    "icons/warning.png"
+   ],
+   "how": "transparent, one connected object, gap of 60 px",
+   "role": "warning",
+   "used": "a golden triangle with rounded corners, red enamel inside, with one short vertical golden bar above one golden dot (warning)"
+  },
+  {
+   "id": "icon_stat_games",
+   "sheet": "profile_actions",
+   "files": [
+    "icons/stat_games.png"
+   ],
+   "how": "transparent, one connected object, gap of 60 px",
+   "role": "games played",
+   "used": "a small stack of card backs tied with a dark green ribbon (games played)"
+  },
+  {
+   "id": "icon_stat_winrate",
+   "sheet": "profile_actions",
+   "files": [
+    "icons/stat_winrate.png"
+   ],
+   "how": "transparent, one connected object, gap of 60 px",
+   "role": "win rate",
+   "used": "a round target with golden and dark green painted rings and one golden arrow in it (win rate)"
+  },
+  {
+   "id": "icon_stat_contracts",
+   "sheet": "profile_actions",
+   "files": [
+    "icons/stat_contracts.png"
+   ],
+   "how": "transparent, one connected object, gap of 60 px",
+   "role": "contracts taken",
+   "used": "a golden scroll sealed with a red wax seal (contracts taken)"
+  },
+  {
+   "id": "icon_stat_streak",
+   "sheet": "profile_actions",
+   "files": [
+    "icons/stat_streak.png"
+   ],
+   "how": "transparent, one connected object, gap of 60 px",
+   "role": "best streak",
+   "used": "a golden flame with a red inner flame on a rising golden step (best streak)"
+  },
+  {
+   "id": "icon_mood_sad",
+   "sheet": "profile_moods",
+   "files": [
+    "icons/mood_sad.png"
+   ],
+   "how": "transparent, one connected object, gap of 60 px",
+   "role": "mood sad",
+   "used": "Row 1, left to right, three round golden faces of exactly the same size, each wearing the same small dark green fez: sad face"
+  },
+  {
+   "id": "icon_mood_neutral",
+   "sheet": "profile_moods",
+   "files": [
+    "icons/mood_neutral.png"
+   ],
+   "how": "transparent, one connected object, gap of 60 px",
+   "role": "mood neutral",
+   "used": "Row 1, left to right, three round golden faces of exactly the same size, each wearing the same small dark green fez: neutral face"
+  },
+  {
+   "id": "icon_mood_love",
+   "sheet": "profile_moods",
+   "files": [
+    "icons/mood_love.png"
+   ],
+   "how": "transparent, one connected object, gap of 60 px",
+   "role": "mood delighted",
+   "used": "Row 1, left to right, three round golden faces of exactly the same size, each wearing the same small dark green fez: delighted face with two flat red hearts as eyes"
+  },
+  {
+   "id": "icon_switch_off",
+   "sheet": "profile_moods",
+   "files": [
+    "icons/switch_off.png"
+   ],
+   "how": "transparent, one connected object, gap of 60 px",
+   "role": "switch off (kept wide, 240 px)",
+   "used": "a horizontal pill-shaped switch in the OFF position: dark green track with a thin gold rim, golden knob on the LEFT"
+  },
+  {
+   "id": "icon_switch_on",
+   "sheet": "profile_moods",
+   "files": [
+    "icons/switch_on.png"
+   ],
+   "how": "transparent, one connected object, gap of 60 px",
+   "role": "switch on (kept wide, 240 px)",
+   "used": "the same switch, exactly the same size, in the ON position: bright green enamel track, golden knob on the RIGHT"
+  },
+  {
+   "id": "icon_podium",
+   "sheet": "profile_moods",
+   "files": [
+    "icons/podium.png"
+   ],
+   "how": "transparent, one connected object, gap of 60 px",
+   "role": "rank",
+   "used": "a golden podium with three steps and a dark green painted front"
   }
  ]
 }

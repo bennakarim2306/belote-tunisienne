@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import Constants from "expo-constants";
 import React, { useState } from "react";
 import {
+  Image,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -12,6 +13,12 @@ import {
   View,
 } from "react-native";
 
+import { BTN_DARK, BTN_GREEN, HUD_PANEL, ICONS } from "@/src/anime/assets";
+import HSlice from "@/src/anime/components/HSlice";
+import NineSlice from "@/src/anime/components/NineSlice";
+import { useAnime } from "@/src/anime/design";
+import { AnimeTitle, AnimeWindowFrame } from "@/src/anime/game/AnimeUI";
+import { A } from "@/src/anime/tokens";
 import { api, ApiError } from "@/src/api";
 import { useI18n } from "@/src/i18n";
 import { C, F, R, SP } from "@/src/theme";
@@ -21,6 +28,7 @@ const MOODS = [
   { id: "neutral", emoji: "😐" },
   { id: "love", emoji: "😍" },
 ] as const;
+const MOOD_IMG = { sad: ICONS.moodSad, neutral: ICONS.moodNeutral, love: ICONS.moodLove };
 
 export default function FeedbackModal({
   visible,
@@ -30,6 +38,7 @@ export default function FeedbackModal({
   onClose: () => void;
 }) {
   const { t, lang } = useI18n();
+  const ANIME = useAnime();
   const [mood, setMood] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
@@ -77,48 +86,61 @@ export default function FeedbackModal({
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.scrim}
       >
-        <View style={styles.card} testID="feedback-modal">
+        <View style={[styles.card, ANIME && an.window]} testID="feedback-modal">
+          {ANIME && <AnimeWindowFrame />}
           {sent ? (
             <>
-              <Ionicons name="checkmark-circle" size={44} color={C.green} />
-              <Text style={styles.title} testID="feedback-thanks">
+              {ANIME ? (
+                <Image source={ICONS.done} style={an.done} resizeMode="contain" fadeDuration={0} />
+              ) : (
+                <Ionicons name="checkmark-circle" size={44} color={C.green} />
+              )}
+              <Text style={[styles.title, ANIME && an.title]} testID="feedback-thanks">
                 {t("feedbackThanks")}
               </Text>
-              <Text style={styles.body}>{t("feedbackThanksBody")}</Text>
+              <Text style={[styles.body, ANIME && an.body]}>{t("feedbackThanksBody")}</Text>
               <Pressable
                 testID="feedback-close-button"
                 onPress={close}
-                style={[styles.btn, styles.btnSolo]}
+                style={[styles.btn, styles.btnSolo, ANIME && an.btn]}
               >
-                <Text style={[styles.btnText, { color: C.ink }]}>{t("close")}</Text>
+                {ANIME && <HSlice slices={BTN_DARK} />}
+                <Text style={[styles.btnText, { color: ANIME ? A.ivory : C.ink }]}>{t("close")}</Text>
               </Pressable>
             </>
           ) : (
             <>
-              <Text style={styles.title}>{t("feedbackTitle")}</Text>
-              <Text style={styles.body}>{t("feedbackMoodQ")}</Text>
+              {ANIME ? <AnimeTitle text={t("feedbackTitle")} /> : <Text style={styles.title}>{t("feedbackTitle")}</Text>}
+              <Text style={[styles.body, ANIME && an.body]}>{t("feedbackMoodQ")}</Text>
               <View style={styles.moodRow}>
                 {MOODS.map((m) => (
                   <Pressable
                     key={m.id}
                     testID={`mood-${m.id}`}
                     onPress={() => setMood(m.id)}
-                    style={[styles.mood, mood === m.id && styles.moodActive]}
+                    style={[styles.mood, mood === m.id && styles.moodActive, ANIME && an.mood, ANIME && mood === m.id && an.moodOn]}
                   >
-                    <Text style={styles.moodEmoji}>{m.emoji}</Text>
+                    {ANIME ? (
+                      <Image source={MOOD_IMG[m.id]} style={an.moodImg} resizeMode="contain" fadeDuration={0} />
+                    ) : (
+                      <Text style={styles.moodEmoji}>{m.emoji}</Text>
+                    )}
                   </Pressable>
                 ))}
               </View>
+              <View style={ANIME ? an.inputBox : { alignSelf: "stretch" }}>
+              {ANIME && <NineSlice slices={HUD_PANEL} corner={11} />}
               <TextInput
                 testID="feedback-message-input"
-                style={styles.input}
+                style={[styles.input, ANIME && an.input]}
                 placeholder={t("feedbackPlaceholder")}
-                placeholderTextColor={C.ink3}
+                placeholderTextColor={ANIME ? A.ivoryDim : C.ink3}
                 value={message}
                 onChangeText={setMessage}
                 multiline
                 maxLength={2000}
               />
+              </View>
               {!!error && (
                 <Text style={styles.error} testID="feedback-error">
                   {error}
@@ -128,9 +150,10 @@ export default function FeedbackModal({
                 <Pressable
                   testID="feedback-cancel-button"
                   onPress={close}
-                  style={[styles.btn, { backgroundColor: C.bg3 }]}
+                  style={[styles.btn, { backgroundColor: ANIME ? "transparent" : C.bg3 }]}
                 >
-                  <Text style={[styles.btnText, { color: C.ink }]}>{t("cancel")}</Text>
+                  {ANIME && <HSlice slices={BTN_DARK} />}
+                  <Text style={[styles.btnText, { color: ANIME ? A.ivory : C.ink }]}>{t("cancel")}</Text>
                 </Pressable>
                 <Pressable
                   testID="feedback-send-button"
@@ -138,10 +161,11 @@ export default function FeedbackModal({
                   onPress={send}
                   style={[
                     styles.btn,
-                    { backgroundColor: C.gold, opacity: !mood || sending ? 0.45 : 1 },
+                    { backgroundColor: ANIME ? "transparent" : C.gold, opacity: !mood || sending ? 0.45 : 1 },
                   ]}
                 >
-                  <Text style={[styles.btnText, { color: "#2a2117" }]}>
+                  {ANIME && <HSlice slices={BTN_GREEN} />}
+                  <Text style={[styles.btnText, { color: ANIME ? A.ivory : "#2a2117" }]}>
                     {sending ? "…" : t("feedbackSend")}
                   </Text>
                 </Pressable>
@@ -153,6 +177,20 @@ export default function FeedbackModal({
     </Modal>
   );
 }
+
+// ---- new design ----
+const an = StyleSheet.create({
+  window: { backgroundColor: "transparent", borderWidth: 0, borderRadius: 0, paddingHorizontal: 34, paddingTop: 24, paddingBottom: 26 },
+  title: { color: A.goldLight },
+  body: { color: A.ivory },
+  done: { width: 56, height: 56 },
+  mood: { backgroundColor: "transparent", borderColor: "transparent", width: 70, height: 64 },
+  moodOn: { borderColor: A.gold, backgroundColor: "rgba(214,172,86,0.16)" },
+  moodImg: { width: 52, height: 52 },
+  inputBox: { alignSelf: "stretch", marginTop: SP.md },
+  input: { backgroundColor: "transparent", borderWidth: 0, color: A.ivory, marginTop: 0, position: "relative", zIndex: 1 },
+  btn: { backgroundColor: "transparent", flexGrow: 0, flexShrink: 0, flexBasis: "auto", height: 44, minWidth: 200, alignSelf: "center" },
+});
 
 const styles = StyleSheet.create({
   scrim: {

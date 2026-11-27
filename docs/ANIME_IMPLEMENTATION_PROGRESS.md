@@ -307,6 +307,14 @@ Inventory: 20 old-design elements. Karim approved starting ("let's go"); prompts
   Also: home 54, windows 46, design 25, tutorial 81 (new design); home 54, design 5 (original).
 - The online dot came out glossy, not flat as asked; easy to swap if Karim wants.
 
+### Group 4: profile (2026-11-27)
+
+- Profile (head card, avatar choice, statistics, ELO chart, painted switches, language, links, log out, delete) and the feedback
+  and delete-account windows in the new design. Saving, sound, design switch and calls unchanged. The feedback close button
+  has a real size in the new design (in the original it has no height in a browser, flex: 0; unchanged).
+- `smoke-profile.js`: 111/111 new design (844, 640, 915; French, Arabic, English), 38/38 original, 38/38 old design by toggle.
+  Also: home 54, design 25, social 130, game 29 (new design); home 54, design 5 (original).
+
 ## Safety log
 
 No `git push`, no remote branch, no pull request, no GitHub write, no Emergent/Expo/EAS deployment,
